@@ -1,14 +1,13 @@
 package org.cap;
 
-import java.util.Collections;
 import java.util.List;
 
 public class TaskWriter {
 
     public void writeResponseTimes(List<Task> tasks) {
+        System.out.println("-------- Worst-Case Response Times --------");
         for (Task task : tasks) {
-            int wcrt = Collections.max(task.responseTimes);
-            System.out.println("Task with nice " + task.nice + " has WCRT " + wcrt);
+            System.out.println("id " + task.id + " task has WCRT of " + task.worstCaseResponseTime + "s");
         }
     }
 }
