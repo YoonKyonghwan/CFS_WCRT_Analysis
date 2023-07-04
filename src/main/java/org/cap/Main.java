@@ -12,7 +12,7 @@ public class Main {
     }
 
     public static void simulateCFS(List<Task> tasks) {
-        PriorityQueue<Task> queue = new PriorityQueue<>((task1, task2) -> Integer.compare(task1.virtualRuntime, task2.virtualRuntime));
+        TaskQueue queue = new TaskQueue();
         queue.addAll(tasks);
         int time = 0;
 
