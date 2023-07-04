@@ -1,7 +1,7 @@
 package org.cap;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.PriorityQueue;
 
 public class Main {
 
@@ -12,18 +12,37 @@ public class Main {
     }
 
     public static void simulateCFS(List<Task> tasks) {
+        List<Task> allTasks = new ArrayList<>(tasks);
         TaskQueue queue = new TaskQueue();
-        queue.addAll(tasks);
         int time = 0;
 
-        while (!queue.isEmpty()) {
-            Task task = queue.poll();
-            task.virtualRuntime += task.worstCaseExecutionTime / (task.nice + 20);
-            time += task.worstCaseExecutionTime;
-            task.responseTimes.add(time - task.startTime);
-            System.out.println("Task with nice " + task.nice + " finishes at " + time);
+        while (time < getLCM(tasks)) {
+            // Add tasks to queue if their start time has arrived
+            int currentTime = time;
+            tasks.removeIf(task -> {
+                if (task.startTime <= currentTime) {
+                    queue.add(task);
+                    return true;
+                }
+                return false;
+            });
 
-            if (time < task.period) {
+            // If queue is empty, increment time and continue
+            if (queue.isEmpty()) {
+                time++;
+                continue;
+            }
+
+            // Run task with lowest virtual runtime
+            Task task = queue.poll();
+            task.virtualRuntime += (float) task.worstCaseExecutionTime / (task.nice + 20);
+            time += task.worstCaseExecutionTime;
+            if (time - task.startTime > task.worstCaseResponseTime)
+                task.worstCaseResponseTime = time - task.startTime;
+            System.out.println(time + "s - id " + task.id + " task finished (vruntime = " + task.virtualRuntime + ")");
+
+            // Add task back to queue if it has a period
+            if (task.period != 0) {
                 task.startTime += task.period;
                 task.virtualRuntime = 0;
                 tasks.add(task);
@@ -31,6 +50,19 @@ public class Main {
         }
 
         TaskWriter taskWriter = new TaskWriter();
-        taskWriter.writeResponseTimes(tasks);
+        taskWriter.writeResponseTimes(allTasks);
+    }
+
+    private static int getLCM(List<Task> tasks) {
+        return tasks.stream().map(Task::getPeriod)
+                .reduce(1, (a, b) -> a * (b / getGCD(a, b)));
+    }
+
+    private static int getGCD(int a, int b) {
+        if (b == 0) {
+            return a;
+        } else {
+            return getGCD(b, a % b);
+        }
     }
 }
