@@ -8,7 +8,7 @@ import java.io.IOException;
 import java.lang.reflect.Type;
 import java.util.List;
 
-public class TaskReader {
+public class JsonReader {
 
     public List<Task> readTasksFromFile(String filename) {
         Gson gson = new Gson();
