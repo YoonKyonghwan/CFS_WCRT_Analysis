@@ -2,6 +2,8 @@ package org.cap;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.PriorityQueue;
+import java.util.Queue;
 
 public class Main {
 
@@ -12,45 +14,72 @@ public class Main {
     }
 
     public static void simulateCFS(List<Task> tasks) {
-        List<Task> allTasks = new ArrayList<>(tasks);
-        TaskQueue queue = new TaskQueue();
+        // Initialize the priority queue with the initial tasks
+        Queue<Task> queue = new PriorityQueue<>((task1, task2) -> Double.compare(task1.priorityWeight, task2.priorityWeight));
+        loadQueue(tasks, queue);
+
+        double[] WCRT = new double[tasks.size()];
         int time = 0;
 
-        while (time < getLCM(tasks)) {
-            // Add tasks to queue if their start time has arrived
-            int currentTime = time;
-            tasks.removeIf(task -> {
-                if (task.startTime <= currentTime) {
-                    queue.add(task);
-                    return true;
-                }
-                return false;
-            });
-
-            // If queue is empty, increment time and continue
+        while (time < getLCM(tasks) || !queue.isEmpty()) {
+            // If there are no tasks in the queue, just increment the time
             if (queue.isEmpty()) {
                 time++;
                 continue;
             }
 
-            // Run task with lowest virtual runtime
-            Task task = queue.poll();
-            task.virtualRuntime += (float) task.worstCaseExecutionTime / (task.nice + 20);
-            time += task.worstCaseExecutionTime;
-            if (time - task.startTime > task.worstCaseResponseTime)
-                task.worstCaseResponseTime = time - task.startTime;
-            System.out.println(time + "s - id " + task.id + " task finished (vruntime = " + task.virtualRuntime + ")");
+            List<Task> runningTasks = loadRunningTasks(tasks, time);
 
-            // Add task back to queue if it has a period
-            if (task.period != 0) {
-                task.startTime += task.period;
-                task.virtualRuntime = 0;
-                tasks.add(task);
+            // Calculate total priority weight
+            double totalPriorityWeight = runningTasks.stream().mapToDouble(t -> t.priorityWeight).sum();
+
+            // Share the CPU among all tasks proportionally to their priority weight
+            for (Task currentTask : runningTasks) {
+                double allocation = 1.0 * (currentTask.priorityWeight / totalPriorityWeight); // One second divided proportionally to priority weight
+                currentTask.WCET -= allocation;
+
+                if (currentTask.WCET > 0) {
+                    queue.add(currentTask);  // Re-queue the task if it is not finished
+                } else {
+                    WCRT[currentTask.id-1] = Math.max(WCRT[currentTask.id-1], time + allocation);  // Update WCRT if the task has finished
+                    currentTask.WCET = currentTask.originalWCET;
+                }
+
+                // Check if the period has come again
+                if (currentTask.period > 0 && time % currentTask.period == 0) {
+                    queue.add(currentTask);  // Re-queue the task if its period has come again
+                }
             }
+
+            time += 1;  // Increase time by one second
         }
 
-        TaskWriter taskWriter = new TaskWriter();
-        taskWriter.writeResponseTimes(allTasks);
+        for (int i = 0; i < WCRT.length; i++) {
+            System.out.println("Task " + (i+1) + " WCRT: " + WCRT[i]);
+        }
+    }
+
+    private static List<Task> loadRunningTasks(List<Task> tasks, int time) {
+        List<Task> runningTasks = new ArrayList<>();
+
+        // Add tasks to the queue if their start time has come
+        for (Task task : tasks) {
+            if (task.startTime == time) {
+                // remove from queue
+                runningTasks.add(task);
+            }
+        }
+        return runningTasks;
+    }
+
+    private static void loadQueue(List<Task> tasks, Queue<Task> queue) {
+        for (Task task : tasks) {
+            task.priorityWeight = Math.pow(1.25, task.nice + 20);
+            task.originalWCET = task.WCET;
+            if (task.startTime == 0) {
+                queue.add(task);
+            }
+        }
     }
 
     private static int getLCM(List<Task> tasks) {

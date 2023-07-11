@@ -2,22 +2,15 @@
   {
     "id": 1,
     "startTime": 0,
-    "period": 10,
-    "worstCaseExecutionTime": 3,
+    "period": 5,
+    "worstCaseExecutionTime": 1,
     "nice": 0
   },
   {
     "id": 2,
     "startTime": 0,
-    "period": 15,
-    "worstCaseExecutionTime": 5,
-    "nice": -5
-  },
-  {
-    "id": 3,
-    "startTime": 0,
-    "period": 20,
-    "worstCaseExecutionTime": 7,
-    "nice": 10
+    "period": 5,
+    "worstCaseExecutionTime": 2,
+    "nice": 0
   }
 ]
