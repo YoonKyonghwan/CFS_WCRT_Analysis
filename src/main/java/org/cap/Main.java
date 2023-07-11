@@ -13,12 +13,15 @@ public class Main {
     public static void simulateCFS(List<Task> tasks) {
         // Initialize the priority queue with the initial tasks
         Queue<Task> queue = new PriorityQueue<>((task1, task2) -> Double.compare(task1.priorityWeight, task2.priorityWeight));
-        loadQueue(tasks, queue);
 
         double[] WCRT = new double[tasks.size()];
         int time = 0;
+        loadQueue(tasks, queue, time);
 
         while (time < getLCM(tasks) || !queue.isEmpty()) {
+            // Check if the period has come again and re-queue tasks if necessary
+            reloadQueue(tasks, queue, time);
+
             List<Task> runningTasks = loadRunningTasks(queue, tasks, time);
 
             // If there are no tasks in runningTasks, just increment the time
@@ -38,13 +41,8 @@ public class Main {
                 if (currentTask.WCET > 0) {
                     queue.add(currentTask);  // Re-queue the task if it is not finished
                 } else {
-                    WCRT[currentTask.id-1] = Math.max(WCRT[currentTask.id-1], time + allocation);  // Update WCRT if the task has finished
+                    WCRT[currentTask.id-1] = Math.max(WCRT[currentTask.id-1], time + allocation - currentTask.currentPeriodStart);  // Update WCRT if the task has finished
                     currentTask.WCET = currentTask.originalWCET;
-                }
-
-                // Check if the period has come again
-                if (currentTask.period > 0 && time % currentTask.period == 0) {
-                    queue.add(currentTask);  // Re-queue the task if its period has come again
                 }
             }
 
@@ -54,9 +52,22 @@ public class Main {
         displayResult(WCRT);
     }
 
-    private static void displayResult(double[] WCRT) {
-        for (int i = 0; i < WCRT.length; i++) {
-            System.out.println("Task " + (i+1) + " WCRT: " + WCRT[i]);
+    private static void reloadQueue(List<Task> tasks, Queue<Task> queue, int time) {
+        for (Task task : tasks) {
+            if (time > task.startTime && task.period > 0 && time % task.period == 0) {
+                task.currentPeriodStart = time;
+                queue.add(task);
+            }
+        }
+    }
+
+    private static void loadQueue(List<Task> tasks, Queue<Task> queue, int time) {
+        for (Task task : tasks) {
+            // TODO get real priority weight
+            task.priorityWeight = Math.pow(1.25, task.nice + 20);
+            task.originalWCET = task.WCET;
+            task.currentPeriodStart = time;
+            queue.add(task);
         }
     }
 
@@ -76,11 +87,9 @@ public class Main {
         return runningTasks;
     }
 
-    private static void loadQueue(List<Task> tasks, Queue<Task> queue) {
-        for (Task task : tasks) {
-            task.priorityWeight = Math.pow(1.25, task.nice + 20);
-            task.originalWCET = task.WCET;
-            queue.add(task);
+    private static void displayResult(double[] WCRT) {
+        for (int i = 0; i < WCRT.length; i++) {
+            System.out.println("Task " + (i+1) + " WCRT: " + WCRT[i]);
         }
     }
 

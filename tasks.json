@@ -3,14 +3,14 @@
     "id": 1,
     "startTime": 0,
     "period": 5,
-    "worstCaseExecutionTime": 1,
+    "WCET": 1,
     "nice": 0
   },
   {
     "id": 2,
     "startTime": 0,
-    "period": 10,
-    "worstCaseExecutionTime": 2,
+    "period": 5,
+    "WCET": 2,
     "nice": 0
   }
 ]
