@@ -9,7 +9,7 @@
   {
     "id": 2,
     "startTime": 0,
-    "period": 5,
+    "period": 10,
     "worstCaseExecutionTime": 2,
     "nice": 0
   }

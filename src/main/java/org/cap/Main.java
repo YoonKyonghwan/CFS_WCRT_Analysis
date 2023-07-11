@@ -1,9 +1,6 @@
 package org.cap;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.PriorityQueue;
-import java.util.Queue;
+import java.util.*;
 
 public class Main {
 
@@ -22,13 +19,13 @@ public class Main {
         int time = 0;
 
         while (time < getLCM(tasks) || !queue.isEmpty()) {
-            // If there are no tasks in the queue, just increment the time
-            if (queue.isEmpty()) {
+            List<Task> runningTasks = loadRunningTasks(queue, tasks, time);
+
+            // If there are no tasks in runningTasks, just increment the time
+            if (runningTasks.isEmpty()) {
                 time++;
                 continue;
             }
-
-            List<Task> runningTasks = loadRunningTasks(tasks, time);
 
             // Calculate total priority weight
             double totalPriorityWeight = runningTasks.stream().mapToDouble(t -> t.priorityWeight).sum();
@@ -54,21 +51,28 @@ public class Main {
             time += 1;  // Increase time by one second
         }
 
+        displayResult(WCRT);
+    }
+
+    private static void displayResult(double[] WCRT) {
         for (int i = 0; i < WCRT.length; i++) {
             System.out.println("Task " + (i+1) + " WCRT: " + WCRT[i]);
         }
     }
 
-    private static List<Task> loadRunningTasks(List<Task> tasks, int time) {
+    private static List<Task> loadRunningTasks(Queue<Task> queue, List<Task> tasks, int time) {
         List<Task> runningTasks = new ArrayList<>();
+        Iterator<Task> iterator = queue.iterator();
 
         // Add tasks to the queue if their start time has come
-        for (Task task : tasks) {
-            if (task.startTime == time) {
-                // remove from queue
+        while (iterator.hasNext()) {
+            Task task = iterator.next();
+            if (task.startTime <= time) {
                 runningTasks.add(task);
+                iterator.remove();
             }
         }
+
         return runningTasks;
     }
 
@@ -76,9 +80,7 @@ public class Main {
         for (Task task : tasks) {
             task.priorityWeight = Math.pow(1.25, task.nice + 20);
             task.originalWCET = task.WCET;
-            if (task.startTime == 0) {
-                queue.add(task);
-            }
+            queue.add(task);
         }
     }
 
