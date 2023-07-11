@@ -11,17 +11,18 @@ public class Main {
     }
 
     public static void simulateCFS(List<Task> tasks) {
-        // Initialize the priority queue with the initial tasks
-        Queue<Task> queue = new PriorityQueue<>((task1, task2) -> Double.compare(task1.priorityWeight, task2.priorityWeight));
-
-        double[] WCRT = new double[tasks.size()];
+        // double[] WCRT = new double[tasks.size()];
+        ArrayList<Double> WCRT = new ArrayList<>(Collections.nCopies(tasks.size(), 0.0));
         int time = 0;
-        loadQueue(tasks, queue, time);
+
+        // Initialize the priority queue with the initial tasks
+        Queue<Task> queue = new PriorityQueue<>(Comparator.comparingDouble(task -> task.priorityWeight));
+        initializeQueue(tasks, queue, time);
 
         while (time < getLCM(tasks) || !queue.isEmpty()) {
             // Check if the period has come again and re-queue tasks if necessary
-            reloadQueue(tasks, queue, time);
-            List<Task> runningTasks = loadRunningTasks(queue, tasks, time);
+            addPeriodicJobs(tasks, queue, time);
+            List<Task> runningTasks = initializeRunningTasks(queue, tasks, time);
 
             // If there are no tasks in runningTasks, just increment the time
             if (runningTasks.isEmpty()) {
@@ -40,7 +41,7 @@ public class Main {
                 if (currentTask.WCET > 0) {
                     queue.add(currentTask);  // Re-queue the task if it is not finished
                 } else {
-                    WCRT[currentTask.id-1] = Math.max(WCRT[currentTask.id-1], time - currentTask.currentPeriodStart + 1);  // Update WCRT if the task has finished
+                    WCRT.set(currentTask.id - 1, Math.max(WCRT.get(currentTask.id - 1), time - currentTask.currentPeriodStart + 1));  // Update WCRT if the task has finished
                     currentTask.WCET = currentTask.originalWCET;
                 }
             }
@@ -51,7 +52,27 @@ public class Main {
         displayResult(WCRT);
     }
 
-    private static void reloadQueue(List<Task> tasks, Queue<Task> queue, int time) {
+    private static final List<Integer> priorityToWeight = Arrays.asList(
+        88761, 71755, 56483, 46273, 36291,
+        29154, 23254, 18705, 14949, 11916,
+        9548, 7620, 6100, 4904, 3906,
+        3121, 2501, 1991, 1586, 1277,
+        1024, 820, 655, 526, 423,
+        335, 272, 215, 172, 137,
+        110, 87, 70, 56, 45,
+        36, 29, 23, 18, 15
+    );
+
+    private static void initializeQueue(List<Task> tasks, Queue<Task> queue, int time) {
+        for (Task task : tasks) {
+            task.priorityWeight = priorityToWeight.get(task.nice + 20);
+            task.originalWCET = task.WCET;
+            task.currentPeriodStart = time;
+            queue.add(task);
+        }
+    }
+
+    private static void addPeriodicJobs(List<Task> tasks, Queue<Task> queue, int time) {
         for (Task task : tasks) {
             if (time > task.startTime && task.period > 0 && time % task.period == 0) {
                 task.currentPeriodStart = time;
@@ -60,17 +81,7 @@ public class Main {
         }
     }
 
-    private static void loadQueue(List<Task> tasks, Queue<Task> queue, int time) {
-        for (Task task : tasks) {
-            // TODO get real priority weight
-            task.priorityWeight = Math.pow(1.25, task.nice + 20);
-            task.originalWCET = task.WCET;
-            task.currentPeriodStart = time;
-            queue.add(task);
-        }
-    }
-
-    private static List<Task> loadRunningTasks(Queue<Task> queue, List<Task> tasks, int time) {
+    private static List<Task> initializeRunningTasks(Queue<Task> queue, List<Task> tasks, int time) {
         List<Task> runningTasks = new ArrayList<>();
         Iterator<Task> iterator = queue.iterator();
 
@@ -86,9 +97,9 @@ public class Main {
         return runningTasks;
     }
 
-    private static void displayResult(double[] WCRT) {
-        for (int i = 0; i < WCRT.length; i++) {
-            System.out.println("Task " + (i+1) + " WCRT: " + WCRT[i]);
+    private static void displayResult(List<Double> WCRT) {
+        for (int i = 0; i < WCRT.size(); i++) {
+            System.out.println("Task " + (i+1) + " WCRT: " + WCRT.get(i));
         }
     }
 
