@@ -3,10 +3,10 @@ package org.cap;
 public class Task {
     int id;
     int startTime;
-    int WCET;
+    double WCET;
     int nice;
     int period;
-    int originalWCET;
+    double originalWCET;
     int currentPeriodStart;
     double priorityWeight;
 

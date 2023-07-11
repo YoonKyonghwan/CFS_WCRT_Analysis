@@ -10,7 +10,7 @@
     "id": 2,
     "startTime": 0,
     "period": 5,
-    "WCET": 2,
+    "WCET": 1,
     "nice": 0
   }
 ]

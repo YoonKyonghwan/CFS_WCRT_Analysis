@@ -21,7 +21,6 @@ public class Main {
         while (time < getLCM(tasks) || !queue.isEmpty()) {
             // Check if the period has come again and re-queue tasks if necessary
             reloadQueue(tasks, queue, time);
-
             List<Task> runningTasks = loadRunningTasks(queue, tasks, time);
 
             // If there are no tasks in runningTasks, just increment the time
@@ -41,7 +40,7 @@ public class Main {
                 if (currentTask.WCET > 0) {
                     queue.add(currentTask);  // Re-queue the task if it is not finished
                 } else {
-                    WCRT[currentTask.id-1] = Math.max(WCRT[currentTask.id-1], time + allocation - currentTask.currentPeriodStart);  // Update WCRT if the task has finished
+                    WCRT[currentTask.id-1] = Math.max(WCRT[currentTask.id-1], time - currentTask.currentPeriodStart + 1);  // Update WCRT if the task has finished
                     currentTask.WCET = currentTask.originalWCET;
                 }
             }
