@@ -3,6 +3,7 @@ package org.cap;
 import java.util.*;
 
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class CFSSimulator {
     private static final List<Integer> priorityToWeight = Arrays.asList(
@@ -17,6 +18,7 @@ public class CFSSimulator {
     );
 
     public void simulateCFS(List<Task> tasks) {
+        System.out.println("Starting CFS simulation");
         ArrayList<Double> WCRT = new ArrayList<>(Collections.nCopies(tasks.size(), 0.0));
         int time = 0;
 
@@ -24,10 +26,15 @@ public class CFSSimulator {
         Queue<Task> queue = new PriorityQueue<>(Comparator.comparingDouble(task -> task.priorityWeight));
         initializeQueue(tasks, queue, time);
 
+        // TODO fix infinite loop bug when WCET and period are the same
         while (time < getLCM(tasks) || !queue.isEmpty()) {
+            System.out.printf("\n>>> CURRENT TIME: %d <<<\n", time);
+
             // Check if the period has come again and re-queue tasks if necessary
             addPeriodicJobs(tasks, queue, time);
             List<Task> runningTasks = initializeRunningTasks(queue, tasks, time);
+
+            System.out.println("Running tasks: " + runningTasks.stream().map(task -> task.id).collect(Collectors.toList()));
 
             // If there are no tasks in runningTasks, just increment the time
             if (runningTasks.isEmpty()) {
@@ -44,9 +51,12 @@ public class CFSSimulator {
                 currentTask.WCET -= allocation;
 
                 // Re-queue the task if it is not finished
+                // TODO considering rounding to three decimals
+                // Math.round(result * 1000.0) / 1000.0;
                 if (currentTask.WCET > 0) {
                     queue.add(currentTask);
                 } else {
+                    System.out.println("Task " + currentTask.id + " completed at time " + (time + 1));
                     WCRT.set(currentTask.id - 1, Math.max(WCRT.get(currentTask.id - 1), time - currentTask.currentPeriodStart + 1));
                     currentTask.WCET = currentTask.originalWCET;
                 }
@@ -93,6 +103,9 @@ public class CFSSimulator {
     }
 
     private void displayResult(List<Double> WCRT) {
+        System.out.println("\n******************************");
+        System.out.println("***** Simulation Results *****");
+        System.out.println("******************************");
         for (int i = 0; i < WCRT.size(); i++) {
             System.out.println("Task " + (i+1) + " WCRT: " + WCRT.get(i));
         }
