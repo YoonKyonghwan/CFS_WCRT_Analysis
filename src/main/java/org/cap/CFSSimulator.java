@@ -26,8 +26,7 @@ public class CFSSimulator {
         Queue<Task> queue = new PriorityQueue<>(Comparator.comparingDouble(task -> task.priorityWeight));
         initializeQueue(tasks, queue, time);
 
-        // TODO fix infinite loop bug when WCET and period are the same
-        while (time < getLCM(tasks) || !queue.isEmpty()) {
+        while (time < getLCM(tasks)) {
             System.out.printf("\n>>> CURRENT TIME: %d <<<\n", time);
 
             // Check if the period has come again and re-queue tasks if necessary
@@ -51,8 +50,6 @@ public class CFSSimulator {
                 currentTask.WCET -= allocation;
 
                 // Re-queue the task if it is not finished
-                // TODO considering rounding to three decimals
-                // Math.round(result * 1000.0) / 1000.0;
                 if (currentTask.WCET > 0) {
                     queue.add(currentTask);
                 } else {
@@ -65,7 +62,7 @@ public class CFSSimulator {
             time += 1;
         }
 
-        displayResult(WCRT);
+        displayResult(WCRT, queue);
     }
 
     private void initializeQueue(List<Task> tasks, Queue<Task> queue, int time) {
@@ -102,10 +99,11 @@ public class CFSSimulator {
         return runningTasks;
     }
 
-    private void displayResult(List<Double> WCRT) {
+    private void displayResult(List<Double> WCRT, Queue<Task> queue) {
         System.out.println("\n******************************");
         System.out.println("***** Simulation Results *****");
         System.out.println("******************************");
+        System.out.println("Unfinished tasks: " + queue.stream().map(task -> task.id).collect(Collectors.toList()));
         for (int i = 0; i < WCRT.size(); i++) {
             System.out.println("Task " + (i+1) + " WCRT: " + WCRT.get(i));
         }
