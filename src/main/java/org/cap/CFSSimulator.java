@@ -1,8 +1,6 @@
 package org.cap;
 
 import java.util.*;
-
-import java.util.*;
 import java.util.stream.Collectors;
 
 public class CFSSimulator {
@@ -47,6 +45,7 @@ public class CFSSimulator {
             // Share the CPU among all tasks proportionally to their priority weight
             for (Task currentTask : runningTasks) {
                 double allocation = 1.0 * (currentTask.priorityWeight / totalPriorityWeight);
+                System.out.println("Task " + currentTask.id + " executed for " + allocation);
                 currentTask.WCET -= allocation;
 
                 // Re-queue the task if it is not finished
