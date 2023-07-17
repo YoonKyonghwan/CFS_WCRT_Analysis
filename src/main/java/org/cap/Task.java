@@ -6,7 +6,7 @@ public class Task {
     double WCET;
     int nice;
     int period;
-    double originalWCET;
+    double originalWCET; // TODO add description for below fields
     int currentPeriodStart;
     double priorityWeight;
 

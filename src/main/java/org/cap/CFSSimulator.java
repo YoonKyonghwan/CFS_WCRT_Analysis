@@ -16,6 +16,7 @@ public class CFSSimulator {
     );
 
     public void simulateCFS(List<Task> tasks) {
+        // TODO see if there is a visualization library at the end
         System.out.println("Starting CFS simulation");
         ArrayList<Double> WCRT = new ArrayList<>(Collections.nCopies(tasks.size(), 0.0));
         int time = 0;
@@ -28,6 +29,7 @@ public class CFSSimulator {
             System.out.printf("\n>>> CURRENT TIME: %d <<<\n", time);
 
             // Check if the period has come again and re-queue tasks if necessary
+            // TODO add release jobs logs
             addPeriodicJobs(tasks, queue, time);
             List<Task> runningTasks = initializeRunningTasks(queue, tasks, time);
 
@@ -52,7 +54,8 @@ public class CFSSimulator {
                 if (currentTask.WCET > 0) {
                     queue.add(currentTask);
                 } else {
-                    System.out.println("Task " + currentTask.id + " completed at time " + (time + 1));
+                    // TODO save RT of all jobs at the end
+                    System.out.println("Task " + currentTask.id + " completed at time " + (time + 1) + " with RT " + (time - currentTask.currentPeriodStart + 1));
                     WCRT.set(currentTask.id - 1, Math.max(WCRT.get(currentTask.id - 1), time - currentTask.currentPeriodStart + 1));
                     currentTask.WCET = currentTask.originalWCET;
                 }
@@ -78,6 +81,7 @@ public class CFSSimulator {
             if (time > task.startTime && task.period > 0 && time % task.period == 0) {
                 task.currentPeriodStart = time;
                 queue.add(task);
+                System.out.println("Task " + task.id + " released with WCET " + task.WCET);
             }
         }
     }
@@ -99,6 +103,8 @@ public class CFSSimulator {
     }
 
     private void displayResult(List<Double> WCRT, Queue<Task> queue) {
+        // TODO save simulation result as a file
+        // TODO remove running logs when print (only include in file)
         System.out.println("\n******************************");
         System.out.println("***** Simulation Results *****");
         System.out.println("******************************");
