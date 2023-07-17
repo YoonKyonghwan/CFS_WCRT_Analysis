@@ -15,6 +15,10 @@ public class CFSSimulator {
         36, 29, 23, 18, 15
     );
 
+    private static BlockingPolicy blockingPolicy = BlockingPolicy.NONE;
+
+    // TODO 1. apply read, body, write blocking policy
+    // TODO 2. diverge paths to get worst case
     public void simulateCFS(List<Task> tasks) {
         System.out.println("Starting CFS simulation");
         ArrayList<Double> WCRT = new ArrayList<>(Collections.nCopies(tasks.size(), 0.0));
@@ -31,7 +35,7 @@ public class CFSSimulator {
             // TODO add release jobs logs
             addPeriodicJobs(tasks, queue, time);
             // TODO need to select running tasks that match blocking policy
-            // TODO check blockingPolicy 
+            // TODO check blockingPolicy
             // TODO case 1: there are no previous tasks running
             // TODO case 2: there are previous tasks running
             List<Task> runningTasks = initializeRunningTasks(queue, tasks, time);
@@ -51,14 +55,40 @@ public class CFSSimulator {
             for (Task currentTask : runningTasks) {
                 double allocation = 1.0 * (currentTask.priorityWeight / totalPriorityWeight);
                 System.out.println("Task " + currentTask.id + " executed for " + allocation);
-                // TODO subtract allocation appropriate for each read, body, write stage
-                // currentTask.WCET -= allocation;
 
-                // TODO set currentStage differently if the stage has ended
+                // TODO save blockingPolicy
                 // Re-queue the task if it is not finished
-                if (currentTask.readTime > 0 || currentTask.bodyTime > 0 || currentTask.writeTime > 0) {
-                    // TODO save blocking state if task at read or write stage is not finished
-                    // TODO set currentStage as one of read, body, write
+                switch (currentTask.stage) {
+                    case READ:
+                        currentTask.readTime -= allocation;
+                        if (currentTask.readTime <= 0) {
+                            currentTask.stage = Stage.BODY;
+                        }
+                        else {
+                            if (blockingPolicy == BlockingPolicy.NONE) {
+                                blockingPolicy = BlockingPolicy.READ;
+                            }
+                        }
+                        break;
+                    case BODY:
+                        currentTask.bodyTime -= allocation;
+                        if (currentTask.bodyTime <= 0) {
+                            currentTask.stage = Stage.WRITE;
+                        }
+                        break;
+                    case WRITE:
+                        currentTask.writeTime -= allocation;
+                        if (currentTask.writeTime <= 0) {
+                            currentTask.stage = Stage.COMPLETED;
+                        }
+                        else {
+                            if (blockingPolicy == BlockingPolicy.NONE) {
+                                blockingPolicy = BlockingPolicy.WRITE;
+                            }
+                        }
+                        break;
+                }
+                if (currentTask.stage != Stage.COMPLETED) {
                     queue.add(currentTask);
                 } else {
                     // TODO save RT of all jobs at the end
@@ -66,6 +96,10 @@ public class CFSSimulator {
                     WCRT.set(currentTask.id - 1, Math.max(WCRT.get(currentTask.id - 1), time - currentTask.currentPeriodStart + 1));
                 }
             }
+
+            // If no read, write tasks are running, reset blockingPolicy to NONE
+            if (runningTasks.stream().noneMatch(task -> task.stage == Stage.READ || task.stage == Stage.WRITE))
+                blockingPolicy = BlockingPolicy.NONE;
 
             time += 1;
         }
@@ -102,10 +136,10 @@ public class CFSSimulator {
         while (iterator.hasNext()) {
             Task task = iterator.next();
             // TODO use blockingPolicy to select tasks accordingly
-            // TODO use case and default
-            // TODO if blockingPolicy == read, select tasks in read, body stage
-            // TODO if blockingPolicy == write, select tasks in body, write stage
-            // TODO if blockingPolicy == body, select tasks in read, body, write stage
+            // TODO use switch case
+            // TODO if blockingPolicy == READ, select tasks in read, body stage
+            // TODO if blockingPolicy == WRITE, select tasks in body, write stage
+            // TODO if blockingPolicy == NONE, select tasks in read, body, write stage
             // TODO if both read, write stage tasks exist, select only one of them and diverge the path
             // TODO if read stage is running, then select tasks that are in read, body stage
             // TODO if body stage is running, then select tasks that are in body stage
