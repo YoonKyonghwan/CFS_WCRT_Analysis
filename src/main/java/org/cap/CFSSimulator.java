@@ -16,7 +16,6 @@ public class CFSSimulator {
     );
 
     public void simulateCFS(List<Task> tasks) {
-        // TODO see if there is a visualization library at the end
         System.out.println("Starting CFS simulation");
         ArrayList<Double> WCRT = new ArrayList<>(Collections.nCopies(tasks.size(), 0.0));
         int time = 0;
@@ -31,6 +30,10 @@ public class CFSSimulator {
             // Check if the period has come again and re-queue tasks if necessary
             // TODO add release jobs logs
             addPeriodicJobs(tasks, queue, time);
+            // TODO need to select running tasks that match blocking policy
+            // TODO check blockingPolicy 
+            // TODO case 1: there are no previous tasks running
+            // TODO case 2: there are previous tasks running
             List<Task> runningTasks = initializeRunningTasks(queue, tasks, time);
 
             System.out.println("Running tasks: " + runningTasks.stream().map(task -> task.id).collect(Collectors.toList()));
@@ -48,16 +51,19 @@ public class CFSSimulator {
             for (Task currentTask : runningTasks) {
                 double allocation = 1.0 * (currentTask.priorityWeight / totalPriorityWeight);
                 System.out.println("Task " + currentTask.id + " executed for " + allocation);
-                currentTask.WCET -= allocation;
+                // TODO subtract allocation appropriate for each read, body, write stage
+                // currentTask.WCET -= allocation;
 
+                // TODO set currentStage differently if the stage has ended
                 // Re-queue the task if it is not finished
-                if (currentTask.WCET > 0) {
+                if (currentTask.readTime > 0 || currentTask.bodyTime > 0 || currentTask.writeTime > 0) {
+                    // TODO save blocking state if task at read or write stage is not finished
+                    // TODO set currentStage as one of read, body, write
                     queue.add(currentTask);
                 } else {
                     // TODO save RT of all jobs at the end
                     System.out.println("Task " + currentTask.id + " completed at time " + (time + 1) + " with RT " + (time - currentTask.currentPeriodStart + 1));
                     WCRT.set(currentTask.id - 1, Math.max(WCRT.get(currentTask.id - 1), time - currentTask.currentPeriodStart + 1));
-                    currentTask.WCET = currentTask.originalWCET;
                 }
             }
 
@@ -70,7 +76,9 @@ public class CFSSimulator {
     private void initializeQueue(List<Task> tasks, Queue<Task> queue, int time) {
         for (Task task : tasks) {
             task.priorityWeight = priorityToWeight.get(task.nice + 20);
-            task.originalWCET = task.WCET;
+            task.originalReadTime = task.readTime;
+            task.originalBodyTime = task.bodyTime;
+            task.originalWriteTime = task.writeTime;
             task.currentPeriodStart = time;
             queue.add(task);
         }
@@ -81,7 +89,7 @@ public class CFSSimulator {
             if (time > task.startTime && task.period > 0 && time % task.period == 0) {
                 task.currentPeriodStart = time;
                 queue.add(task);
-                System.out.println("Task " + task.id + " released with WCET " + task.WCET);
+                System.out.println("Task " + task.id + " released with read time " + task.readTime + ", write time " + task.writeTime + ", body Time " + task.bodyTime);
             }
         }
     }
@@ -93,6 +101,14 @@ public class CFSSimulator {
         // Add tasks to the queue if their start time has come
         while (iterator.hasNext()) {
             Task task = iterator.next();
+            // TODO use blockingPolicy to select tasks accordingly
+            // TODO use case and default
+            // TODO if blockingPolicy == read, select tasks in read, body stage
+            // TODO if blockingPolicy == write, select tasks in body, write stage
+            // TODO if blockingPolicy == body, select tasks in read, body, write stage
+            // TODO if both read, write stage tasks exist, select only one of them and diverge the path
+            // TODO if read stage is running, then select tasks that are in read, body stage
+            // TODO if body stage is running, then select tasks that are in body stage
             if (task.startTime <= time) {
                 runningTasks.add(task);
                 iterator.remove();
@@ -115,7 +131,7 @@ public class CFSSimulator {
     }
 
     private int getLCM(List<Task> tasks) {
-        return tasks.stream().map(Task::getPeriod)
+        return tasks.stream().map(task -> task.period)
                 .reduce(1, (a, b) -> a * (b / getGCD(a, b)));
     }
 
