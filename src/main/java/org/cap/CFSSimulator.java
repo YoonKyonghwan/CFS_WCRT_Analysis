@@ -34,8 +34,6 @@ public class CFSSimulator {
             // Check if the period has come again and re-queue tasks if necessary
             // TODO add release jobs logs
             addPeriodicJobs(tasks, queue, time);
-            // TODO need to select running tasks that match blocking policy
-            // TODO check blockingPolicy
             // TODO case 1: there are no previous tasks running
             // TODO case 2: there are previous tasks running
             List<Task> runningTasks = initializeRunningTasks(queue, tasks, time);
@@ -56,7 +54,6 @@ public class CFSSimulator {
                 double allocation = 1.0 * (currentTask.priorityWeight / totalPriorityWeight);
                 System.out.println("Task " + currentTask.id + " executed for " + allocation);
 
-                // TODO save blockingPolicy
                 // Re-queue the task if it is not finished
                 switch (currentTask.stage) {
                     case READ:
@@ -100,6 +97,7 @@ public class CFSSimulator {
             // If no read, write tasks are running, reset blockingPolicy to NONE
             if (runningTasks.stream().noneMatch(task -> task.stage == Stage.READ || task.stage == Stage.WRITE))
                 blockingPolicy = BlockingPolicy.NONE;
+            System.out.println("Blocking policy " + blockingPolicy);
 
             time += 1;
         }
@@ -133,16 +131,29 @@ public class CFSSimulator {
         Iterator<Task> iterator = queue.iterator();
 
         // Add tasks to the queue if their start time has come
+        // TODO if blockingPolicy == READ, select tasks in read, body stage
+        // TODO if blockingPolicy == WRITE, select tasks in body, write stage
+        // TODO need to select previously running writing task
+        // TODO if blockingPolicy == NONE, select tasks in read, body, write stage
+        // TODO if both read, write stage tasks exist, select only one of them and diverge the path
+        // TODO if read stage is running, then select tasks that are in read, body stage
         while (iterator.hasNext()) {
             Task task = iterator.next();
-            // TODO use blockingPolicy to select tasks accordingly
-            // TODO use switch case
-            // TODO if blockingPolicy == READ, select tasks in read, body stage
-            // TODO if blockingPolicy == WRITE, select tasks in body, write stage
-            // TODO if blockingPolicy == NONE, select tasks in read, body, write stage
-            // TODO if both read, write stage tasks exist, select only one of them and diverge the path
-            // TODO if read stage is running, then select tasks that are in read, body stage
-            // TODO if body stage is running, then select tasks that are in body stage
+            switch (blockingPolicy) {
+                case NONE:
+                    break;
+                case READ:
+                    if (task.stage == Stage.READ || task.stage == Stage.BODY)
+                        break;
+                    else
+                        continue;
+                case WRITE:
+                    // TODO need to select previously running writing task
+                    if (task.stage == Stage.BODY)
+                        break;
+                    else
+                        continue;
+            }
             if (task.startTime <= time) {
                 runningTasks.add(task);
                 iterator.remove();
