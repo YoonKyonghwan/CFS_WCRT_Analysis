@@ -17,8 +17,11 @@ public class CFSSimulator {
 
     private static BlockingPolicy blockingPolicy = BlockingPolicy.NONE;
 
-    // TODO 1. apply read, body, write blocking policy
+    private static int writingTaskId = -1;
+
+    // 1. apply read, body, write blocking policy
     // TODO 2. diverge paths to get worst case
+    // TODO 3. make test cases
     public void simulateCFS(List<Task> tasks) {
         System.out.println("Starting CFS simulation");
         ArrayList<Double> WCRT = new ArrayList<>(Collections.nCopies(tasks.size(), 0.0));
@@ -34,8 +37,6 @@ public class CFSSimulator {
             // Check if the period has come again and re-queue tasks if necessary
             // TODO add release jobs logs
             addPeriodicJobs(tasks, queue, time);
-            // TODO case 1: there are no previous tasks running
-            // TODO case 2: there are previous tasks running
             List<Task> runningTasks = initializeRunningTasks(queue, tasks, time);
 
             System.out.println("Running tasks: " + runningTasks.stream().map(task -> task.id).collect(Collectors.toList()));
@@ -77,10 +78,12 @@ public class CFSSimulator {
                         currentTask.writeTime -= allocation;
                         if (currentTask.writeTime <= 0) {
                             currentTask.stage = Stage.COMPLETED;
+                            writingTaskId = -1;
                         }
                         else {
                             if (blockingPolicy == BlockingPolicy.NONE) {
                                 blockingPolicy = BlockingPolicy.WRITE;
+                                writingTaskId = currentTask.id;
                             }
                         }
                         break;
@@ -131,16 +134,21 @@ public class CFSSimulator {
         Iterator<Task> iterator = queue.iterator();
 
         // Add tasks to the queue if their start time has come
-        // TODO if blockingPolicy == READ, select tasks in read, body stage
-        // TODO if blockingPolicy == WRITE, select tasks in body, write stage
-        // TODO need to select previously running writing task
-        // TODO if blockingPolicy == NONE, select tasks in read, body, write stage
-        // TODO if both read, write stage tasks exist, select only one of them and diverge the path
-        // TODO if read stage is running, then select tasks that are in read, body stage
+        // if blockingPolicy == READ, select tasks in read, body stage
+        // if blockingPolicy == WRITE, select tasks in body, write stage
+        // need to select previously running writing task
+        // if blockingPolicy == NONE, select tasks in read, body, write stage
+        // if both read, write stage tasks exist, select only one of them and diverge the path
+        // if read stage is running, then select tasks that are in read, body stage
         while (iterator.hasNext()) {
             Task task = iterator.next();
             switch (blockingPolicy) {
                 case NONE:
+                    // TODO need to diverge and check all possible cases instead of selecting first write task
+                    if (task.stage == Stage.WRITE)
+                        blockingPolicy = BlockingPolicy.WRITE;
+                    else if (task.stage == Stage.READ)
+                        blockingPolicy = BlockingPolicy.READ;
                     break;
                 case READ:
                     if (task.stage == Stage.READ || task.stage == Stage.BODY)
@@ -148,8 +156,7 @@ public class CFSSimulator {
                     else
                         continue;
                 case WRITE:
-                    // TODO need to select previously running writing task
-                    if (task.stage == Stage.BODY)
+                    if (task.id == writingTaskId || task.stage == Stage.BODY)
                         break;
                     else
                         continue;
