@@ -50,7 +50,7 @@ public class CFSSimulator {
             // Share the CPU among all tasks proportionally to their priority weight
             for (Task currentTask : runningTasks) {
                 double allocation = 1.0 * (currentTask.priorityWeight / totalPriorityWeight);
-                System.out.println("Task " + currentTask.id + " executed for " + allocation);
+                System.out.println("Task " + currentTask.id + " executed for " + allocation + " | stage: " + currentTask.stage);
 
                 // Re-queue the task if it is not finished
                 switch (currentTask.stage) {
@@ -85,6 +85,7 @@ public class CFSSimulator {
                         }
                         break;
                 }
+
                 if (currentTask.stage != Stage.COMPLETED) {
                     queue.add(currentTask);
                 } else {
@@ -92,10 +93,6 @@ public class CFSSimulator {
                     System.out.println("Task " + currentTask.id + " completed at time " + (time + 1) + " with RT " + (time - currentTask.currentPeriodStart + 1));
                     WCRT.set(currentTask.id - 1, Math.max(WCRT.get(currentTask.id - 1), time - currentTask.currentPeriodStart + 1));
                 }
-            }
-
-            for (Task task : runningTasks) {
-                System.out.println("Task " + task.id + " - " + task.stage);
             }
 
             time += 1;
@@ -113,8 +110,6 @@ public class CFSSimulator {
                 int finalTime = time;
                 List<Task> readTasks = queue.stream().filter(task -> task.stage == Stage.READ && task.startTime <= finalTime).collect(Collectors.toList());
                 List<Task> writeTasks = queue.stream().filter(task -> task.stage == Stage.WRITE && task.startTime <= finalTime).collect(Collectors.toList());
-                System.out.println(readTasks);
-                System.out.println(writeTasks);
 
                 ArrayList<ArrayList<Double>> possibleWCRT = new ArrayList<ArrayList<Double>>();
 
@@ -191,7 +186,7 @@ public class CFSSimulator {
             // Share the CPU among all tasks proportionally to their priority weight
             for (Task currentTask : runningTasks) {
                 double allocation = 1.0 * (currentTask.priorityWeight / totalPriorityWeight);
-                System.out.println("Task " + currentTask.id + " executed for " + allocation);
+                System.out.println("Task " + currentTask.id + " executed for " + allocation + " | stage: " + currentTask.stage);
 
                 // Re-queue the task if it is not finished
                 switch (currentTask.stage) {
@@ -226,6 +221,7 @@ public class CFSSimulator {
                         }
                         break;
                 }
+
                 if (currentTask.stage != Stage.COMPLETED) {
                     cloneQueue.add(currentTask);
                 } else {
@@ -277,7 +273,7 @@ public class CFSSimulator {
                 }
             }
 
-            System.out.println("Blocking policy " + blockingPolicy);
+            System.out.println("Blocking policy: " + blockingPolicy);
 
             time += 1;
         }
