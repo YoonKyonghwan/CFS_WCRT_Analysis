@@ -34,9 +34,6 @@ public class CFSSimulator {
         while (time < getLCM(tasks)) {
             System.out.printf("\n>>> CURRENT TIME: %d <<<\n", time);
 
-            // Check if the period has come again and re-queue tasks if necessary
-            // TODO add release jobs logs
-            addPeriodicJobs(tasks, queue, time);
             List<Task> runningTasks = initializeRunningTasks(queue, time);
 
             System.out.println("Running tasks: " + runningTasks.stream().map(task -> task.id).collect(Collectors.toList()));
@@ -97,30 +94,25 @@ public class CFSSimulator {
                 }
             }
 
-            // If no read, write tasks are running, reset blockingPolicy to NONE
-            // TODO tasks' stages are already updated to new stage
             for (Task task : runningTasks) {
                 System.out.println("Task " + task.id + " - " + task.stage);
             }
-            System.out.println(runningTasks.stream().noneMatch(task -> task.stage == Stage.READ || task.stage == Stage.WRITE));
-            // I think this is supposed to check if read and write tasks ended...
-            // How to check if blocking policy became NONE or blocking policy was just NONE and we need to diverge?
+
+            time += 1;
+
+            // Check if the period has come again and re-queue tasks if necessary
+            // TODO add release jobs logs
+            addPeriodicJobs(tasks, queue, time);
+
+            // If no read, write tasks are running, reset blockingPolicy to NONE
+            // TODO need to check if condition is correct
             if (runningTasks.stream().noneMatch(task -> task.stage == Stage.READ || task.stage == Stage.WRITE) || blockingPolicy == BlockingPolicy.NONE) {
                 blockingPolicy = BlockingPolicy.NONE;
-                // TODO cases of diverging: when blocking policy is None, 1) read and write tasks exist, 2) multiple write tasks exist
-                // TODO even in case of 1) multiple write tasks can exist
-                // TODO need to simulate multiple write paths if they exist and get WCRT for each path
-                // TODO need to not just specify which blocking policy but also writingTaskId to properly check all paths
-                // TODO add a function simulatePath which can specify blocking policy and writingTaskId
-                // TODO then combine all WCRT results from all paths
-                // TODO what if path diverges within a path?
-                // TODO maybe return WCRT for simulatePath function? then compare WCRTs from all paths and get max?
-                // check if start time is greater than or equal to time + 1 value and see if read and write tasks both exist
-                int nextTime = time + 1;
-                // TODO need to get from queue not tasks
-                // TODO how to account for periodic tasks? move adding periodic tasks to the end?
-                List<Task> readTasks = queue.stream().filter(task -> task.stage == Stage.READ && task.startTime <= nextTime).collect(Collectors.toList());
-                List<Task> writeTasks = queue.stream().filter(task -> task.stage == Stage.WRITE && task.startTime <= nextTime).collect(Collectors.toList());
+
+                // TODO check whether time step increment is correct
+                int finalTime = time;
+                List<Task> readTasks = queue.stream().filter(task -> task.stage == Stage.READ && task.startTime <= finalTime).collect(Collectors.toList());
+                List<Task> writeTasks = queue.stream().filter(task -> task.stage == Stage.WRITE && task.startTime <= finalTime).collect(Collectors.toList());
                 System.out.println(readTasks);
                 System.out.println(writeTasks);
 
@@ -128,9 +120,9 @@ public class CFSSimulator {
 
                 // Case 1: read and write tasks exist
                 if (!readTasks.isEmpty() && !writeTasks.isEmpty()) {
-                    possibleWCRT.add(simulatePath(tasks, queue, WCRT, nextTime, writingTaskId, BlockingPolicy.READ));
+                    possibleWCRT.add(simulatePath(tasks, queue, WCRT, time, writingTaskId, BlockingPolicy.READ));
                     for (Task writeTask : writeTasks) {
-                        possibleWCRT.add(simulatePath(tasks, queue, WCRT, nextTime, writeTask.id, BlockingPolicy.WRITE));
+                        possibleWCRT.add(simulatePath(tasks, queue, WCRT, time, writeTask.id, BlockingPolicy.WRITE));
                     }
 
                     for (int i=0; i<WCRT.size(); i++) {
@@ -145,7 +137,7 @@ public class CFSSimulator {
                 // Case 2: multiple write tasks exist
                 else if (writeTasks.size() > 1) {
                     for (Task writeTask : writeTasks) {
-                        possibleWCRT.add(simulatePath(tasks, queue, WCRT, nextTime, writeTask.id, BlockingPolicy.WRITE));
+                        possibleWCRT.add(simulatePath(tasks, queue, WCRT, time, writeTask.id, BlockingPolicy.WRITE));
                     }
 
                     for (int i=0; i<WCRT.size(); i++) {
@@ -158,10 +150,7 @@ public class CFSSimulator {
                     break;
                 }
             }
-
             System.out.println("Blocking policy " + blockingPolicy);
-
-            time += 1;
         }
 
         displayResult(WCRT, queue);
@@ -186,8 +175,6 @@ public class CFSSimulator {
             System.out.printf("\n>>> CURRENT TIME: %d <<<\n", time);
 
             addPeriodicJobs(tasks, cloneQueue, time);
-            // TODO specify blockingPolicy and writingTaskId when initializing runningTasks
-            // TODO maybe the function should receive blockingPolicy and writingTaskId optionally
             List<Task> runningTasks = initializeRunningTasks(cloneQueue, blockingPolicy, writingTaskId, time);
 
             System.out.println("Running tasks: " + runningTasks.stream().map(task -> task.id).collect(Collectors.toList()));
@@ -251,24 +238,11 @@ public class CFSSimulator {
             // If no read, write tasks are running, reset blockingPolicy to NONE
             if (runningTasks.stream().noneMatch(task -> task.stage == Stage.READ || task.stage == Stage.WRITE) || blockingPolicy == BlockingPolicy.NONE) {
                 blockingPolicy = BlockingPolicy.NONE;
-                // TODO cases of diverging: when blocking policy is None, 1) read and write tasks exist, 2) multiple write tasks exist
-                // TODO even in case of 1) multiple write tasks can exist
-                // TODO need to simulate multiple write paths if they exist and get WCRT for each path
-                // TODO need to not just specify which blocking policy but also writingTaskId to properly check all paths
-                // TODO add a function simulatePath which can specify blocking policy and writingTaskId
-                // TODO then combine all WCRT results from all paths
-                // TODO what if path diverges within a path?
-                // TODO maybe return WCRT for simulatePath function? then compare WCRTs from all paths and get max?
-                // check if start time is greater than or equal to time + 1 value and see if read and write tasks both exist
                 int nextTime = time + 1;
-                // TODO need to get from queue not tasks
                 List<Task> readTasks = cloneQueue.stream().filter(task -> task.stage == Stage.READ && task.startTime >= nextTime).collect(Collectors.toList());
                 List<Task> writeTasks = cloneQueue.stream().filter(task -> task.stage == Stage.WRITE && task.startTime >= nextTime).collect(Collectors.toList());
 
-                // TODO make an array of WCRT for each path and compare them
                 ArrayList<ArrayList<Double>> possibleWCRT = new ArrayList<ArrayList<Double>>();
-
-                // TODO modify condition to account for second case of diverging
 
                 // Case 1: read and write tasks exist
                 if (!readTasks.isEmpty() && !writeTasks.isEmpty()) {
@@ -277,8 +251,6 @@ public class CFSSimulator {
                         possibleWCRT.add(simulatePath(tasks, cloneQueue, cloneWCRT, time, writeTask.id, BlockingPolicy.WRITE));
                     }
 
-                    // TODO compare WCRT and get max
-                    // TODO within simulatePath, it would return final WCRT so that it can be compared
                     for (int i=0; i<WCRT.size(); i++) {
                         double maxWCRT = 0;
                         for (int j=0; j<possibleWCRT.size(); j++) {
@@ -294,8 +266,6 @@ public class CFSSimulator {
                         possibleWCRT.add(simulatePath(tasks, cloneQueue, cloneWCRT, time, writeTask.id, BlockingPolicy.WRITE));
                     }
 
-                    // TODO compare WCRT and get max
-                    // TODO within simulatePath, it would return final WCRT so that it can be compared
                     for (int i=0; i<WCRT.size(); i++) {
                         double maxWCRT = 0;
                         for (int j=0; j<possibleWCRT.size(); j++) {
@@ -350,17 +320,17 @@ public class CFSSimulator {
         Iterator<Task> iterator = queue.iterator();
 
         // Add tasks to the queue if their start time has come
-        // if blockingPolicy == READ, select tasks in read, body stage
-        // if blockingPolicy == WRITE, select tasks in body, write stage
-        // need to select previously running writing task
-        // if blockingPolicy == NONE, select tasks in read, body, write stage
-        // if both read, write stage tasks exist, select only one of them and diverge the path
-        // if read stage is running, then select tasks that are in read, body stage
+        // Case 1: if blockingPolicy == READ, select tasks in read, body stage
+        // Case 2: if blockingPolicy == WRITE, select tasks in body, write stage
+        //         need to select previously running writing task
+        // Case 3: if blockingPolicy == NONE, select tasks in read, body, write stage
+        //         if both read, write stage tasks exist, select only one of them and diverge the path
+        //         if read stage is running, then select tasks that are in read, body stage
         while (iterator.hasNext()) {
             Task task = iterator.next();
             switch (blockingPolicy) {
                 case NONE:
-                    // TODO modification needed
+                    // TODO check if logic is correct
                     if (task.stage == Stage.WRITE)
                         blockingPolicy = BlockingPolicy.WRITE;
                     else if (task.stage == Stage.READ)
@@ -386,22 +356,23 @@ public class CFSSimulator {
         return runningTasks;
     }
 
+    // Function for simulatePath
     private List<Task> initializeRunningTasks(Queue<Task> queue, BlockingPolicy blockingPolicy, int writingTaskId, int time) {
         List<Task> runningTasks = new ArrayList<>();
         Iterator<Task> iterator = queue.iterator();
 
         // Add tasks to the queue if their start time has come
-        // if blockingPolicy == READ, select tasks in read, body stage
-        // if blockingPolicy == WRITE, select tasks in body, write stage
-        // need to select previously running writing task
-        // if blockingPolicy == NONE, select tasks in read, body, write stage
-        // if both read, write stage tasks exist, select only one of them and diverge the path
-        // if read stage is running, then select tasks that are in read, body stage
+        // Case 1: if blockingPolicy == READ, select tasks in read, body stage
+        // Case 2: if blockingPolicy == WRITE, select tasks in body, write stage
+        //         need to select previously running writing task
+        // Case 3: if blockingPolicy == NONE, select tasks in read, body, write stage
+        //         if both read, write stage tasks exist, select only one of them and diverge the path
+        //         if read stage is running, then select tasks that are in read, body stage
         while (iterator.hasNext()) {
             Task task = iterator.next();
             switch (blockingPolicy) {
                 case NONE:
-                    // TODO modification needed
+                    // TODO check if logic is correct
                     if (task.stage == Stage.WRITE)
                         blockingPolicy = BlockingPolicy.WRITE;
                     else if (task.stage == Stage.READ)
