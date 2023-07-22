@@ -23,7 +23,7 @@ public class CFSSimulator {
     // 2. diverge paths to get worst case
     // TODO 3. make test cases
     // TODO 4. refactor and improve readability
-    public void simulateCFS(List<Task> tasks) {
+    public ArrayList<Double> simulateCFS(List<Task> tasks) {
         System.out.println("Starting CFS simulation");
         ArrayList<Double> WCRT = new ArrayList<>(Collections.nCopies(tasks.size(), 0.0));
         int time = 0;
@@ -150,6 +150,7 @@ public class CFSSimulator {
         }
 
         displayResult(WCRT, queue);
+        return WCRT;
     }
 
     private ArrayList<Double> simulatePath(List<Task> tasks, Queue<Task> queue, ArrayList<Double> WCRT, int time, int writingTaskId, BlockingPolicy blockingPolicy) {

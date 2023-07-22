@@ -4,6 +4,7 @@ import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
@@ -22,7 +23,7 @@ public class CFSSimulatorTest {
         );
 
         // Execute the method to test
-        simulator.simulateCFS(tasks);
+        ArrayList<Double> WCRT = simulator.simulateCFS(tasks);
 
         // Make assertions about the expected result
         // TODO: You'll need to add a method to your CFSSimulator class
@@ -31,6 +32,6 @@ public class CFSSimulatorTest {
                 // Define your expected result here...
         );
 
-        assertEquals(expectedResult, simulator.getResult());
+        assertEquals(expectedResult, WCRT);
     }
 }
