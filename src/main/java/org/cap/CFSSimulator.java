@@ -20,8 +20,9 @@ public class CFSSimulator {
     private static int writingTaskId = -1;
 
     // 1. apply read, body, write blocking policy
-    // TODO 2. diverge paths to get worst case
+    // 2. diverge paths to get worst case
     // TODO 3. make test cases
+    // TODO 4. refactor and improve readability
     public void simulateCFS(List<Task> tasks) {
         System.out.println("Starting CFS simulation");
         ArrayList<Double> WCRT = new ArrayList<>(Collections.nCopies(tasks.size(), 0.0));
