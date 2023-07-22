@@ -33,4 +33,17 @@ public class Task {
         newTask.priorityWeight = this.priorityWeight;
         return newTask;
     }
+
+    public Task(int id, int startTime, double readTime, double bodyTime, double writeTime, int nice, int period) {
+        this.id = id;
+        this.startTime = startTime;
+        this.readTime = readTime;
+        this.bodyTime = bodyTime;
+        this.writeTime = writeTime;
+        this.nice = nice;
+        this.period = period;
+    }
+
+    public Task() {
+    }
 }

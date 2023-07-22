@@ -2,19 +2,19 @@
   {
     "id": 1,
     "startTime": 0,
-    "period": 10,
     "readTime": 1,
     "bodyTime": 2,
     "writeTime": 1,
-    "nice": 0
+    "nice": 0,
+    "period": 10
   },
   {
     "id": 2,
     "startTime": 0,
-    "period": 10,
     "readTime": 1,
     "bodyTime": 2,
     "writeTime": 1,
-    "nice": 0
+    "nice": 0,
+    "period": 10
   }
 ]

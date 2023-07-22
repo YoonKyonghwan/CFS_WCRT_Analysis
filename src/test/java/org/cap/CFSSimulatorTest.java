@@ -18,20 +18,20 @@ public class CFSSimulatorTest {
 
     @Test
     public void testSimulateCFS() {
+        // Define test tasks
         List<Task> tasks = Arrays.asList(
-                // Define your test tasks here...
+            new Task(1, 0, 1, 2, 1, 0, 10),
+            new Task(2, 0, 1, 2, 1, 0, 10)
         );
 
-        // Execute the method to test
+        // Execute the method
         ArrayList<Double> WCRT = simulator.simulateCFS(tasks);
 
         // Make assertions about the expected result
-        // TODO: You'll need to add a method to your CFSSimulator class
-        // that allows you to get the result, so you can compare it here
         List<Double> expectedResult = Arrays.asList(
-                // Define your expected result here...
+            8.0,
+            8.0
         );
-
         assertEquals(expectedResult, WCRT);
     }
 }
