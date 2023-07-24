@@ -56,8 +56,8 @@ public class CFSSimulatorTest {
     public void testReadAndWriteReleasedTogether() {
         // Define test tasks
         List<Task> tasks = Arrays.asList(
-                new Task(1, 0, 1, 2, 1, 0, 10), // writes at t=3
-                new Task(2, 3, 1, 2, 1, 0, 10)  // reads at t=3
+                new Task(1, 0, 1, 2, 1, 0, 10), // write is released at t=3
+                new Task(2, 3, 1, 2, 1, 0, 10)  // read is released at t=3
         );
 
         // Execute the method
@@ -71,7 +71,25 @@ public class CFSSimulatorTest {
         assertEquals(expectedResult, WCRT);
     }
 
-    // TODO read is released when write is executing
+    @Test
+    public void testReadReleasedWhenWriteIsExecuting() {
+        // Define test tasks
+        List<Task> tasks = Arrays.asList(
+                new Task(1, 0, 1, 1, 2, 0, 10), // write is executing at t=3
+                new Task(2, 3, 1, 1, 2, 0, 10)  // read is released at t=3
+        );
+
+        // Execute the method
+        ArrayList<Double> WCRT = simulator.simulateCFS(tasks);
+
+        // Make assertions about the expected result
+        List<Double> expectedResult = Arrays.asList(
+                4.0,
+                5.0
+        );
+        assertEquals(expectedResult, WCRT);
+    }
+
     // TODO different nice value
     // TODO different periods
 
