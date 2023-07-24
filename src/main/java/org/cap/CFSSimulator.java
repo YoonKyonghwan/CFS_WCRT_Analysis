@@ -298,7 +298,7 @@ public class CFSSimulator {
             task.originalReadTime = task.readTime;
             task.originalBodyTime = task.bodyTime;
             task.originalWriteTime = task.writeTime;
-            task.currentPeriodStart = time;
+            task.currentPeriodStart = task.startTime;
             queue.add(task);
         }
     }
@@ -326,13 +326,15 @@ public class CFSSimulator {
         //         if read stage is running, then select tasks that are in read, body stage
         while (iterator.hasNext()) {
             Task task = iterator.next();
+            if (task.startTime > time)
+                continue;
+
             switch (blockingPolicy) {
                 case NONE:
-                    // TODO check if logic is correct
-                    if (task.stage == Stage.WRITE)
-                        blockingPolicy = BlockingPolicy.WRITE;
-                    else if (task.stage == Stage.READ)
+                    if (task.stage == Stage.READ)
                         blockingPolicy = BlockingPolicy.READ;
+                    else if (task.stage == Stage.WRITE)
+                        blockingPolicy = BlockingPolicy.WRITE;
                     break;
                 case READ:
                     if (task.stage == Stage.READ || task.stage == Stage.BODY)
@@ -345,10 +347,8 @@ public class CFSSimulator {
                     else
                         continue;
             }
-            if (task.startTime <= time) {
-                runningTasks.add(task);
-                iterator.remove();
-            }
+            runningTasks.add(task);
+            iterator.remove();
         }
 
         return runningTasks;
