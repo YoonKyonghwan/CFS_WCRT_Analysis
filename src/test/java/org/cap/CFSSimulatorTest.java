@@ -92,6 +92,7 @@ public class CFSSimulatorTest {
 
     // TODO different nice value
     // TODO different periods
+    // TODO read, write orders different due to rounding policy
 
 //    @Test
 //    public void testTasksWithDifferentNiceValues() {
@@ -113,25 +114,22 @@ public class CFSSimulatorTest {
 //        assertEquals(expectedResult, WCRT);
 //    }
 
-//    @Test
-//    public void testTasksWithDifferentPeriods() {
-//        // Define test tasks
-//        CFSSimulator simulator = new CFSSimulator();
-//        List<Task> tasks = Arrays.asList(
-//            new Task(1, 0, 1.0, 1.0, 1.0, 0, 3),  // period 3
-//            new Task(2, 0, 1.0, 1.0, 1.0, 0, 6),  // period 6
-//            new Task(3, 0, 1.0, 1.0, 1.0, 0, 9)   // period 9
-//        );
-//
-//        // Execute the method
-//        ArrayList<Double> WCRT = simulator.simulateCFS(tasks);
-//
-//        // Make assertions about the expected result
-//        List<Double> expectedResult = Arrays.asList(
-//            8.0,
-//            8.0,
-//            8.0
-//        );
-//        assertEquals(expectedResult, WCRT);
-//    }
+    @Test
+    public void testTasksWithDifferentPeriods() {
+        // Define test tasks
+        List<Task> tasks = Arrays.asList(
+            new Task(1, 0, 1.0, 1.0, 1.0, 0, 15),  // period 15
+            new Task(2, 0, 1.0, 1.0, 1.0, 0, 5)   // period 5
+        );
+
+        // Execute the method
+        ArrayList<Double> WCRT = simulator.simulateCFS(tasks);
+
+        // Make assertions about the expected result
+        List<Double> expectedResult = Arrays.asList(
+            8.0,
+            8.0
+        );
+        assertEquals(expectedResult, WCRT);
+    }
 }
