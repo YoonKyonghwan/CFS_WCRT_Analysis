@@ -14,9 +14,7 @@ public class CFSSimulator {
         110, 87, 70, 56, 45,
         36, 29, 23, 18, 15
     );
-
     private static BlockingPolicy blockingPolicy = BlockingPolicy.NONE;
-
     private static String writingTaskKey = "-1:0";
 
     // TODO Make test cases
@@ -32,34 +30,25 @@ public class CFSSimulator {
 
         while (time < getLCM(tasks)) {
             System.out.printf("\n>>> CURRENT TIME: %d <<<\n", time);
-
             List<Task> runningTasks = initializeRunningTasks(queue, time);
 
-            System.out.println("Running tasks: " + runningTasks.stream().map(task -> task.id).collect(Collectors.toList()));
-
-            // If there are no tasks in runningTasks, just increment the time
             if (runningTasks.isEmpty()) {
                 time++;
                 continue;
             }
 
-            // Calculate total priority weight
+            // Share the CPU proportional to priority weight
             double totalPriorityWeight = runningTasks.stream().mapToDouble(t -> t.priorityWeight).sum();
-
-            // Share the CPU among all tasks proportionally to their priority weight
             for (Task currentTask : runningTasks) {
                 double allocation = 1.0 * (currentTask.priorityWeight / totalPriorityWeight);
                 executeTask(currentTask, allocation, queue, WCRT, blockingPolicy, writingTaskKey, time);
             }
 
             time += 1;
-
             addPeriodicJobs(tasks, queue, time);
 
-            // If no read, write tasks are running, reset blockingPolicy to NONE
-            if (runningTasks.stream().noneMatch(task -> task.stage == Stage.READ || task.stage == Stage.WRITE) || blockingPolicy == BlockingPolicy.NONE) {
+            if (noReadAndWriteTasksRunning(runningTasks, blockingPolicy)) {
                 blockingPolicy = BlockingPolicy.NONE;
-
                 if (pathDiverges(tasks, queue, WCRT, writingTaskKey, time)) break;
             }
             System.out.println("Blocking policy " + blockingPolicy);
@@ -69,7 +58,12 @@ public class CFSSimulator {
         return WCRT;
     }
 
+    private static boolean noReadAndWriteTasksRunning(List<Task> runningTasks, BlockingPolicy blockingPolicy) {
+        return runningTasks.stream().noneMatch(task -> task.stage == Stage.READ || task.stage == Stage.WRITE) || blockingPolicy == BlockingPolicy.NONE;
+    }
+
     private static void executeTask(Task currentTask, double allocation, Queue<Task> queue, ArrayList<Double> WCRT, BlockingPolicy blockingPolicy, String writingTaskKey, int time) {
+        System.out.println("Task " + currentTask.id + " executed for " + allocation + " | stage: " + currentTask.stage);
         switch (currentTask.stage) {
             case READ:
                 currentTask.readTime -= allocation;
@@ -102,7 +96,6 @@ public class CFSSimulator {
                 }
                 break;
         }
-        System.out.println("Task " + currentTask.id + " executed for " + allocation + " | stage: " + currentTask.stage);
 
         if (currentTask.stage != Stage.COMPLETED) {
             queue.add(currentTask);
@@ -123,26 +116,17 @@ public class CFSSimulator {
         System.out.println("Queue state: " + queue);
         System.out.println("Clone queue state: " + cloneQueue);
 
-        // Simulate one path (either read or write)
-        // This is basically the body of the original simulateCFS function, but with some modifications to handle a single path
-        // ...
         while (time < getLCM(tasks)) {
             System.out.printf("\n>>> CURRENT TIME: %d <<<\n", time);
-
             List<Task> runningTasks = initializeRunningTasksForPath(cloneQueue, blockingPolicy, writingTaskKey, time);
 
-            System.out.println("Running tasks: " + runningTasks.stream().map(task -> task.id).collect(Collectors.toList()));
-
-            // If there are no tasks in runningTasks, just increment the time
             if (runningTasks.isEmpty()) {
                 time++;
                 continue;
             }
 
-            // Calculate total priority weight
+            // Share the CPU proportional to priority weight
             double totalPriorityWeight = runningTasks.stream().mapToDouble(t -> t.priorityWeight).sum();
-
-            // Share the CPU among all tasks proportionally to their priority weight
             for (Task currentTask : runningTasks) {
                 double allocation = 1.0 * (currentTask.priorityWeight / totalPriorityWeight);
                 executeTask(currentTask, allocation, cloneQueue, cloneWCRT, blockingPolicy, writingTaskKey, time);
@@ -153,7 +137,7 @@ public class CFSSimulator {
             addPeriodicJobs(tasks, cloneQueue, time);
 
             // If no read, write tasks are running, reset blockingPolicy to NONE
-            if (runningTasks.stream().noneMatch(task -> task.stage == Stage.READ || task.stage == Stage.WRITE) || blockingPolicy == BlockingPolicy.NONE) {
+            if (noReadAndWriteTasksRunning(runningTasks, blockingPolicy)) {
                 blockingPolicy = BlockingPolicy.NONE;
 
                 if (pathDiverges(tasks, cloneQueue, cloneWCRT, writingTaskKey, time)) break;
@@ -275,10 +259,10 @@ public class CFSSimulator {
             iterator.remove();
         }
 
+        System.out.println("Running tasks: " + runningTasks.stream().map(task -> task.id).collect(Collectors.toList()));
         return runningTasks;
     }
 
-    // Function for simulatePath
     private List<Task> initializeRunningTasksForPath(Queue<Task> queue, BlockingPolicy blockingPolicy, String writingTaskKey, int time) {
         List<Task> runningTasks = new ArrayList<>();
         Iterator<Task> iterator = queue.iterator();
@@ -319,6 +303,7 @@ public class CFSSimulator {
             iterator.remove();
         }
 
+        System.out.println("Running tasks: " + runningTasks.stream().map(task -> task.id).collect(Collectors.toList()));
         return runningTasks;
     }
 
