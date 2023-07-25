@@ -49,49 +49,7 @@ public class CFSSimulator {
             // Share the CPU among all tasks proportionally to their priority weight
             for (Task currentTask : runningTasks) {
                 double allocation = 1.0 * (currentTask.priorityWeight / totalPriorityWeight);
-                System.out.println("Task " + currentTask.id + " executed for " + allocation + " | stage: " + currentTask.stage);
-
-                // Re-queue the task if it is not finished
-                switch (currentTask.stage) {
-                    case READ:
-                        currentTask.readTime -= allocation;
-                        if (currentTask.readTime <= 0) {
-                            currentTask.stage = Stage.BODY;
-                        }
-                        else {
-                            if (blockingPolicy == BlockingPolicy.NONE) {
-                                blockingPolicy = BlockingPolicy.READ;
-                            }
-                        }
-                        break;
-                    case BODY:
-                        currentTask.bodyTime -= allocation;
-                        if (currentTask.bodyTime <= 0) {
-                            currentTask.stage = Stage.WRITE;
-                        }
-                        break;
-                    case WRITE:
-                        currentTask.writeTime -= allocation;
-                        if (currentTask.writeTime <= 0) {
-                            currentTask.stage = Stage.COMPLETED;
-                            writingTaskKey = "-1:0";
-                        }
-                        else {
-                            if (blockingPolicy == BlockingPolicy.NONE) {
-                                blockingPolicy = BlockingPolicy.WRITE;
-                                writingTaskKey = String.format("%s:%s", currentTask.id, currentTask.currentPeriodStart);
-                            }
-                        }
-                        break;
-                }
-
-                if (currentTask.stage != Stage.COMPLETED) {
-                    queue.add(currentTask);
-                } else {
-                    // TODO save RT of all jobs at the end
-                    System.out.println("Task " + currentTask.id + " completed at time " + (time + 1) + " with RT " + (time - currentTask.currentPeriodStart + 1));
-                    WCRT.set(currentTask.id - 1, Math.max(WCRT.get(currentTask.id - 1), time - currentTask.currentPeriodStart + 1));
-                }
+                executeTask(currentTask, allocation, queue, WCRT, blockingPolicy, writingTaskKey, time);
             }
 
             time += 1;
@@ -109,6 +67,50 @@ public class CFSSimulator {
 
         displayResult(WCRT, queue);
         return WCRT;
+    }
+
+    private static void executeTask(Task currentTask, double allocation, Queue<Task> queue, ArrayList<Double> WCRT, BlockingPolicy blockingPolicy, String writingTaskKey, int time) {
+        switch (currentTask.stage) {
+            case READ:
+                currentTask.readTime -= allocation;
+                if (currentTask.readTime <= 0) {
+                    currentTask.stage = Stage.BODY;
+                }
+                else {
+                    if (blockingPolicy == BlockingPolicy.NONE) {
+                        blockingPolicy = BlockingPolicy.READ;
+                    }
+                }
+                break;
+            case BODY:
+                currentTask.bodyTime -= allocation;
+                if (currentTask.bodyTime <= 0) {
+                    currentTask.stage = Stage.WRITE;
+                }
+                break;
+            case WRITE:
+                currentTask.writeTime -= allocation;
+                if (currentTask.writeTime <= 0) {
+                    currentTask.stage = Stage.COMPLETED;
+                    writingTaskKey = "-1:0";
+                }
+                else {
+                    if (blockingPolicy == BlockingPolicy.NONE) {
+                        blockingPolicy = BlockingPolicy.WRITE;
+                        writingTaskKey = String.format("%s:%s", currentTask.id, currentTask.currentPeriodStart);
+                    }
+                }
+                break;
+        }
+        System.out.println("Task " + currentTask.id + " executed for " + allocation + " | stage: " + currentTask.stage);
+
+        if (currentTask.stage != Stage.COMPLETED) {
+            queue.add(currentTask);
+        } else {
+            // TODO save RT of all jobs at the end
+            System.out.println("Task " + currentTask.id + " completed at time " + (time + 1) + " with RT " + (time - currentTask.currentPeriodStart + 1));
+            WCRT.set(currentTask.id - 1, Math.max(WCRT.get(currentTask.id - 1), time - currentTask.currentPeriodStart + 1));
+        }
     }
 
     private ArrayList<Double> simulatePath(List<Task> tasks, Queue<Task> queue, ArrayList<Double> WCRT, int time, String writingTaskKey, BlockingPolicy blockingPolicy) {
@@ -143,49 +145,7 @@ public class CFSSimulator {
             // Share the CPU among all tasks proportionally to their priority weight
             for (Task currentTask : runningTasks) {
                 double allocation = 1.0 * (currentTask.priorityWeight / totalPriorityWeight);
-                System.out.println("Task " + currentTask.id + " executed for " + allocation + " | stage: " + currentTask.stage);
-
-                // Re-queue the task if it is not finished
-                switch (currentTask.stage) {
-                    case READ:
-                        currentTask.readTime -= allocation;
-                        if (currentTask.readTime <= 0) {
-                            currentTask.stage = Stage.BODY;
-                        }
-                        else {
-                            if (blockingPolicy == BlockingPolicy.NONE) {
-                                blockingPolicy = BlockingPolicy.READ;
-                            }
-                        }
-                        break;
-                    case BODY:
-                        currentTask.bodyTime -= allocation;
-                        if (currentTask.bodyTime <= 0) {
-                            currentTask.stage = Stage.WRITE;
-                        }
-                        break;
-                    case WRITE:
-                        currentTask.writeTime -= allocation;
-                        if (currentTask.writeTime <= 0) {
-                            currentTask.stage = Stage.COMPLETED;
-                            writingTaskKey = "-1:0";
-                        }
-                        else {
-                            if (blockingPolicy == BlockingPolicy.NONE) {
-                                blockingPolicy = BlockingPolicy.WRITE;
-                                writingTaskKey = String.format("%s:%s", currentTask.id, currentTask.currentPeriodStart);
-                            }
-                        }
-                        break;
-                }
-
-                if (currentTask.stage != Stage.COMPLETED) {
-                    cloneQueue.add(currentTask);
-                } else {
-                    // TODO save RT of all jobs at the end
-                    System.out.println("Task " + currentTask.id + " completed at time " + (time + 1) + " with RT " + (time - currentTask.currentPeriodStart + 1));
-                    cloneWCRT.set(currentTask.id - 1, Math.max(cloneWCRT.get(currentTask.id - 1), time - currentTask.currentPeriodStart + 1));
-                }
+                executeTask(currentTask, allocation, cloneQueue, cloneWCRT, blockingPolicy, writingTaskKey, time);
             }
 
             time += 1;
