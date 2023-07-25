@@ -14,13 +14,9 @@ public class CFSSimulator {
         110, 87, 70, 56, 45,
         36, 29, 23, 18, 15
     );
-//    private static BlockingPolicy blockingPolicy = BlockingPolicy.NONE;
-//    private static String writingTaskKey = "-1:0";
 
     // TODO Make test cases
     // TODO Refactor and improve readability
-
-    // TODO consider making a new class called SimulationState to preserve blockingPolicy and writingTaskKey
     public ArrayList<Double> simulateCFS(List<Task> tasks) {
         System.out.println("Starting CFS simulation");
         ArrayList<Double> WCRT = new ArrayList<>(Collections.nCopies(tasks.size(), 0.0));
@@ -33,7 +29,7 @@ public class CFSSimulator {
 
         while (time < getLCM(tasks)) {
             System.out.printf("\n>>> CURRENT TIME: %d <<<\n", time);
-            List<Task> runningTasks = initializeRunningTasks(queue, time, simulationState);
+            List<Task> runningTasks = initializeRunningTasks(queue, simulationState, time);
 
             if (runningTasks.isEmpty()) {
                 time++;
@@ -116,13 +112,13 @@ public class CFSSimulator {
         System.out.println("******************************");
 
         Queue<Task> cloneQueue = deepCopyQueue(queue);
-        ArrayList<Double> cloneWCRT = new ArrayList<Double>(WCRT);
+        ArrayList<Double> cloneWCRT = new ArrayList<>(WCRT);
         System.out.println("Queue state: " + queue);
         System.out.println("Clone queue state: " + cloneQueue);
 
         while (time < getLCM(tasks)) {
             System.out.printf("\n>>> CURRENT TIME: %d <<<\n", time);
-            List<Task> runningTasks = initializeRunningTasksForPath(cloneQueue, simulationState, time);
+            List<Task> runningTasks = initializeRunningTasks(cloneQueue, simulationState, time);
 
             if (runningTasks.isEmpty()) {
                 time++;
@@ -137,13 +133,10 @@ public class CFSSimulator {
             }
 
             time += 1;
-
             addPeriodicJobs(tasks, cloneQueue, time);
 
-            // If no read, write tasks are running, reset blockingPolicy to NONE
             if (noReadAndWriteTasksRunning(runningTasks, simulationState.blockingPolicy)) {
                 simulationState.blockingPolicy = BlockingPolicy.NONE;
-
                 if (pathDiverges(tasks, cloneQueue, cloneWCRT, simulationState, time)) break;
             }
 
@@ -223,17 +216,17 @@ public class CFSSimulator {
         }
     }
 
-    private List<Task> initializeRunningTasks(Queue<Task> queue, int time, SimulationState simulationState) {
+    // Add tasks to the queue if their start time has come
+    // Case 1: if blockingPolicy == READ, select tasks in read, body stage
+    // Case 2: if blockingPolicy == WRITE, select tasks in body, write stage
+    //         need to select previously running writing task
+    // Case 3: if blockingPolicy == NONE, select tasks in read, body, write stage
+    //         if both read, write stage tasks exist, select only one of them and diverge the path
+    //         if read stage is running, then select tasks that are in read, body stage
+    private List<Task> initializeRunningTasks(Queue<Task> queue, SimulationState simulationState, int time) {
         List<Task> runningTasks = new ArrayList<>();
         Iterator<Task> iterator = queue.iterator();
 
-        // Add tasks to the queue if their start time has come
-        // Case 1: if blockingPolicy == READ, select tasks in read, body stage
-        // Case 2: if blockingPolicy == WRITE, select tasks in body, write stage
-        //         need to select previously running writing task
-        // Case 3: if blockingPolicy == NONE, select tasks in read, body, write stage
-        //         if both read, write stage tasks exist, select only one of them and diverge the path
-        //         if read stage is running, then select tasks that are in read, body stage
         while (iterator.hasNext()) {
             Task task = iterator.next();
             if (task.startTime > time)
@@ -246,50 +239,6 @@ public class CFSSimulator {
                     else if (task.stage == Stage.WRITE) {
                         simulationState.blockingPolicy = BlockingPolicy.WRITE;
                         simulationState.writingTaskKey = String.format("%s:%s", task.id, task.currentPeriodStart);
-                    }
-                    break;
-                case READ:
-                    if (task.stage == Stage.READ || task.stage == Stage.BODY)
-                        break;
-                    else
-                        continue;
-                case WRITE:
-                    if (simulationState.writingTaskKey.equals((String.format("%s:%s", task.id, task.currentPeriodStart))) || task.stage == Stage.BODY)
-                        break;
-                    else
-                        continue;
-            }
-            runningTasks.add(task);
-            iterator.remove();
-        }
-
-        System.out.println("Running tasks: " + runningTasks.stream().map(task -> task.id).collect(Collectors.toList()));
-        return runningTasks;
-    }
-
-    private List<Task> initializeRunningTasksForPath(Queue<Task> queue, SimulationState simulationState, int time) {
-        List<Task> runningTasks = new ArrayList<>();
-        Iterator<Task> iterator = queue.iterator();
-
-        // Add tasks to the queue if their start time has come
-        // Case 1: if blockingPolicy == READ, select tasks in read, body stage
-        // Case 2: if blockingPolicy == WRITE, select tasks in body, write stage
-        //         need to select previously running writing task
-        // Case 3: if blockingPolicy == NONE, select tasks in read, body, write stage
-        //         if both read, write stage tasks exist, select only one of them and diverge the path
-        //         if read stage is running, then select tasks that are in read, body stage
-        while (iterator.hasNext()) {
-            Task task = iterator.next();
-            if (task.startTime > time)
-                continue;
-
-            switch (simulationState.blockingPolicy) {
-                case NONE:
-                    if (task.stage == Stage.READ)
-                        simulationState.blockingPolicy = BlockingPolicy.READ;
-                    else if (task.stage == Stage.WRITE) {
-                        simulationState.blockingPolicy = BlockingPolicy.WRITE;
-                        simulationState.writingTaskKey = String.format("%s:%s", task.id, task.startTime);
                     }
                     break;
                 case READ:
