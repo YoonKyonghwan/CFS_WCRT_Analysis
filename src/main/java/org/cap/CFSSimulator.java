@@ -102,7 +102,7 @@ public class CFSSimulator {
             if (runningTasks.stream().noneMatch(task -> task.stage == Stage.READ || task.stage == Stage.WRITE) || blockingPolicy == BlockingPolicy.NONE) {
                 blockingPolicy = BlockingPolicy.NONE;
 
-                if (pathDiverges(tasks, WCRT, time, queue)) break;
+                if (pathDiverges(tasks, queue, WCRT, writingTaskKey, time)) break;
             }
             System.out.println("Blocking policy " + blockingPolicy);
         }
@@ -196,7 +196,7 @@ public class CFSSimulator {
             if (runningTasks.stream().noneMatch(task -> task.stage == Stage.READ || task.stage == Stage.WRITE) || blockingPolicy == BlockingPolicy.NONE) {
                 blockingPolicy = BlockingPolicy.NONE;
 
-                if (pathDiverges(tasks, WCRT, time, writingTaskKey, cloneQueue, cloneWCRT)) break;
+                if (pathDiverges(tasks, cloneQueue, cloneWCRT, writingTaskKey, time)) break;
             }
 
             System.out.println("Blocking policy: " + blockingPolicy);
@@ -206,7 +206,7 @@ public class CFSSimulator {
         return cloneWCRT;
     }
 
-    private boolean pathDiverges(List<Task> tasks, ArrayList<Double> WCRT, int time, Queue<Task> queue) {
+    private boolean pathDiverges(List<Task> tasks, Queue<Task> queue, ArrayList<Double> WCRT, String writingTaskKey, int time) {
         List<Task> readTasks = queue.stream().filter(task -> task.stage == Stage.READ && task.startTime <= time).collect(Collectors.toList());
         List<Task> writeTasks = queue.stream().filter(task -> task.stage == Stage.WRITE && task.startTime <= time).collect(Collectors.toList());
 
@@ -240,47 +240,6 @@ public class CFSSimulator {
                     maxWCRT = Math.max(maxWCRT, possibleWCRT.get(j).get(i));
                 }
                 WCRT.set(i, maxWCRT);
-            }
-            return true;
-        }
-        return false;
-    }
-
-
-    private boolean pathDiverges(List<Task> tasks, ArrayList<Double> WCRT, int time, String writingTaskKey, Queue<Task> cloneQueue, ArrayList<Double> cloneWCRT) {
-        List<Task> readTasks = cloneQueue.stream().filter(task -> task.stage == Stage.READ && task.startTime >= time).collect(Collectors.toList());
-        List<Task> writeTasks = cloneQueue.stream().filter(task -> task.stage == Stage.WRITE && task.startTime >= time).collect(Collectors.toList());
-
-        ArrayList<ArrayList<Double>> possibleWCRT = new ArrayList<ArrayList<Double>>();
-
-        // Case 1: read and write tasks exist
-        if (!readTasks.isEmpty() && !writeTasks.isEmpty()) {
-            possibleWCRT.add(simulatePath(tasks, cloneQueue, cloneWCRT, time, writingTaskKey, BlockingPolicy.READ));
-            for (Task writeTask : writeTasks) {
-                possibleWCRT.add(simulatePath(tasks, cloneQueue, cloneWCRT, time, String.format("%s:%s", writeTask.id, writeTask.currentPeriodStart), BlockingPolicy.WRITE));
-            }
-
-            for (int i = 0; i< WCRT.size(); i++) {
-                double maxWCRT = 0;
-                for (int j=0; j<possibleWCRT.size(); j++) {
-                    maxWCRT = Math.max(maxWCRT, possibleWCRT.get(j).get(i));
-                }
-                cloneWCRT.set(i, maxWCRT);
-            }
-            return true;
-        }
-        // Case 2: multiple write tasks exist
-        else if (writeTasks.size() > 1) {
-            for (Task writeTask : writeTasks) {
-                possibleWCRT.add(simulatePath(tasks, cloneQueue, cloneWCRT, time, String.format("%s:%s", writeTask.id, writeTask.currentPeriodStart), BlockingPolicy.WRITE));
-            }
-
-            for (int i = 0; i< WCRT.size(); i++) {
-                double maxWCRT = 0;
-                for (int j=0; j<possibleWCRT.size(); j++) {
-                    maxWCRT = Math.max(maxWCRT, possibleWCRT.get(j).get(i));
-                }
-                cloneWCRT.set(i, maxWCRT);
             }
             return true;
         }
