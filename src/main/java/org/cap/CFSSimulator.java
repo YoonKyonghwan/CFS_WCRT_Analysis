@@ -14,14 +14,17 @@ public class CFSSimulator {
         110, 87, 70, 56, 45,
         36, 29, 23, 18, 15
     );
-    private static BlockingPolicy blockingPolicy = BlockingPolicy.NONE;
-    private static String writingTaskKey = "-1:0";
+//    private static BlockingPolicy blockingPolicy = BlockingPolicy.NONE;
+//    private static String writingTaskKey = "-1:0";
 
     // TODO Make test cases
     // TODO Refactor and improve readability
+
+    // TODO consider making a new class called SimulationState to preserve blockingPolicy and writingTaskKey
     public ArrayList<Double> simulateCFS(List<Task> tasks) {
         System.out.println("Starting CFS simulation");
         ArrayList<Double> WCRT = new ArrayList<>(Collections.nCopies(tasks.size(), 0.0));
+        SimulationState simulationState = new SimulationState(BlockingPolicy.NONE, "-1:0");
         int time = 0;
 
         // Initialize the priority queue with the initial tasks
@@ -30,7 +33,7 @@ public class CFSSimulator {
 
         while (time < getLCM(tasks)) {
             System.out.printf("\n>>> CURRENT TIME: %d <<<\n", time);
-            List<Task> runningTasks = initializeRunningTasks(queue, time);
+            List<Task> runningTasks = initializeRunningTasks(queue, time, simulationState);
 
             if (runningTasks.isEmpty()) {
                 time++;
@@ -41,17 +44,17 @@ public class CFSSimulator {
             double totalPriorityWeight = runningTasks.stream().mapToDouble(t -> t.priorityWeight).sum();
             for (Task currentTask : runningTasks) {
                 double allocation = 1.0 * (currentTask.priorityWeight / totalPriorityWeight);
-                executeTask(currentTask, allocation, queue, WCRT, blockingPolicy, writingTaskKey, time);
+                executeTask(currentTask, allocation, queue, WCRT, simulationState, time);
             }
 
             time += 1;
             addPeriodicJobs(tasks, queue, time);
 
-            if (noReadAndWriteTasksRunning(runningTasks, blockingPolicy)) {
-                blockingPolicy = BlockingPolicy.NONE;
-                if (pathDiverges(tasks, queue, WCRT, writingTaskKey, time)) break;
+            if (noReadAndWriteTasksRunning(runningTasks, simulationState.blockingPolicy)) {
+                simulationState.blockingPolicy = BlockingPolicy.NONE;
+                if (pathDiverges(tasks, queue, WCRT, simulationState, time)) break;
             }
-            System.out.println("Blocking policy " + blockingPolicy);
+            System.out.println("Blocking policy " + simulationState.blockingPolicy);
         }
 
         displayResult(WCRT, queue);
@@ -62,7 +65,8 @@ public class CFSSimulator {
         return runningTasks.stream().noneMatch(task -> task.stage == Stage.READ || task.stage == Stage.WRITE) || blockingPolicy == BlockingPolicy.NONE;
     }
 
-    private static void executeTask(Task currentTask, double allocation, Queue<Task> queue, ArrayList<Double> WCRT, BlockingPolicy blockingPolicy, String writingTaskKey, int time) {
+    // TODO logic inside does not reach
+    private static void executeTask(Task currentTask, double allocation, Queue<Task> queue, ArrayList<Double> WCRT, SimulationState simulationState, int time) {
         System.out.println("Task " + currentTask.id + " executed for " + allocation + " | stage: " + currentTask.stage);
         switch (currentTask.stage) {
             case READ:
@@ -71,8 +75,8 @@ public class CFSSimulator {
                     currentTask.stage = Stage.BODY;
                 }
                 else {
-                    if (blockingPolicy == BlockingPolicy.NONE) {
-                        blockingPolicy = BlockingPolicy.READ;
+                    if (simulationState.blockingPolicy == BlockingPolicy.NONE) {
+                        simulationState.blockingPolicy = BlockingPolicy.READ;
                     }
                 }
                 break;
@@ -86,12 +90,12 @@ public class CFSSimulator {
                 currentTask.writeTime -= allocation;
                 if (currentTask.writeTime <= 0) {
                     currentTask.stage = Stage.COMPLETED;
-                    writingTaskKey = "-1:0";
+                    simulationState.writingTaskKey = "-1:0";
                 }
                 else {
-                    if (blockingPolicy == BlockingPolicy.NONE) {
-                        blockingPolicy = BlockingPolicy.WRITE;
-                        writingTaskKey = String.format("%s:%s", currentTask.id, currentTask.currentPeriodStart);
+                    if (simulationState.blockingPolicy == BlockingPolicy.NONE) {
+                        simulationState.blockingPolicy = BlockingPolicy.WRITE;
+                        simulationState.writingTaskKey = String.format("%s:%s", currentTask.id, currentTask.currentPeriodStart);
                     }
                 }
                 break;
@@ -106,7 +110,7 @@ public class CFSSimulator {
         }
     }
 
-    private ArrayList<Double> simulatePath(List<Task> tasks, Queue<Task> queue, ArrayList<Double> WCRT, int time, String writingTaskKey, BlockingPolicy blockingPolicy) {
+    private ArrayList<Double> simulatePath(List<Task> tasks, Queue<Task> queue, ArrayList<Double> WCRT, int time, SimulationState simulationState) {
         System.out.println("\n******************************");
         System.out.println("Path diverged");
         System.out.println("******************************");
@@ -118,7 +122,7 @@ public class CFSSimulator {
 
         while (time < getLCM(tasks)) {
             System.out.printf("\n>>> CURRENT TIME: %d <<<\n", time);
-            List<Task> runningTasks = initializeRunningTasksForPath(cloneQueue, blockingPolicy, writingTaskKey, time);
+            List<Task> runningTasks = initializeRunningTasksForPath(cloneQueue, simulationState, time);
 
             if (runningTasks.isEmpty()) {
                 time++;
@@ -129,7 +133,7 @@ public class CFSSimulator {
             double totalPriorityWeight = runningTasks.stream().mapToDouble(t -> t.priorityWeight).sum();
             for (Task currentTask : runningTasks) {
                 double allocation = 1.0 * (currentTask.priorityWeight / totalPriorityWeight);
-                executeTask(currentTask, allocation, cloneQueue, cloneWCRT, blockingPolicy, writingTaskKey, time);
+                executeTask(currentTask, allocation, cloneQueue, cloneWCRT, simulationState, time);
             }
 
             time += 1;
@@ -137,20 +141,20 @@ public class CFSSimulator {
             addPeriodicJobs(tasks, cloneQueue, time);
 
             // If no read, write tasks are running, reset blockingPolicy to NONE
-            if (noReadAndWriteTasksRunning(runningTasks, blockingPolicy)) {
-                blockingPolicy = BlockingPolicy.NONE;
+            if (noReadAndWriteTasksRunning(runningTasks, simulationState.blockingPolicy)) {
+                simulationState.blockingPolicy = BlockingPolicy.NONE;
 
-                if (pathDiverges(tasks, cloneQueue, cloneWCRT, writingTaskKey, time)) break;
+                if (pathDiverges(tasks, cloneQueue, cloneWCRT, simulationState, time)) break;
             }
 
-            System.out.println("Blocking policy: " + blockingPolicy);
+            System.out.println("Blocking policy: " + simulationState.blockingPolicy);
         }
 
         displayResult(cloneWCRT, cloneQueue);
         return cloneWCRT;
     }
 
-    private boolean pathDiverges(List<Task> tasks, Queue<Task> queue, ArrayList<Double> WCRT, String writingTaskKey, int time) {
+    private boolean pathDiverges(List<Task> tasks, Queue<Task> queue, ArrayList<Double> WCRT, SimulationState simulationState, int time) {
         List<Task> readTasks = queue.stream().filter(task -> task.stage == Stage.READ && task.startTime <= time).collect(Collectors.toList());
         List<Task> writeTasks = queue.stream().filter(task -> task.stage == Stage.WRITE && task.startTime <= time).collect(Collectors.toList());
 
@@ -158,9 +162,9 @@ public class CFSSimulator {
 
         // Case 1: read and write tasks exist
         if (!readTasks.isEmpty() && !writeTasks.isEmpty()) {
-            possibleWCRT.add(simulatePath(tasks, queue, WCRT, time, writingTaskKey, BlockingPolicy.READ));
+            possibleWCRT.add(simulatePath(tasks, queue, WCRT, time, new SimulationState(BlockingPolicy.READ, simulationState.writingTaskKey)));
             for (Task writeTask : writeTasks) {
-                possibleWCRT.add(simulatePath(tasks, queue, WCRT, time, String.format("%s:%s", writeTask.id, writeTask.currentPeriodStart), BlockingPolicy.WRITE));
+                possibleWCRT.add(simulatePath(tasks, queue, WCRT, time, new SimulationState(BlockingPolicy.WRITE, String.format("%s:%s", writeTask.id, writeTask.currentPeriodStart))));
             }
 
             for (int i = 0; i< WCRT.size(); i++) {
@@ -175,7 +179,7 @@ public class CFSSimulator {
         // Case 2: multiple write tasks exist
         else if (writeTasks.size() > 1) {
             for (Task writeTask : writeTasks) {
-                possibleWCRT.add(simulatePath(tasks, queue, WCRT, time, String.format("%s:%s", writeTask.id, writeTask.currentPeriodStart), BlockingPolicy.WRITE));
+                possibleWCRT.add(simulatePath(tasks, queue, WCRT, time, new SimulationState(BlockingPolicy.WRITE, String.format("%s:%s", writeTask.id, writeTask.currentPeriodStart))));
             }
 
             for (int i = 0; i< WCRT.size(); i++) {
@@ -219,7 +223,7 @@ public class CFSSimulator {
         }
     }
 
-    private List<Task> initializeRunningTasks(Queue<Task> queue, int time) {
+    private List<Task> initializeRunningTasks(Queue<Task> queue, int time, SimulationState simulationState) {
         List<Task> runningTasks = new ArrayList<>();
         Iterator<Task> iterator = queue.iterator();
 
@@ -235,13 +239,13 @@ public class CFSSimulator {
             if (task.startTime > time)
                 continue;
 
-            switch (blockingPolicy) {
+            switch (simulationState.blockingPolicy) {
                 case NONE:
                     if (task.stage == Stage.READ)
-                        blockingPolicy = BlockingPolicy.READ;
+                        simulationState.blockingPolicy = BlockingPolicy.READ;
                     else if (task.stage == Stage.WRITE) {
-                        blockingPolicy = BlockingPolicy.WRITE;
-                        writingTaskKey = String.format("%s:%s", task.id, task.currentPeriodStart);
+                        simulationState.blockingPolicy = BlockingPolicy.WRITE;
+                        simulationState.writingTaskKey = String.format("%s:%s", task.id, task.currentPeriodStart);
                     }
                     break;
                 case READ:
@@ -250,7 +254,7 @@ public class CFSSimulator {
                     else
                         continue;
                 case WRITE:
-                    if (writingTaskKey.equals((String.format("%s:%s", task.id, task.currentPeriodStart))) || task.stage == Stage.BODY)
+                    if (simulationState.writingTaskKey.equals((String.format("%s:%s", task.id, task.currentPeriodStart))) || task.stage == Stage.BODY)
                         break;
                     else
                         continue;
@@ -263,7 +267,7 @@ public class CFSSimulator {
         return runningTasks;
     }
 
-    private List<Task> initializeRunningTasksForPath(Queue<Task> queue, BlockingPolicy blockingPolicy, String writingTaskKey, int time) {
+    private List<Task> initializeRunningTasksForPath(Queue<Task> queue, SimulationState simulationState, int time) {
         List<Task> runningTasks = new ArrayList<>();
         Iterator<Task> iterator = queue.iterator();
 
@@ -279,13 +283,13 @@ public class CFSSimulator {
             if (task.startTime > time)
                 continue;
 
-            switch (blockingPolicy) {
+            switch (simulationState.blockingPolicy) {
                 case NONE:
                     if (task.stage == Stage.READ)
-                        blockingPolicy = BlockingPolicy.READ;
+                        simulationState.blockingPolicy = BlockingPolicy.READ;
                     else if (task.stage == Stage.WRITE) {
-                        blockingPolicy = BlockingPolicy.WRITE;
-                        writingTaskKey = String.format("%s:%s", task.id, task.startTime);
+                        simulationState.blockingPolicy = BlockingPolicy.WRITE;
+                        simulationState.writingTaskKey = String.format("%s:%s", task.id, task.startTime);
                     }
                     break;
                 case READ:
@@ -294,7 +298,7 @@ public class CFSSimulator {
                     else
                         continue;
                 case WRITE:
-                    if (writingTaskKey.equals((String.format("%s:%s", task.id, task.currentPeriodStart))) || task.stage == Stage.BODY)
+                    if (simulationState.writingTaskKey.equals((String.format("%s:%s", task.id, task.currentPeriodStart))) || task.stage == Stage.BODY)
                         break;
                     else
                         continue;
