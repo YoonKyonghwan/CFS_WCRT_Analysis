@@ -21,12 +21,17 @@ public class CFSSimulator {
         System.out.println("Starting CFS simulation");
         ArrayList<Double> WCRT = new ArrayList<>(Collections.nCopies(tasks.size(), 0.0));
         SimulationState simulationState = new SimulationState(BlockingPolicy.NONE, "-1:0");
-        int time = 0;
-
-        // Initialize the priority queue with the initial tasks
         Queue<Task> queue = new PriorityQueue<>(Comparator.comparingDouble(task -> task.priorityWeight));
         initializeQueue(tasks, queue);
 
+        int time = 0;
+        performSimulation(tasks, WCRT, simulationState, time, queue);
+
+        displayResult(WCRT, queue);
+        return WCRT;
+    }
+
+    private void performSimulation(List<Task> tasks, ArrayList<Double> WCRT, SimulationState simulationState, int time, Queue<Task> queue) {
         while (time < getLCM(tasks)) {
             System.out.printf("\n>>> CURRENT TIME: %d <<<\n", time);
             List<Task> runningTasks = initializeRunningTasks(queue, simulationState, time);
@@ -52,16 +57,20 @@ public class CFSSimulator {
             }
             System.out.println("Blocking policy " + simulationState.blockingPolicy);
         }
-
-        displayResult(WCRT, queue);
-        return WCRT;
     }
 
-    private static boolean noReadAndWriteTasksRunning(List<Task> runningTasks, BlockingPolicy blockingPolicy) {
-        return runningTasks.stream().noneMatch(task -> task.stage == Stage.READ || task.stage == Stage.WRITE) || blockingPolicy == BlockingPolicy.NONE;
+    private ArrayList<Double> simulatePath(List<Task> tasks, Queue<Task> queue, ArrayList<Double> WCRT, int time, SimulationState simulationState) {
+        System.out.println("Path diverged");
+
+        Queue<Task> cloneQueue = copyQueue(queue);
+        ArrayList<Double> cloneWCRT = new ArrayList<>(WCRT);
+
+        performSimulation(tasks, cloneWCRT, simulationState, time, cloneQueue);
+
+        displayResult(cloneWCRT, cloneQueue);
+        return cloneWCRT;
     }
 
-    // TODO logic inside does not reach
     private static void executeTask(Task currentTask, double allocation, Queue<Task> queue, ArrayList<Double> WCRT, SimulationState simulationState, int time) {
         System.out.println("Task " + currentTask.id + " executed for " + allocation + " | stage: " + currentTask.stage);
         switch (currentTask.stage) {
@@ -106,47 +115,6 @@ public class CFSSimulator {
         }
     }
 
-    private ArrayList<Double> simulatePath(List<Task> tasks, Queue<Task> queue, ArrayList<Double> WCRT, int time, SimulationState simulationState) {
-        System.out.println("\n******************************");
-        System.out.println("Path diverged");
-        System.out.println("******************************");
-
-        Queue<Task> cloneQueue = deepCopyQueue(queue);
-        ArrayList<Double> cloneWCRT = new ArrayList<>(WCRT);
-        System.out.println("Queue state: " + queue);
-        System.out.println("Clone queue state: " + cloneQueue);
-
-        while (time < getLCM(tasks)) {
-            System.out.printf("\n>>> CURRENT TIME: %d <<<\n", time);
-            List<Task> runningTasks = initializeRunningTasks(cloneQueue, simulationState, time);
-
-            if (runningTasks.isEmpty()) {
-                time++;
-                continue;
-            }
-
-            // Share the CPU proportional to priority weight
-            double totalPriorityWeight = runningTasks.stream().mapToDouble(t -> t.priorityWeight).sum();
-            for (Task currentTask : runningTasks) {
-                double allocation = 1.0 * (currentTask.priorityWeight / totalPriorityWeight);
-                executeTask(currentTask, allocation, cloneQueue, cloneWCRT, simulationState, time);
-            }
-
-            time += 1;
-            addPeriodicJobs(tasks, cloneQueue, time);
-
-            if (noReadAndWriteTasksRunning(runningTasks, simulationState.blockingPolicy)) {
-                simulationState.blockingPolicy = BlockingPolicy.NONE;
-                if (pathDiverges(tasks, cloneQueue, cloneWCRT, simulationState, time)) break;
-            }
-
-            System.out.println("Blocking policy: " + simulationState.blockingPolicy);
-        }
-
-        displayResult(cloneWCRT, cloneQueue);
-        return cloneWCRT;
-    }
-
     private boolean pathDiverges(List<Task> tasks, Queue<Task> queue, ArrayList<Double> WCRT, SimulationState simulationState, int time) {
         List<Task> readTasks = queue.stream().filter(task -> task.stage == Stage.READ && task.startTime <= time).collect(Collectors.toList());
         List<Task> writeTasks = queue.stream().filter(task -> task.stage == Stage.WRITE && task.startTime <= time).collect(Collectors.toList());
@@ -187,14 +155,6 @@ public class CFSSimulator {
         return false;
     }
 
-    private Queue<Task> deepCopyQueue(Queue<Task> originalQueue) {
-        Queue<Task> newQueue = new PriorityQueue<>(Comparator.comparingDouble(task -> task.priorityWeight));
-        for (Task task : originalQueue) {
-            newQueue.add(task.copy());
-        }
-        return newQueue;
-    }
-
     private void initializeQueue(List<Task> tasks, Queue<Task> queue) {
         for (Task task : tasks) {
             task.priorityWeight = priorityToWeight.get(task.nice + 20);
@@ -206,6 +166,15 @@ public class CFSSimulator {
         }
     }
 
+    private Queue<Task> copyQueue(Queue<Task> originalQueue) {
+        Queue<Task> newQueue = new PriorityQueue<>(Comparator.comparingDouble(task -> task.priorityWeight));
+        for (Task task : originalQueue) {
+            newQueue.add(task.copy());
+        }
+        return newQueue;
+    }
+
+
     private void addPeriodicJobs(List<Task> tasks, Queue<Task> queue, int time) {
         for (Task task : tasks) {
             if (time > task.startTime && task.period > 0 && time % task.period == 0) {
@@ -216,13 +185,15 @@ public class CFSSimulator {
         }
     }
 
-    // Add tasks to the queue if their start time has come
-    // Case 1: if blockingPolicy == READ, select tasks in read, body stage
-    // Case 2: if blockingPolicy == WRITE, select tasks in body, write stage
-    //         need to select previously running writing task
-    // Case 3: if blockingPolicy == NONE, select tasks in read, body, write stage
-    //         if both read, write stage tasks exist, select only one of them and diverge the path
-    //         if read stage is running, then select tasks that are in read, body stage
+    /**
+     * Add tasks to the queue if their start time has come
+     * Case 1: if blockingPolicy == READ, select tasks in read, body stage
+     * Case 2: if blockingPolicy == WRITE, select tasks in body, write stage
+     *         need to select previously running writing task
+     * Case 3: if blockingPolicy == NONE, select tasks in read, body, write stage
+     *         if read task is selected, set blockingPolicy to READ
+     *         if write task is selected, set blockingPolicy to WRITE and set writingTaskKey
+     */
     private List<Task> initializeRunningTasks(Queue<Task> queue, SimulationState simulationState, int time) {
         List<Task> runningTasks = new ArrayList<>();
         Iterator<Task> iterator = queue.iterator();
@@ -271,6 +242,10 @@ public class CFSSimulator {
         for (int i = 0; i < WCRT.size(); i++) {
             System.out.println("Task " + (i+1) + " WCRT: " + WCRT.get(i));
         }
+    }
+
+    private static boolean noReadAndWriteTasksRunning(List<Task> runningTasks, BlockingPolicy blockingPolicy) {
+        return runningTasks.stream().noneMatch(task -> task.stage == Stage.READ || task.stage == Stage.WRITE) || blockingPolicy == BlockingPolicy.NONE;
     }
 
     private int getLCM(List<Task> tasks) {
