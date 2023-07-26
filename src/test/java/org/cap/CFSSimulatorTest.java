@@ -17,7 +17,7 @@ public class CFSSimulatorTest {
     }
 
     @Test
-    public void testSingleTask() {
+    public void testOneTask() {
         // Define test tasks
         List<Task> tasks = Arrays.asList(
             new Task(1, 0, 1, 1, 1, 0, 10) // a single task
@@ -34,10 +34,10 @@ public class CFSSimulatorTest {
     }
 
     @Test
-    public void testMultipleTasks() {
+    public void testTwoTasks() {
         // Define test tasks
         List<Task> tasks = Arrays.asList(
-            new Task(1, 0, 1, 2, 1, 0, 10), // multiple tasks
+            new Task(1, 0, 1, 2, 1, 0, 10), // two tasks
             new Task(2, 0, 1, 2, 1, 0, 10)
         );
 
@@ -128,5 +128,25 @@ public class CFSSimulatorTest {
         assertEquals(expectedResult, WCRT);
     }
 
-    // TODO read, write orders different due to rounding policy
+    @Test
+    public void testRounding() {
+        // Define test tasks
+        List<Task> tasks = Arrays.asList(
+                new Task(1, 0, 0, 1, 0, 0, 10), // three tasks
+                new Task(2, 0, 0, 1, 0, 0, 10),
+                new Task(3, 0, 0, 1, 0, 0, 10)
+        );
+
+        // Execute the method
+        ArrayList<Double> WCRT = simulator.simulateCFS(tasks);
+
+        // Make assertions about the expected result
+        List<Double> expectedResult = Arrays.asList(
+                3.0,
+                3.0,
+                3.0
+        );
+        assertEquals(expectedResult, WCRT);
+    }
+
 }

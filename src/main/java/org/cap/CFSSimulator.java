@@ -60,7 +60,7 @@ public class CFSSimulator {
     }
 
     private ArrayList<Double> simulatePath(List<Task> tasks, Queue<Task> queue, ArrayList<Double> WCRT, int time, SimulationState simulationState) {
-        System.out.println("Path diverged");
+        System.out.println("\n******* Path diverged *******");
 
         Queue<Task> cloneQueue = copyQueue(queue);
         ArrayList<Double> cloneWCRT = new ArrayList<>(WCRT);
@@ -72,6 +72,7 @@ public class CFSSimulator {
     }
 
     private static void executeTask(Task currentTask, double allocation, Queue<Task> queue, ArrayList<Double> WCRT, SimulationState simulationState, int time) {
+        skipReadStageIfNoReadTime(currentTask);
         System.out.println("Task " + currentTask.id + " executed for " + allocation + " | stage: " + currentTask.stage);
         switch (currentTask.stage) {
             case READ:
@@ -88,7 +89,10 @@ public class CFSSimulator {
             case BODY:
                 currentTask.bodyTime -= allocation;
                 if (currentTask.bodyTime <= 0) {
-                    currentTask.stage = Stage.WRITE;
+                    if (currentTask.writeTime > 0)
+                        currentTask.stage = Stage.WRITE;
+                    else
+                        currentTask.stage = Stage.COMPLETED;
                 }
                 break;
             case WRITE:
@@ -229,6 +233,12 @@ public class CFSSimulator {
 
         System.out.println("Running tasks: " + runningTasks.stream().map(task -> task.id).collect(Collectors.toList()));
         return runningTasks;
+    }
+
+    private static void skipReadStageIfNoReadTime(Task task) {
+        if (task.stage == Stage.READ && task.readTime <= 0) {
+            task.stage = Stage.BODY;
+        }
     }
 
 
