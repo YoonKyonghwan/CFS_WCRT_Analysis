@@ -1,9 +1,15 @@
 package org.cap;
 
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.logging.*;
 import java.util.stream.Collectors;
 
 public class CFSSimulator {
+    private static final Logger logger = Logger.getLogger(CFSSimulator.class.getName());
+
     private static final List<Integer> priorityToWeight = Arrays.asList(
         88761, 71755, 56483, 46273, 36291,
         29154, 23254, 18705, 14949, 11916,
@@ -22,15 +28,18 @@ public class CFSSimulator {
      * @return WCRT - list of worst case response times
      */
     public ArrayList<Double> simulateCFS(List<Task> tasks) {
-        System.out.println("Starting CFS simulation");
+        initializelogger();
+        logger.info("Starting CFS simulation");
+
         ArrayList<Double> WCRT = new ArrayList<>(Collections.nCopies(tasks.size(), 0.0));
         SimulationState simulationState = new SimulationState(BlockingPolicy.NONE, "-1:0");
         Queue<Task> queue = new PriorityQueue<>(Comparator.comparingDouble(task -> task.priorityWeight));
         initializeQueue(tasks, queue);
-
         int time = 0;
+
         performSimulation(tasks, WCRT, simulationState, time, queue);
 
+        addConsoleLogger();
         displayResult(WCRT, queue);
         return WCRT;
     }
@@ -41,7 +50,7 @@ public class CFSSimulator {
      */
     private void performSimulation(List<Task> tasks, ArrayList<Double> WCRT, SimulationState simulationState, int time, Queue<Task> queue) {
         while (time < getLCM(tasks)) {
-            System.out.printf("\n>>> CURRENT TIME: %d <<<\n", time);
+            logger.info(String.format("\n>>> CURRENT TIME: %d <<<\n", time));
             List<Task> runningTasks = initializeRunningTasks(queue, simulationState, time);
 
             if (runningTasks.isEmpty()) {
@@ -63,7 +72,7 @@ public class CFSSimulator {
                 simulationState.blockingPolicy = BlockingPolicy.NONE;
                 if (pathDiverges(tasks, queue, WCRT, simulationState, time)) break;
             }
-            System.out.println("Blocking policy " + simulationState.blockingPolicy);
+            logger.info("Blocking policy " + simulationState.blockingPolicy);
         }
     }
 
@@ -74,7 +83,7 @@ public class CFSSimulator {
      * @return cloneWCRT - list of worst case response times for the simulated path
      */
     private ArrayList<Double> simulatePath(List<Task> tasks, Queue<Task> queue, ArrayList<Double> WCRT, int time, SimulationState simulationState) {
-        System.out.println("\n******* Path diverged *******");
+        logger.info("\n******* Path diverged *******");
 
         Queue<Task> cloneQueue = copyQueue(queue);
         ArrayList<Double> cloneWCRT = new ArrayList<>(WCRT);
@@ -92,7 +101,7 @@ public class CFSSimulator {
      */
     private void executeTask(Task currentTask, double allocation, Queue<Task> queue, ArrayList<Double> WCRT, SimulationState simulationState, int time) {
         skipReadStageIfNoReadTime(currentTask);
-        System.out.println("Task " + currentTask.id + " executed for " + allocation + " | stage: " + currentTask.stage);
+        logger.info("Task " + currentTask.id + " executed for " + allocation + " | stage: " + currentTask.stage);
 
         switch (currentTask.stage) {
             case READ:
@@ -134,7 +143,7 @@ public class CFSSimulator {
             queue.add(currentTask);
         } else {
             // TODO save RT of all jobs at the end
-            System.out.println("Task " + currentTask.id + " completed at time " + (time + 1) + " with RT " + (time - currentTask.currentPeriodStart + 1));
+            logger.info("Task " + currentTask.id + " completed at time " + (time + 1) + " with RT " + (time - currentTask.currentPeriodStart + 1));
             WCRT.set(currentTask.id - 1, Math.max(WCRT.get(currentTask.id - 1), time - currentTask.currentPeriodStart + 1));
         }
     }
@@ -225,7 +234,7 @@ public class CFSSimulator {
             iterator.remove();
         }
 
-        System.out.println("Running tasks: " + runningTasks.stream().map(task -> task.id).collect(Collectors.toList()));
+        logger.info("Running tasks: " + runningTasks.stream().map(task -> task.id).collect(Collectors.toList()));
         return runningTasks;
     }
 
@@ -254,7 +263,7 @@ public class CFSSimulator {
             if (time > task.startTime && task.period > 0 && time % task.period == 0) {
                 task.currentPeriodStart = time;
                 queue.add(task.copy());
-                System.out.println("Task " + task.id + " released with read time " + task.readTime + ", write time " + task.writeTime + ", body Time " + task.bodyTime);
+                logger.info("Task " + task.id + " released with read time " + task.readTime + ", write time " + task.writeTime + ", body Time " + task.bodyTime);
             }
         }
     }
@@ -267,19 +276,38 @@ public class CFSSimulator {
 
 
     private void displayResult(List<Double> WCRT, Queue<Task> queue) {
-        // TODO save simulation result as a file
-        // TODO remove running logs when print (only include in file)
-        System.out.println("\n******************************");
-        System.out.println("***** Simulation Results *****");
-        System.out.println("******************************");
-        System.out.println("Unfinished tasks: " + queue.stream().map(task -> task.id).collect(Collectors.toList()));
+        logger.info("\n******************************");
+        logger.info("***** Simulation Results *****");
+        logger.info("******************************");
+        logger.info("Unfinished tasks: " + queue.stream().map(task -> task.id).collect(Collectors.toList()));
         for (int i = 0; i < WCRT.size(); i++) {
-            System.out.println("Task " + (i+1) + " WCRT: " + WCRT.get(i));
+            logger.info("Task " + (i+1) + " WCRT: " + WCRT.get(i));
         }
     }
 
     private boolean noReadAndWriteTasksRunning(List<Task> runningTasks, BlockingPolicy blockingPolicy) {
         return runningTasks.stream().noneMatch(task -> task.stage == Stage.READ || task.stage == Stage.WRITE) || blockingPolicy == BlockingPolicy.NONE;
+    }
+
+    private void initializelogger() {
+        try {
+            LocalDateTime now = LocalDateTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
+            String formatDateTime = now.format(formatter);
+
+            FileHandler fileHandler = new FileHandler("./logs/simulation_" + formatDateTime + ".txt");
+            fileHandler.setFormatter(new CustomFormatter());
+            logger.setUseParentHandlers(false);
+            logger.addHandler(fileHandler);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    private void addConsoleLogger() {
+        ConsoleHandler consoleHandler = new ConsoleHandler();
+        consoleHandler.setFormatter(new CustomFormatter());
+        logger.addHandler(consoleHandler);
     }
 
     private boolean withinTolerance(double a, double b) {
