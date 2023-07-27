@@ -71,13 +71,13 @@ public class CFSSimulator {
         return cloneWCRT;
     }
 
-    private static void executeTask(Task currentTask, double allocation, Queue<Task> queue, ArrayList<Double> WCRT, SimulationState simulationState, int time) {
+    private void executeTask(Task currentTask, double allocation, Queue<Task> queue, ArrayList<Double> WCRT, SimulationState simulationState, int time) {
         skipReadStageIfNoReadTime(currentTask);
         System.out.println("Task " + currentTask.id + " executed for " + allocation + " | stage: " + currentTask.stage);
         switch (currentTask.stage) {
             case READ:
                 currentTask.readTime -= allocation;
-                if (currentTask.readTime <= 0) {
+                if (withinTolerance(currentTask.readTime, 0)) {
                     currentTask.stage = Stage.BODY;
                 }
                 else {
@@ -88,7 +88,7 @@ public class CFSSimulator {
                 break;
             case BODY:
                 currentTask.bodyTime -= allocation;
-                if (currentTask.bodyTime <= 0) {
+                if (withinTolerance(currentTask.bodyTime, 0)) {
                     if (currentTask.writeTime > 0)
                         currentTask.stage = Stage.WRITE;
                     else
@@ -97,7 +97,7 @@ public class CFSSimulator {
                 break;
             case WRITE:
                 currentTask.writeTime -= allocation;
-                if (currentTask.writeTime <= 0) {
+                if (withinTolerance(currentTask.writeTime, 0)) {
                     currentTask.stage = Stage.COMPLETED;
                     simulationState.writingTaskKey = "-1:0";
                 }
@@ -235,7 +235,7 @@ public class CFSSimulator {
         return runningTasks;
     }
 
-    private static void skipReadStageIfNoReadTime(Task task) {
+    private void skipReadStageIfNoReadTime(Task task) {
         if (task.stage == Stage.READ && task.readTime <= 0) {
             task.stage = Stage.BODY;
         }
@@ -254,8 +254,13 @@ public class CFSSimulator {
         }
     }
 
-    private static boolean noReadAndWriteTasksRunning(List<Task> runningTasks, BlockingPolicy blockingPolicy) {
+    private boolean noReadAndWriteTasksRunning(List<Task> runningTasks, BlockingPolicy blockingPolicy) {
         return runningTasks.stream().noneMatch(task -> task.stage == Stage.READ || task.stage == Stage.WRITE) || blockingPolicy == BlockingPolicy.NONE;
+    }
+
+    private boolean withinTolerance(double a, double b) {
+        double tolerance = 1E-10;
+        return (a - b) < tolerance;
     }
 
     private int getLCM(List<Task> tasks) {
