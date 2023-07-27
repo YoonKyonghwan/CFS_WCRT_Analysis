@@ -15,8 +15,12 @@ public class CFSSimulator {
         36, 29, 23, 18, 15
     );
 
-    // TODO Make test cases
-    // TODO Refactor and improve readability
+    /**
+     * This method starts the CFS simulation, initializes the simulation state, and the queue.
+     * Then, it performs the simulation and displays the result.
+     *
+     * @return WCRT - list of worst case response times
+     */
     public ArrayList<Double> simulateCFS(List<Task> tasks) {
         System.out.println("Starting CFS simulation");
         ArrayList<Double> WCRT = new ArrayList<>(Collections.nCopies(tasks.size(), 0.0));
@@ -31,6 +35,10 @@ public class CFSSimulator {
         return WCRT;
     }
 
+    /**
+     * This method performs the simulation while the current time is less than the LCM of the tasks.
+     * It calculates the allocation for each task and executes it accordingly.
+     */
     private void performSimulation(List<Task> tasks, ArrayList<Double> WCRT, SimulationState simulationState, int time, Queue<Task> queue) {
         while (time < getLCM(tasks)) {
             System.out.printf("\n>>> CURRENT TIME: %d <<<\n", time);
@@ -59,6 +67,12 @@ public class CFSSimulator {
         }
     }
 
+    /**
+     * This method simulates a path, which means it creates a clone of the queue and WCRT,
+     * performs the simulation using the clones, and displays the result.
+     *
+     * @return cloneWCRT - list of worst case response times for the simulated path
+     */
     private ArrayList<Double> simulatePath(List<Task> tasks, Queue<Task> queue, ArrayList<Double> WCRT, int time, SimulationState simulationState) {
         System.out.println("\n******* Path diverged *******");
 
@@ -71,9 +85,15 @@ public class CFSSimulator {
         return cloneWCRT;
     }
 
+    /**
+     * This method executes a task according to its current stage.
+     * The task can be at the READ, BODY, or WRITE stage.
+     * If the task is completed, it is removed from the queue, and its response time is calculated.
+     */
     private void executeTask(Task currentTask, double allocation, Queue<Task> queue, ArrayList<Double> WCRT, SimulationState simulationState, int time) {
         skipReadStageIfNoReadTime(currentTask);
         System.out.println("Task " + currentTask.id + " executed for " + allocation + " | stage: " + currentTask.stage);
+
         switch (currentTask.stage) {
             case READ:
                 currentTask.readTime -= allocation;
@@ -119,6 +139,12 @@ public class CFSSimulator {
         }
     }
 
+    /**
+     * This method checks if the simulation path diverges.
+     * If it does, it simulates each possible path and stores the worst case response time for each.
+     *
+     * @return boolean - returns true if the path diverges, false otherwise
+     */
     private boolean pathDiverges(List<Task> tasks, Queue<Task> queue, ArrayList<Double> WCRT, SimulationState simulationState, int time) {
         List<Task> readTasks = queue.stream().filter(task -> task.stage == Stage.READ && task.startTime <= time).collect(Collectors.toList());
         List<Task> writeTasks = queue.stream().filter(task -> task.stage == Stage.WRITE && task.startTime <= time).collect(Collectors.toList());
@@ -159,44 +185,12 @@ public class CFSSimulator {
         return false;
     }
 
-    private void initializeQueue(List<Task> tasks, Queue<Task> queue) {
-        for (Task task : tasks) {
-            task.priorityWeight = priorityToWeight.get(task.nice + 20);
-            task.originalReadTime = task.readTime;
-            task.originalBodyTime = task.bodyTime;
-            task.originalWriteTime = task.writeTime;
-            task.currentPeriodStart = task.startTime;
-            queue.add(task.copy());
-        }
-    }
-
-    private Queue<Task> copyQueue(Queue<Task> originalQueue) {
-        Queue<Task> newQueue = new PriorityQueue<>(Comparator.comparingDouble(task -> task.priorityWeight));
-        for (Task task : originalQueue) {
-            newQueue.add(task.copy());
-        }
-        return newQueue;
-    }
-
-
-    private void addPeriodicJobs(List<Task> tasks, Queue<Task> queue, int time) {
-        for (Task task : tasks) {
-            if (time > task.startTime && task.period > 0 && time % task.period == 0) {
-                task.currentPeriodStart = time;
-                queue.add(task.copy());
-                System.out.println("Task " + task.id + " released with read time " + task.readTime + ", write time " + task.writeTime + ", body Time " + task.bodyTime);
-            }
-        }
-    }
-
     /**
-     * Add tasks to the queue if their start time has come
-     * Case 1: if blockingPolicy == READ, select tasks in read, body stage
-     * Case 2: if blockingPolicy == WRITE, select tasks in body, write stage
-     *         need to select previously running writing task
-     * Case 3: if blockingPolicy == NONE, select tasks in read, body, write stage
-     *         if read task is selected, set blockingPolicy to READ
-     *         if write task is selected, set blockingPolicy to WRITE and set writingTaskKey
+     * This method initializes the list of running tasks based on the blocking policy.
+     * If the task has been released, depending on the blocking policy, the task may be added to running tasks.
+     * It iterates through the queue and removes tasks that are added to the running tasks list.
+     *
+     * @return runningTasks - list of tasks that are currently running
      */
     private List<Task> initializeRunningTasks(Queue<Task> queue, SimulationState simulationState, int time) {
         List<Task> runningTasks = new ArrayList<>();
@@ -233,6 +227,36 @@ public class CFSSimulator {
 
         System.out.println("Running tasks: " + runningTasks.stream().map(task -> task.id).collect(Collectors.toList()));
         return runningTasks;
+    }
+
+    private void initializeQueue(List<Task> tasks, Queue<Task> queue) {
+        for (Task task : tasks) {
+            task.priorityWeight = priorityToWeight.get(task.nice + 20);
+            task.originalReadTime = task.readTime;
+            task.originalBodyTime = task.bodyTime;
+            task.originalWriteTime = task.writeTime;
+            task.currentPeriodStart = task.startTime;
+            queue.add(task.copy());
+        }
+    }
+
+    private Queue<Task> copyQueue(Queue<Task> originalQueue) {
+        Queue<Task> newQueue = new PriorityQueue<>(Comparator.comparingDouble(task -> task.priorityWeight));
+        for (Task task : originalQueue) {
+            newQueue.add(task.copy());
+        }
+        return newQueue;
+    }
+
+
+    private void addPeriodicJobs(List<Task> tasks, Queue<Task> queue, int time) {
+        for (Task task : tasks) {
+            if (time > task.startTime && task.period > 0 && time % task.period == 0) {
+                task.currentPeriodStart = time;
+                queue.add(task.copy());
+                System.out.println("Task " + task.id + " released with read time " + task.readTime + ", write time " + task.writeTime + ", body Time " + task.bodyTime);
+            }
+        }
     }
 
     private void skipReadStageIfNoReadTime(Task task) {
