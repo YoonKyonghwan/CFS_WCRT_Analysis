@@ -1,7 +1,8 @@
-package org.cap;
+package org.cap.utility;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import org.cap.model.Task;
 
 import java.io.FileReader;
 import java.io.IOException;

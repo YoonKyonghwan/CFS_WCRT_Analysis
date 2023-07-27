@@ -1,4 +1,10 @@
-package org.cap;
+package org.cap.simulation;
+
+import org.cap.model.BlockingPolicy;
+import org.cap.model.SimulationState;
+import org.cap.model.Stage;
+import org.cap.model.Task;
+import org.cap.utility.CustomFormatter;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
