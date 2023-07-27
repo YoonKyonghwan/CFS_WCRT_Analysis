@@ -37,8 +37,7 @@ public class CFSSimulator {
 
         ArrayList<Double> WCRT = new ArrayList<>(Collections.nCopies(tasks.size(), 0.0));
         SimulationState simulationState = new SimulationState(BlockingPolicy.NONE, "-1:0");
-        Queue<Task> queue = new PriorityQueue<>(Comparator.comparingDouble(task -> task.priorityWeight));
-        initializeQueue(tasks, queue);
+        Queue<Task> queue = initializeQueue(tasks);
         int time = 0;
 
         performSimulation(tasks, WCRT, simulationState, time, queue);
@@ -242,7 +241,8 @@ public class CFSSimulator {
         return runningTasks;
     }
 
-    private void initializeQueue(List<Task> tasks, Queue<Task> queue) {
+    private Queue<Task> initializeQueue(List<Task> tasks) {
+        Queue<Task> queue = new PriorityQueue<>(Comparator.comparingDouble(task -> task.priorityWeight));
         for (Task task : tasks) {
             task.priorityWeight = priorityToWeight.get(task.nice + 20);
             task.originalReadTime = task.readTime;
@@ -251,6 +251,7 @@ public class CFSSimulator {
             task.currentPeriodStart = task.startTime;
             queue.add(task.copy());
         }
+        return queue;
     }
 
     private Queue<Task> copyQueue(Queue<Task> originalQueue) {
