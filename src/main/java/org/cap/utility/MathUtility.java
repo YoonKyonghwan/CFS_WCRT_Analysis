@@ -1,7 +1,9 @@
 package org.cap.utility;
 
+import org.cap.model.Core;
 import org.cap.model.Task;
 
+import java.util.ArrayList;
 import java.util.List;
 
 public class MathUtility {
@@ -11,8 +13,10 @@ public class MathUtility {
         return (a - b) < tolerance;
     }
 
-    public static int getLCM(List<Task> tasks) {
-        return tasks.stream().map(task -> task.period)
+    public static int getLCM(List<Core> cores) {
+        return cores.stream()
+                .flatMap(core -> core.tasks.stream())
+                .map(task -> task.period)
                 .reduce(1, (a, b) -> a * (b / getGCD(a, b)));
     }
 
