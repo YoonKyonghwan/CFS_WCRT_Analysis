@@ -22,19 +22,6 @@ public class CFSSimulator {
         36, 29, 23, 18, 15
     );
 
-    // TODO support multi-core
-    // group tasks by core in json
-    // iterate through each core and calculate allocation
-    // all cores share shared resource, so simulation state is single
-
-    // TODO some refactor points
-    // TODO maybe add runningTasks, queue, WCRT to core? instead of passing all by list
-    //      or use List<List<Task>> instead of List<Core>
-    // TODO make WCRT list of WCRT to show results core by core
-    // TODO rename variables to be more clear and understandable
-
-    // TODO update test cases to support multi-core
-
     /**
      * This method starts the CFS simulation, initializes the simulation state, and the queue.
      * Then, it performs the simulation and displays the result.
@@ -45,36 +32,25 @@ public class CFSSimulator {
         LoggerUtility.initializeLogger();
         logger.info("Starting CFS simulation");
 
-        // TODO change tasks to cores
-        // TODO WCRT needs to be made of all tasks in all cores
-        // TODO are core number of queues needed? or is just one queue with all tasks fine?
-        // TODO rename variables to be more clear
-        List<List<Double>> WCRT = new ArrayList<>();
-        for (Core core: cores) {
-            WCRT.add(new ArrayList<>(Collections.nCopies(core.tasks.size(), 0.0)));
-        }
-        SimulationState simulationState = new SimulationState(BlockingPolicy.NONE, "-1:0");
+        List<List<Double>> WCRTs = initializeWCRTs(cores);
         List<Queue<Task>> queues = initializeQueues(cores);
+        SimulationState simulationState = new SimulationState(BlockingPolicy.NONE, "-1:0");
         int time = 0;
 
-        // TODO pass cores instead of tasks
-        // should I use List<Core> or List<List<Task>>?
-        // consider adding queue and runningTasks to core?
-        performSimulation(cores, WCRT, simulationState, time, queues);
+        performSimulation(cores, WCRTs, queues, simulationState, time);
 
         LoggerUtility.addConsoleLogger();
-        displayResult(WCRT, queues);
-        return WCRT;
+        displayResult(WCRTs, queues);
+        return WCRTs;
     }
 
     /**
      * This method performs the simulation while the current time is less than the LCM of the tasks.
      * It calculates the allocation for each task and executes it accordingly.
      */
-    private void performSimulation(List<Core> cores, List<List<Double>> WCRT, SimulationState simulationState, int time, List<Queue<Task>> queues) {
+    private void performSimulation(List<Core> cores, List<List<Double>> WCRTs, List<Queue<Task>> queues, SimulationState simulationState, int time) {
         while (time < MathUtility.getLCM(cores)) {
             logger.info(String.format("\n>>> CURRENT TIME: %d <<<\n", time));
-            // TODO initialize running tasks for each core
             List<List<Task>> runningTasks = initializeRunningTasks(queues, simulationState, time);
 
             if (runningTasks.isEmpty()) {
@@ -82,24 +58,22 @@ public class CFSSimulator {
                 continue;
             }
 
-            // TODO iterate through cores
             // Share the CPU proportional to priority weight
             for (int i = 0; i < cores.size(); i++) {
-                List<Task> coreTasks = runningTasks.get(i);
-                double totalPriorityWeight = coreTasks.stream().mapToDouble(t -> t.priorityWeight).sum();
-                for (Task task : coreTasks) {
+                List<Task> runningTasksInCore = runningTasks.get(i);
+                double totalPriorityWeight = runningTasksInCore.stream().mapToDouble(t -> t.priorityWeight).sum();
+                for (Task task : runningTasksInCore) {
                     double allocation = 1.0 * (task.priorityWeight / totalPriorityWeight);
-                    executeTask(task, allocation, queues.get(i), WCRT.get(i), simulationState, time);
+                    executeTask(task, allocation, queues.get(i), WCRTs.get(i), simulationState, time);
                 }
             }
 
             time += 1;
-            // TODO add periodic jobs to each queue
             addPeriodicJobs(cores, queues, time);
 
             if (noReadAndWriteTasksRunning(runningTasks, simulationState.blockingPolicy)) {
                 simulationState.blockingPolicy = BlockingPolicy.NONE;
-                if (pathDiverges(cores, queues, WCRT, simulationState, time)) break;
+                if (pathDiverges(cores, queues, WCRTs, simulationState, time)) break;
             }
             logger.info("Blocking policy " + simulationState.blockingPolicy);
         }
@@ -111,18 +85,18 @@ public class CFSSimulator {
      *
      * @return cloneWCRT - list of worst case response times for the simulated path
      */
-    private List<List<Double>> simulatePath(List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRT, int time, SimulationState simulationState) {
+    private List<List<Double>> simulatePath(List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, int time, SimulationState simulationState) {
         logger.info("\n******* Path diverged *******");
 
         List<Queue<Task>> cloneQueues = copyQueues(queues);
-        List<List<Double>> cloneWCRT = WCRT.stream()
+        List<List<Double>> cloneWCRTs = WCRTs.stream()
                 .map(ArrayList::new)
                 .collect(Collectors.toList());
 
-        performSimulation(cores, cloneWCRT, simulationState, time, cloneQueues);
+        performSimulation(cores, cloneWCRTs, cloneQueues, simulationState, time);
 
-        displayResult(cloneWCRT, cloneQueues);
-        return cloneWCRT;
+        displayResult(cloneWCRTs, cloneQueues);
+        return cloneWCRTs;
     }
 
     /**
@@ -130,15 +104,15 @@ public class CFSSimulator {
      * The task can be at the READ, BODY, or WRITE stage.
      * If the task is completed, it is removed from the queue, and its response time is calculated.
      */
-    private void executeTask(Task currentTask, double allocation, Queue<Task> queue, List<Double> WCRT, SimulationState simulationState, int time) {
-        skipReadStageIfNoReadTime(currentTask);
-        logger.info("Task " + currentTask.id + " executed for " + allocation + " | stage: " + currentTask.stage);
+    private void executeTask(Task task, double allocation, Queue<Task> queueInCore, List<Double> WCRTInCore, SimulationState simulationState, int time) {
+        skipReadStageIfNoReadTime(task);
+        logger.info("Task " + task.id + " executed for " + allocation + " in stage: " + task.stage);
 
-        switch (currentTask.stage) {
+        switch (task.stage) {
             case READ:
-                currentTask.readTime -= allocation;
-                if (MathUtility.withinTolerance(currentTask.readTime, 0)) {
-                    currentTask.stage = Stage.BODY;
+                task.readTime -= allocation;
+                if (MathUtility.withinTolerance(task.readTime, 0)) {
+                    task.stage = Stage.BODY;
                 }
                 else {
                     if (simulationState.blockingPolicy == BlockingPolicy.NONE) {
@@ -147,35 +121,35 @@ public class CFSSimulator {
                 }
                 break;
             case BODY:
-                currentTask.bodyTime -= allocation;
-                if (MathUtility.withinTolerance(currentTask.bodyTime, 0)) {
-                    if (currentTask.writeTime > 0)
-                        currentTask.stage = Stage.WRITE;
+                task.bodyTime -= allocation;
+                if (MathUtility.withinTolerance(task.bodyTime, 0)) {
+                    if (task.writeTime > 0)
+                        task.stage = Stage.WRITE;
                     else
-                        currentTask.stage = Stage.COMPLETED;
+                        task.stage = Stage.COMPLETED;
                 }
                 break;
             case WRITE:
-                currentTask.writeTime -= allocation;
-                if (MathUtility.withinTolerance(currentTask.writeTime, 0)) {
-                    currentTask.stage = Stage.COMPLETED;
+                task.writeTime -= allocation;
+                if (MathUtility.withinTolerance(task.writeTime, 0)) {
+                    task.stage = Stage.COMPLETED;
                     simulationState.writingTaskKey = "-1:0";
                 }
                 else {
                     if (simulationState.blockingPolicy == BlockingPolicy.NONE) {
                         simulationState.blockingPolicy = BlockingPolicy.WRITE;
-                        simulationState.writingTaskKey = String.format("%s:%s", currentTask.id, currentTask.currentPeriodStart);
+                        simulationState.writingTaskKey = String.format("%s:%s", task.id, task.releaseTime);
                     }
                 }
                 break;
         }
 
-        if (currentTask.stage != Stage.COMPLETED) {
-            queue.add(currentTask);
+        if (task.stage != Stage.COMPLETED) {
+            queueInCore.add(task);
         } else {
             // TODO save RT of all jobs at the end
-            logger.info("Task " + currentTask.id + " completed at time " + (time + 1) + " with RT " + (time - currentTask.currentPeriodStart + 1));
-            WCRT.set(currentTask.index, Math.max(WCRT.get(currentTask.index), time - currentTask.currentPeriodStart + 1));
+            logger.info("Task " + task.id + " completed at time " + (time + 1) + " with RT " + (time - task.releaseTime + 1));
+            WCRTInCore.set(task.index, Math.max(WCRTInCore.get(task.index), time - task.releaseTime + 1));
         }
     }
 
@@ -185,7 +159,7 @@ public class CFSSimulator {
      *
      * @return boolean - returns true if the path diverges, false otherwise
      */
-    private boolean pathDiverges(List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRT, SimulationState simulationState, int time) {
+    private boolean pathDiverges(List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, SimulationState simulationState, int time) {
         List<Task> allTasks = queues.stream()
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
@@ -198,24 +172,23 @@ public class CFSSimulator {
                 .filter(task -> task.stage == Stage.WRITE && task.startTime <= time)
                 .collect(Collectors.toList());
 
-        List<List<List<Double>>> possibleWCRT = new ArrayList<>();
+        List<List<List<Double>>> possibleWCRTs = new ArrayList<>();
 
         // Case 1: read and write tasks exist
         if (!readTasks.isEmpty() && !writeTasks.isEmpty()) {
-            possibleWCRT.add(simulatePath(cores, queues, WCRT, time, new SimulationState(BlockingPolicy.READ, simulationState.writingTaskKey)));
+            possibleWCRTs.add(simulatePath(cores, queues, WCRTs, time, new SimulationState(BlockingPolicy.READ, simulationState.writingTaskKey)));
             for (Task writeTask : writeTasks) {
-                possibleWCRT.add(simulatePath(cores, queues, WCRT, time, new SimulationState(BlockingPolicy.WRITE, String.format("%s:%s", writeTask.id, writeTask.currentPeriodStart))));
+                possibleWCRTs.add(simulatePath(cores, queues, WCRTs, time, new SimulationState(BlockingPolicy.WRITE, String.format("%s:%s", writeTask.id, writeTask.releaseTime))));
             }
 
-            // TODO get maximum WCRT for each task in each core
-            for (int i = 0; i < WCRT.size(); i++) {
-                List<Double> taskWCRTs = WCRT.get(i);
-                for (int k = 0; k < taskWCRTs.size(); k++) {
+            for (int i = 0; i < WCRTs.size(); i++) {
+                List<Double> WCRTInCore = WCRTs.get(i);
+                for (int k = 0; k < WCRTInCore.size(); k++) {
                     double maxWCRT = 0;
-                    for (List<List<Double>> wcrt : possibleWCRT) {
-                        maxWCRT = Math.max(maxWCRT, wcrt.get(i).get(k));
+                    for (List<List<Double>> wcrts : possibleWCRTs) {
+                        maxWCRT = Math.max(maxWCRT, wcrts.get(i).get(k));
                     }
-                    taskWCRTs.set(k, maxWCRT);
+                    WCRTInCore.set(k, maxWCRT);
                 }
             }
             return true;
@@ -223,17 +196,17 @@ public class CFSSimulator {
         // Case 2: multiple write tasks exist
         else if (writeTasks.size() > 1) {
             for (Task writeTask : writeTasks) {
-                possibleWCRT.add(simulatePath(cores, queues, WCRT, time, new SimulationState(BlockingPolicy.WRITE, String.format("%s:%s", writeTask.id, writeTask.currentPeriodStart))));
+                possibleWCRTs.add(simulatePath(cores, queues, WCRTs, time, new SimulationState(BlockingPolicy.WRITE, String.format("%s:%s", writeTask.id, writeTask.releaseTime))));
             }
 
-            for (int i = 0; i< WCRT.size(); i++) {
-                List<Double> taskWCRTs = WCRT.get(i);
-                for (int k = 0; k< taskWCRTs.size(); k++) {
+            for (int i = 0; i< WCRTs.size(); i++) {
+                List<Double> WCRTInCore = WCRTs.get(i);
+                for (int k = 0; k< WCRTInCore.size(); k++) {
                     double maxWCRT = 0;
-                    for (List<List<Double>> wcrt : possibleWCRT) {
-                        maxWCRT = Math.max(maxWCRT, wcrt.get(i).get(k));
+                    for (List<List<Double>> wcrts : possibleWCRTs) {
+                        maxWCRT = Math.max(maxWCRT, wcrts.get(i).get(k));
                     }
-                    taskWCRTs.set(k, maxWCRT);
+                    WCRTInCore.set(k, maxWCRT);
                 }
             }
             return true;
@@ -251,9 +224,9 @@ public class CFSSimulator {
     private List<List<Task>> initializeRunningTasks(List<Queue<Task>> queues, SimulationState simulationState, int time) {
         List<List<Task>> runningTasks = new ArrayList<>();
 
-        for (Queue<Task> queue : queues) {
-            Iterator<Task> iterator = queue.iterator();
-            List<Task> runningTasksInCurrentCore = new ArrayList<>();
+        for (Queue<Task> queueInCore : queues) {
+            Iterator<Task> iterator = queueInCore.iterator();
+            List<Task> runningTasksInCore = new ArrayList<>();
             while (iterator.hasNext()) {
                 Task task = iterator.next();
                 if (task.startTime > time)
@@ -265,7 +238,7 @@ public class CFSSimulator {
                             simulationState.blockingPolicy = BlockingPolicy.READ;
                         else if (task.stage == Stage.WRITE) {
                             simulationState.blockingPolicy = BlockingPolicy.WRITE;
-                            simulationState.writingTaskKey = String.format("%s:%s", task.id, task.currentPeriodStart);
+                            simulationState.writingTaskKey = String.format("%s:%s", task.id, task.releaseTime);
                         }
                         break;
                     case READ:
@@ -274,35 +247,43 @@ public class CFSSimulator {
                         else
                             continue;
                     case WRITE:
-                        if (simulationState.writingTaskKey.equals((String.format("%s:%s", task.id, task.currentPeriodStart))) || task.stage == Stage.BODY)
+                        if (simulationState.writingTaskKey.equals((String.format("%s:%s", task.id, task.releaseTime))) || task.stage == Stage.BODY)
                             break;
                         else
                             continue;
                 }
-                runningTasksInCurrentCore.add(task);
+                runningTasksInCore.add(task);
                 iterator.remove();
             }
 
-            runningTasks.add(runningTasksInCurrentCore);
-            logger.info("Running tasks in core " + runningTasks.size() + ": " + runningTasksInCurrentCore.stream().map(task -> task.id).collect(Collectors.toList()));
+            runningTasks.add(runningTasksInCore);
+            logger.info("Running tasks in core " + runningTasks.size() + ": " + runningTasksInCore.stream().map(task -> task.id).collect(Collectors.toList()));
         }
 
         return runningTasks;
     }
 
+    private static List<List<Double>> initializeWCRTs(List<Core> cores) {
+        List<List<Double>> WCRTs = new ArrayList<>();
+        for (Core core: cores) {
+            WCRTs.add(new ArrayList<>(Collections.nCopies(core.tasks.size(), 0.0)));
+        }
+        return WCRTs;
+    }
+
     private List<Queue<Task>> initializeQueues(List<Core> cores) {
         List<Queue<Task>> queues = new ArrayList<>();
         for (Core core : cores) {
-            Queue<Task> queue = new PriorityQueue<>(Comparator.comparingDouble(task -> task.priorityWeight));
+            Queue<Task> queueInCore = new PriorityQueue<>(Comparator.comparingDouble(task -> task.priorityWeight));
             for (Task task : core.tasks) {
                 task.priorityWeight = priorityToWeight.get(task.nice + 20);
                 task.originalReadTime = task.readTime;
                 task.originalBodyTime = task.bodyTime;
                 task.originalWriteTime = task.writeTime;
-                task.currentPeriodStart = task.startTime;
-                queue.add(task.copy());
+                task.releaseTime = task.startTime;
+                queueInCore.add(task.copy());
             }
-            queues.add(queue);
+            queues.add(queueInCore);
         }
         return queues;
     }
@@ -310,12 +291,12 @@ public class CFSSimulator {
     private List<Queue<Task>> copyQueues(List<Queue<Task>> originalQueues) {
         List<Queue<Task>> newQueues = new ArrayList<>();
 
-        for (Queue<Task> originalQueue : originalQueues) {
-            Queue<Task> newQueue = new PriorityQueue<>(Comparator.comparingDouble(task -> task.priorityWeight));
-            for (Task task : originalQueue) {
-                newQueue.add(task.copy());
+        for (Queue<Task> originalQueueInCore : originalQueues) {
+            Queue<Task> newQueueInCore = new PriorityQueue<>(Comparator.comparingDouble(task -> task.priorityWeight));
+            for (Task task : originalQueueInCore) {
+                newQueueInCore.add(task.copy());
             }
-            newQueues.add(newQueue);
+            newQueues.add(newQueueInCore);
         }
 
         return newQueues;
@@ -326,7 +307,7 @@ public class CFSSimulator {
         for (Core core : cores) {
             for (Task task : core.tasks) {
                 if (time > task.startTime && task.period > 0 && time % task.period == 0) {
-                    task.currentPeriodStart = time;
+                    task.releaseTime = time;
                     queues.get(core.id-1).add(task.copy());
                     logger.info("Task " + task.id + " released with read time " + task.readTime + ", write time " + task.writeTime + ", body Time " + task.bodyTime);
                 }
@@ -340,7 +321,7 @@ public class CFSSimulator {
         }
     }
 
-    private void displayResult(List<List<Double>> WCRT, List<Queue<Task>> queues) {
+    private void displayResult(List<List<Double>> WCRTs, List<Queue<Task>> queues) {
         logger.info("\n******************************");
         logger.info("***** Simulation Results *****");
         logger.info("******************************");
@@ -350,8 +331,8 @@ public class CFSSimulator {
             logger.info("Unfinished tasks in core " + (i+1) + ": " + queue.stream().map(task -> task.id).collect(Collectors.toList()));
         }
 
-        for (int i = 0; i < WCRT.size(); i++) {
-            logger.info("Task " + (i+1) + " WCRT: " + WCRT.get(i));
+        for (int i = 0; i < WCRTs.size(); i++) {
+            logger.info("Task " + (i+1) + " WCRT: " + WCRTs.get(i));
         }
     }
 
