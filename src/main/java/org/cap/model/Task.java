@@ -22,6 +22,8 @@ public class Task {
     // Period of the task
     public int period;
 
+    public int index;
+
     // Current stage of the task
     public Stage stage = Stage.READ;
 
