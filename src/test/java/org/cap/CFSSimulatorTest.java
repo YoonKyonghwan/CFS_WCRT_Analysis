@@ -1,13 +1,12 @@
 package org.cap;
 
+import org.cap.model.Core;
 import org.cap.model.Task;
 import org.cap.simulation.CFSSimulator;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class CFSSimulatorTest {
@@ -18,139 +17,177 @@ public class CFSSimulatorTest {
         simulator = new CFSSimulator();
     }
 
-    // TODO update test cases to support multi-core
     @Test
     public void testOneTask() {
         // Define test tasks
-        List<Task> tasks = Arrays.asList(
-            new Task(1, 0, 1, 1, 1, 0, 10) // a single task
+        List<Task> tasksInFirstCore = List.of(
+            new Task(1, 0, 1, 1, 1, 0, 10, 0) // a single task
+        );
+        List<Core> cores = List.of(
+            new Core(1, tasksInFirstCore) // a single task
         );
 
         // Execute the method
-        ArrayList<Double> WCRT = simulator.simulateCFS(tasks);
+        List<List<Double>> WCRTs = simulator.simulateCFS(cores);
 
         // Make assertions about the expected result
-        List<Double> expectedResult = Arrays.asList(
+        List<List<Double>> expectedResult = List.of(
+            List.of(
             3.0
+            )
         );
-        assertEquals(expectedResult, WCRT);
+        assertEquals(expectedResult, WCRTs);
     }
 
     @Test
     public void testTwoTasks() {
         // Define test tasks
-        List<Task> tasks = Arrays.asList(
-            new Task(1, 0, 1, 2, 1, 0, 10), // two tasks
-            new Task(2, 0, 1, 2, 1, 0, 10)
+        List<Task> tasksInFirstCore = List.of(
+            new Task(1, 0, 1, 2, 1, 0, 10, 0), // two tasks
+            new Task(2, 0, 1, 2, 1, 0, 10, 0)
+        );
+        List<Core> cores = List.of(
+            new Core(1, tasksInFirstCore) // a single task
         );
 
         // Execute the method
-        ArrayList<Double> WCRT = simulator.simulateCFS(tasks);
+        List<List<Double>> WCRTs = simulator.simulateCFS(cores);
 
         // Make assertions about the expected result
-        List<Double> expectedResult = Arrays.asList(
-            8.0,
-            8.0
+        List<List<Double>> expectedResult = List.of(
+            List.of(
+                8.0,
+                8.0
+            )
         );
-        assertEquals(expectedResult, WCRT);
+        assertEquals(expectedResult, WCRTs);
     }
 
     @Test
     public void testReadAndWriteReleasedTogether() {
         // Define test tasks
-        List<Task> tasks = Arrays.asList(
-                new Task(1, 0, 1, 2, 1, 0, 10), // write is released at t=3
-                new Task(2, 3, 1, 2, 1, 0, 10)  // read is released at t=3
+        List<Task> tasksInFirstCore = List.of(
+            new Task(1, 0, 1, 2, 1, 0, 10, 0), // write is released at t=3
+            new Task(2, 3, 1, 2, 1, 0, 10, 1)  // read is released at t=3
+        );
+        List<Core> cores = List.of(
+            new Core(1, tasksInFirstCore)
         );
 
         // Execute the method
-        ArrayList<Double> WCRT = simulator.simulateCFS(tasks);
+        List<List<Double>> WCRTs = simulator.simulateCFS(cores);
 
         // Make assertions about the expected result
-        List<Double> expectedResult = Arrays.asList(
+        List<List<Double>> expectedResult = List.of(
+            List.of(
                 6.0,
                 5.0
+            )
         );
-        assertEquals(expectedResult, WCRT);
+        assertEquals(expectedResult, WCRTs);
     }
 
     @Test
     public void testReadReleasedWhenWriteIsExecuting() {
         // Define test tasks
-        List<Task> tasks = Arrays.asList(
-                new Task(1, 0, 1, 1, 2, 0, 10), // write is executing at t=3
-                new Task(2, 3, 1, 1, 2, 0, 10)  // read is released at t=3
+        List<Task> tasksInFirstCore = List.of(
+            new Task(1, 0, 1, 1, 2, 0, 10, 0), // write is executing at t=3
+            new Task(2, 3, 1, 1, 2, 0, 10, 1)  // read is released at t=3
+        );
+        List<Core> cores = List.of(
+            new Core(1, tasksInFirstCore)
         );
 
         // Execute the method
-        ArrayList<Double> WCRT = simulator.simulateCFS(tasks);
+        List<List<Double>> WCRTs = simulator.simulateCFS(cores);
 
         // Make assertions about the expected result
-        List<Double> expectedResult = Arrays.asList(
+        List<List<Double>> expectedResult = List.of(
+            List.of(
                 4.0,
                 5.0
+            )
         );
-        assertEquals(expectedResult, WCRT);
+        assertEquals(expectedResult, WCRTs);
     }
 
     @Test
     public void testTasksWithDifferentPeriods() {
         // Define test tasks
-        List<Task> tasks = Arrays.asList(
-            new Task(1, 0, 1.0, 1.0, 1.0, 0, 15),  // period 15
-            new Task(2, 0, 1.0, 1.0, 1.0, 0, 5)   // period 5
+        List<Task> tasksInFirstCore = List.of(
+            new Task(1, 0, 1.0, 1.0, 1.0, 0, 15, 0),  // period 15
+            new Task(2, 0, 1.0, 1.0, 1.0, 0, 5, 1)   // period 5
+        );
+        List<Core> cores = List.of(
+            new Core(1, tasksInFirstCore)
         );
 
         // Execute the method
-        ArrayList<Double> WCRT = simulator.simulateCFS(tasks);
+        List<List<Double>> WCRTs = simulator.simulateCFS(cores);
 
         // Make assertions about the expected result
-        List<Double> expectedResult = Arrays.asList(
-            8.0,
-            8.0
+        List<List<Double>> expectedResult = List.of(
+            List.of(
+                8.0,
+                8.0
+            )
         );
-        assertEquals(expectedResult, WCRT);
+        assertEquals(expectedResult, WCRTs);
     }
 
     @Test
     public void testTasksWithDifferentNice() {
         // Define test tasks
-        List<Task> tasks = Arrays.asList(
-            new Task(1, 0, 1.0, 2.0, 1.0, 0, 15),  // nice value 0
-            new Task(2, 0, 1.0, 2.0, 1.0, 10, 15)  // nice value 10
+        List<Task> tasksInFirstCore = List.of(
+            new Task(1, 0, 1.0, 2.0, 1.0, 0, 15, 0),  // nice value 0
+            new Task(2, 0, 1.0, 2.0, 1.0, 10, 15, 1)  // nice value 10
+        );
+        List<Core> cores = List.of(
+            new Core(1, tasksInFirstCore)
         );
 
         // Execute the method
-        ArrayList<Double> WCRT = simulator.simulateCFS(tasks);
+        List<List<Double>> WCRTs = simulator.simulateCFS(cores);
 
         // Make assertions about the expected result
-        List<Double> expectedResult = Arrays.asList(
-            8.0,
-            11.0
+        List<List<Double>> expectedResult = List.of(
+            List.of(
+                8.0,
+                11.0
+            )
         );
-        assertEquals(expectedResult, WCRT);
+        assertEquals(expectedResult, WCRTs);
     }
 
     @Test
     public void testRounding() {
         // Define test tasks
-        List<Task> tasks = Arrays.asList(
-                new Task(1, 0, 0, 1, 0, 0, 10), // three tasks
-                new Task(2, 0, 0, 1, 0, 0, 10),
-                new Task(3, 0, 0, 1, 0, 0, 10)
+        List<Task> tasksInFirstCore = List.of(
+            new Task(1, 0, 0, 1, 0, 0, 10, 0), // three tasks
+            new Task(2, 0, 0, 1, 0, 0, 10, 1),
+            new Task(3, 0, 0, 1, 0, 0, 10, 2)
+        );
+        List<Core> cores = List.of(
+            new Core(1, tasksInFirstCore)
         );
 
         // Execute the method
-        ArrayList<Double> WCRT = simulator.simulateCFS(tasks);
+        List<List<Double>> WCRTs = simulator.simulateCFS(cores);
 
         // Make assertions about the expected result
-        List<Double> expectedResult = Arrays.asList(
+        List<List<Double>> expectedResult = List.of(
+            List.of(
                 3.0,
                 3.0,
                 3.0
+            )
         );
-        assertEquals(expectedResult, WCRT);
+        assertEquals(expectedResult, WCRTs);
     }
 
     // TODO make more test cases
+
+    // TODO add FIFO test case
+    // 첫번째 write이 돌아가는 와중에, 두번째, 세번째 write이 순차적으로 release
+
 }

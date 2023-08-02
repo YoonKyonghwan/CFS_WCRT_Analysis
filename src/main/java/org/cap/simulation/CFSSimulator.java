@@ -285,6 +285,7 @@ public class CFSSimulator {
         List<Queue<Task>> queues = new ArrayList<>();
         for (Core core : cores) {
             Queue<Task> queueInCore = new PriorityQueue<>(Comparator.comparingDouble(task -> task.priorityWeight));
+            // TODO add to queue in order of release time
             for (Task task : core.tasks) {
                 task.priorityWeight = priorityToWeight.get(task.nice + 20);
                 task.originalReadTime = task.readTime;
@@ -315,6 +316,7 @@ public class CFSSimulator {
 
     private void addPeriodicJobs(List<Core> cores, List<Queue<Task>> queues, int time) {
         for (Core core : cores) {
+            // TODO add to core in order of release time
             for (Task task : core.tasks) {
                 if (time > task.startTime && task.period > 0 && time % task.period == 0) {
                     task.releaseTime = time;
