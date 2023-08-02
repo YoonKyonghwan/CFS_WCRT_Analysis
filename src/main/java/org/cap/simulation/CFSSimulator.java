@@ -164,20 +164,25 @@ public class CFSSimulator {
                 .flatMap(Collection::stream)
                 .collect(Collectors.toList());
 
-        List<Task> readTasks = allTasks.stream()
-                .filter(task -> task.stage == Stage.READ && task.startTime <= time)
+        Task earliestTask = allTasks.stream()
+                .filter(task -> task.startTime <= time)
+                .min(Comparator.comparingInt(task -> task.releaseTime))
+                .orElse(null);
+
+        List<Task> earliestReadTasks = allTasks.stream()
+                .filter(task -> task.stage == Stage.READ && task.startTime <= time && task.releaseTime == earliestTask.releaseTime)
                 .collect(Collectors.toList());
 
-        List<Task> writeTasks = allTasks.stream()
-                .filter(task -> task.stage == Stage.WRITE && task.startTime <= time)
+        List<Task> earliestWriteTasks = allTasks.stream()
+                .filter(task -> task.stage == Stage.WRITE && task.startTime <= time && task.releaseTime == earliestTask.releaseTime)
                 .collect(Collectors.toList());
 
         List<List<List<Double>>> possibleWCRTs = new ArrayList<>();
 
-        // Case 1: read and write tasks exist
-        if (!readTasks.isEmpty() && !writeTasks.isEmpty()) {
+        // Case 1: one or more read and write tasks exist with the same earliest release time
+        if (!earliestReadTasks.isEmpty() && !earliestWriteTasks.isEmpty()) {
             possibleWCRTs.add(simulatePath(cores, queues, WCRTs, time, new SimulationState(BlockingPolicy.READ, simulationState.writingTaskKey)));
-            for (Task writeTask : writeTasks) {
+            for (Task writeTask : earliestWriteTasks) {
                 possibleWCRTs.add(simulatePath(cores, queues, WCRTs, time, new SimulationState(BlockingPolicy.WRITE, String.format("%s:%s", writeTask.id, writeTask.releaseTime))));
             }
 
@@ -193,9 +198,9 @@ public class CFSSimulator {
             }
             return true;
         }
-        // Case 2: multiple write tasks exist
-        else if (writeTasks.size() > 1) {
-            for (Task writeTask : writeTasks) {
+        // Case 2: multiple write tasks exist with the same earliest release time
+        else if (earliestWriteTasks.size() > 1) {
+            for (Task writeTask : earliestWriteTasks) {
                 possibleWCRTs.add(simulatePath(cores, queues, WCRTs, time, new SimulationState(BlockingPolicy.WRITE, String.format("%s:%s", writeTask.id, writeTask.releaseTime))));
             }
 
@@ -224,7 +229,11 @@ public class CFSSimulator {
     private List<List<Task>> initializeRunningTasks(List<Queue<Task>> queues, SimulationState simulationState, int time) {
         List<List<Task>> runningTasks = new ArrayList<>();
 
+        // TODO when choosing running tasks, apply FIFO policy
+        // If multiple read, write tasks exist, choose based on releaseTime
+        // If release times are equal, then diverge path
         for (Queue<Task> queueInCore : queues) {
+            // TODO iterate in order of release time
             Iterator<Task> iterator = queueInCore.iterator();
             List<Task> runningTasksInCore = new ArrayList<>();
             while (iterator.hasNext()) {
@@ -234,6 +243,7 @@ public class CFSSimulator {
 
                 switch (simulationState.blockingPolicy) {
                     case NONE:
+                        // TODO choose read and write task with earliest release time
                         if (task.stage == Stage.READ)
                             simulationState.blockingPolicy = BlockingPolicy.READ;
                         else if (task.stage == Stage.WRITE) {
