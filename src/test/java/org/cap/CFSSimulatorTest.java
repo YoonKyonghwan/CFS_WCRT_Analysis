@@ -44,7 +44,7 @@ public class CFSSimulatorTest {
         // Define test tasks
         List<Task> tasksInFirstCore = List.of(
             new Task(1, 0, 1, 2, 1, 0, 10, 0), // two tasks
-            new Task(2, 0, 1, 2, 1, 0, 10, 0)
+            new Task(2, 0, 1, 2, 1, 0, 10, 1)
         );
         List<Core> cores = List.of(
             new Core(1, tasksInFirstCore) // a single task
@@ -128,8 +128,8 @@ public class CFSSimulatorTest {
         // Make assertions about the expected result
         List<List<Double>> expectedResult = List.of(
             List.of(
-                8.0,
-                8.0
+                6.0,
+                6.0
             )
         );
         assertEquals(expectedResult, WCRTs);
@@ -185,9 +185,59 @@ public class CFSSimulatorTest {
         assertEquals(expectedResult, WCRTs);
     }
 
-    // TODO make more test cases
+    @Test
+    public void testFIFOWithReadAndWrite() {
+        // Define test tasks
+        List<Task> tasksInFirstCore = List.of(
+            new Task(1, 0, 5, 1, 0, 0, 10, 0), // three tasks
+            new Task(2, 0, 0, 1, 1, 0, 10, 1),
+            new Task(3, 4, 0, 1, 1, 0, 10, 2)
+        );
+        List<Core> cores = List.of(
+            new Core(1, tasksInFirstCore)
+        );
 
-    // TODO add FIFO test case
-    // 첫번째 write이 돌아가는 와중에, 두번째, 세번째 write이 순차적으로 release
+        // Execute the method
+        List<List<Double>> WCRTs = simulator.simulateCFS(cores);
+
+        // Make assertions about the expected result
+        List<List<Double>> expectedResult = List.of(
+            List.of(
+                9.0,
+                9.0,
+                6.0
+            )
+        );
+        assertEquals(expectedResult, WCRTs);
+    }
+
+    @Test
+    public void testFIFOWithWrite() {
+        // Define test tasks
+        List<Task> tasksInFirstCore = List.of(
+            new Task(1, 0, 0, 1, 5, 0, 10, 0), // three tasks
+            new Task(2, 1, 0, 1, 1, 0, 10, 1),
+            new Task(3, 4, 0, 1, 1, 0, 10, 2)
+        );
+        List<Core> cores = List.of(
+                new Core(1, tasksInFirstCore)
+        );
+
+        // Execute the method
+        List<List<Double>> WCRTs = simulator.simulateCFS(cores);
+
+        // Make assertions about the expected result
+        List<List<Double>> expectedResult = List.of(
+            List.of(
+                8.0,
+                8.0,
+                6.0
+            )
+        );
+        assertEquals(expectedResult, WCRTs);
+    }
+
+    // TODO make more test cases
+    // TODO check if path diverges at the start of simulation
 
 }

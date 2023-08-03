@@ -49,7 +49,8 @@ public class CFSSimulator {
      * It calculates the allocation for each task and executes it accordingly.
      */
     private void performSimulation(List<Core> cores, List<List<Double>> WCRTs, List<Queue<Task>> queues, SimulationState simulationState, int time) {
-        while (time < MathUtility.getLCM(cores)) {
+        int hyperperiod = MathUtility.getLCM(cores);
+        while (time < hyperperiod) {
             logger.info(String.format("\n>>> CURRENT TIME: %d <<<\n", time));
             List<List<Task>> runningTasks = initializeRunningTasks(queues, simulationState, time);
 
@@ -69,7 +70,8 @@ public class CFSSimulator {
             }
 
             time += 1;
-            addPeriodicJobs(cores, queues, time);
+            if (time != hyperperiod)
+                addPeriodicJobs(cores, queues, time);
 
             if (noReadAndWriteTasksRunning(runningTasks, simulationState.blockingPolicy)) {
                 simulationState.blockingPolicy = BlockingPolicy.NONE;
@@ -240,6 +242,7 @@ public class CFSSimulator {
                 Task task = iterator.next();
                 if (task.startTime > time)
                     continue;
+                skipReadStageIfNoReadTime(task);
 
                 switch (simulationState.blockingPolicy) {
                     case NONE:
@@ -343,11 +346,16 @@ public class CFSSimulator {
             logger.info("Unfinished tasks in core " + (i+1) + ": " + queue.stream().map(task -> task.id).collect(Collectors.toList()));
         }
 
+        // TODO check if cores have to be passed to log task id
         for (int i = 0; i < WCRTs.size(); i++) {
-            logger.info("Task " + (i+1) + " WCRT: " + WCRTs.get(i));
+            logger.info("\n******* Core " + (i+1) + " Results *******");
+            for (int j = 0; j < WCRTs.get(i).size(); j++) {
+                logger.info("Task " + (j+1) + " WCRT: " + WCRTs.get(i).get(j));
+            }
         }
     }
 
+    // TODO check if condition has to change
     private boolean noReadAndWriteTasksRunning(List<List<Task>> runningTasks, BlockingPolicy blockingPolicy) {
         return runningTasks.stream()
                 .flatMap(List::stream)
