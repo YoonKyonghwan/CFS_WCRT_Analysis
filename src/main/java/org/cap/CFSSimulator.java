@@ -15,8 +15,14 @@ public class CFSSimulator {
         36, 29, 23, 18, 15
     );
 
+    private static BlockingPolicy blockingPolicy = BlockingPolicy.NONE;
+
+    private static int writingTaskId = -1;
+
+    // 1. apply read, body, write blocking policy
+    // TODO 2. diverge paths to get worst case
+    // TODO 3. make test cases
     public void simulateCFS(List<Task> tasks) {
-        // TODO see if there is a visualization library at the end
         System.out.println("Starting CFS simulation");
         ArrayList<Double> WCRT = new ArrayList<>(Collections.nCopies(tasks.size(), 0.0));
         int time = 0;
@@ -48,18 +54,53 @@ public class CFSSimulator {
             for (Task currentTask : runningTasks) {
                 double allocation = 1.0 * (currentTask.priorityWeight / totalPriorityWeight);
                 System.out.println("Task " + currentTask.id + " executed for " + allocation);
-                currentTask.WCET -= allocation;
 
                 // Re-queue the task if it is not finished
-                if (currentTask.WCET > 0) {
+                switch (currentTask.stage) {
+                    case READ:
+                        currentTask.readTime -= allocation;
+                        if (currentTask.readTime <= 0) {
+                            currentTask.stage = Stage.BODY;
+                        }
+                        else {
+                            if (blockingPolicy == BlockingPolicy.NONE) {
+                                blockingPolicy = BlockingPolicy.READ;
+                            }
+                        }
+                        break;
+                    case BODY:
+                        currentTask.bodyTime -= allocation;
+                        if (currentTask.bodyTime <= 0) {
+                            currentTask.stage = Stage.WRITE;
+                        }
+                        break;
+                    case WRITE:
+                        currentTask.writeTime -= allocation;
+                        if (currentTask.writeTime <= 0) {
+                            currentTask.stage = Stage.COMPLETED;
+                            writingTaskId = -1;
+                        }
+                        else {
+                            if (blockingPolicy == BlockingPolicy.NONE) {
+                                blockingPolicy = BlockingPolicy.WRITE;
+                                writingTaskId = currentTask.id;
+                            }
+                        }
+                        break;
+                }
+                if (currentTask.stage != Stage.COMPLETED) {
                     queue.add(currentTask);
                 } else {
                     // TODO save RT of all jobs at the end
                     System.out.println("Task " + currentTask.id + " completed at time " + (time + 1) + " with RT " + (time - currentTask.currentPeriodStart + 1));
                     WCRT.set(currentTask.id - 1, Math.max(WCRT.get(currentTask.id - 1), time - currentTask.currentPeriodStart + 1));
-                    currentTask.WCET = currentTask.originalWCET;
                 }
             }
+
+            // If no read, write tasks are running, reset blockingPolicy to NONE
+            if (runningTasks.stream().noneMatch(task -> task.stage == Stage.READ || task.stage == Stage.WRITE))
+                blockingPolicy = BlockingPolicy.NONE;
+            System.out.println("Blocking policy " + blockingPolicy);
 
             time += 1;
         }
@@ -70,7 +111,9 @@ public class CFSSimulator {
     private void initializeQueue(List<Task> tasks, Queue<Task> queue, int time) {
         for (Task task : tasks) {
             task.priorityWeight = priorityToWeight.get(task.nice + 20);
-            task.originalWCET = task.WCET;
+            task.originalReadTime = task.readTime;
+            task.originalBodyTime = task.bodyTime;
+            task.originalWriteTime = task.writeTime;
             task.currentPeriodStart = time;
             queue.add(task);
         }
@@ -81,7 +124,7 @@ public class CFSSimulator {
             if (time > task.startTime && task.period > 0 && time % task.period == 0) {
                 task.currentPeriodStart = time;
                 queue.add(task);
-                System.out.println("Task " + task.id + " released with WCET " + task.WCET);
+                System.out.println("Task " + task.id + " released with read time " + task.readTime + ", write time " + task.writeTime + ", body Time " + task.bodyTime);
             }
         }
     }
@@ -91,8 +134,33 @@ public class CFSSimulator {
         Iterator<Task> iterator = queue.iterator();
 
         // Add tasks to the queue if their start time has come
+        // if blockingPolicy == READ, select tasks in read, body stage
+        // if blockingPolicy == WRITE, select tasks in body, write stage
+        // need to select previously running writing task
+        // if blockingPolicy == NONE, select tasks in read, body, write stage
+        // if both read, write stage tasks exist, select only one of them and diverge the path
+        // if read stage is running, then select tasks that are in read, body stage
         while (iterator.hasNext()) {
             Task task = iterator.next();
+            switch (blockingPolicy) {
+                case NONE:
+                    // TODO need to diverge and check all possible cases instead of selecting first write task
+                    if (task.stage == Stage.WRITE)
+                        blockingPolicy = BlockingPolicy.WRITE;
+                    else if (task.stage == Stage.READ)
+                        blockingPolicy = BlockingPolicy.READ;
+                    break;
+                case READ:
+                    if (task.stage == Stage.READ || task.stage == Stage.BODY)
+                        break;
+                    else
+                        continue;
+                case WRITE:
+                    if (task.id == writingTaskId || task.stage == Stage.BODY)
+                        break;
+                    else
+                        continue;
+            }
             if (task.startTime <= time) {
                 runningTasks.add(task);
                 iterator.remove();
@@ -115,7 +183,7 @@ public class CFSSimulator {
     }
 
     private int getLCM(List<Task> tasks) {
-        return tasks.stream().map(Task::getPeriod)
+        return tasks.stream().map(task -> task.period)
                 .reduce(1, (a, b) -> a * (b / getGCD(a, b)));
     }
 

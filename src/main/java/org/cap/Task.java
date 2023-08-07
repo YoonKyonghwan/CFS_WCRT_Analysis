@@ -3,15 +3,16 @@ package org.cap;
 public class Task {
     int id;
     int startTime;
-    double WCET;
+    double readTime;
+    double bodyTime;
+    double writeTime;
     int nice;
     int period;
-    double originalWCET; // TODO add description for below fields
+    // TODO add description for below fields
+    Stage stage = Stage.READ;
+    double originalReadTime;
+    double originalBodyTime;
+    double originalWriteTime;
     int currentPeriodStart;
     double priorityWeight;
-
-    public int getPeriod() {
-        return period;
-    }
-
 }
