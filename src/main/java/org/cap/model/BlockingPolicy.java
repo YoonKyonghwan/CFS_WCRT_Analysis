@@ -1,4 +1,4 @@
-package org.cap;
+package org.cap.model;
 
 public enum BlockingPolicy {
     NONE, READ, WRITE

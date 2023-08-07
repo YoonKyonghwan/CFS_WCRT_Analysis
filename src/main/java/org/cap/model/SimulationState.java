@@ -1,8 +1,8 @@
-package org.cap;
+package org.cap.model;
 
 public class SimulationState {
-    BlockingPolicy blockingPolicy;
-    String writingTaskKey;
+    public BlockingPolicy blockingPolicy;
+    public String writingTaskKey;
 
     public SimulationState(BlockingPolicy blockingPolicy, String writingTaskKey) {
         this.blockingPolicy = blockingPolicy;

@@ -1,5 +1,7 @@
 package org.cap;
 
+import org.cap.model.Task;
+import org.cap.simulation.CFSSimulator;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;

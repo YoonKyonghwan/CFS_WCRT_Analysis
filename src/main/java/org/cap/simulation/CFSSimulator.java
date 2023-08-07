@@ -1,14 +1,18 @@
-package org.cap;
+package org.cap.simulation;
 
-import java.io.IOException;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import org.cap.model.BlockingPolicy;
+import org.cap.model.SimulationState;
+import org.cap.model.Stage;
+import org.cap.model.Task;
+import org.cap.utility.LoggerUtility;
+import org.cap.utility.MathUtility;
+
 import java.util.*;
 import java.util.logging.*;
 import java.util.stream.Collectors;
 
 public class CFSSimulator {
-    private static final Logger logger = Logger.getLogger(CFSSimulator.class.getName());
+    private static final Logger logger = LoggerUtility.getLogger();
 
     private static final List<Integer> priorityToWeight = Arrays.asList(
         88761, 71755, 56483, 46273, 36291,
@@ -28,18 +32,17 @@ public class CFSSimulator {
      * @return WCRT - list of worst case response times
      */
     public ArrayList<Double> simulateCFS(List<Task> tasks) {
-        initializelogger();
+        LoggerUtility.initializeLogger();
         logger.info("Starting CFS simulation");
 
         ArrayList<Double> WCRT = new ArrayList<>(Collections.nCopies(tasks.size(), 0.0));
         SimulationState simulationState = new SimulationState(BlockingPolicy.NONE, "-1:0");
-        Queue<Task> queue = new PriorityQueue<>(Comparator.comparingDouble(task -> task.priorityWeight));
-        initializeQueue(tasks, queue);
+        Queue<Task> queue = initializeQueue(tasks);
         int time = 0;
 
         performSimulation(tasks, WCRT, simulationState, time, queue);
 
-        addConsoleLogger();
+        LoggerUtility.addConsoleLogger();
         displayResult(WCRT, queue);
         return WCRT;
     }
@@ -49,7 +52,7 @@ public class CFSSimulator {
      * It calculates the allocation for each task and executes it accordingly.
      */
     private void performSimulation(List<Task> tasks, ArrayList<Double> WCRT, SimulationState simulationState, int time, Queue<Task> queue) {
-        while (time < getLCM(tasks)) {
+        while (time < MathUtility.getLCM(tasks)) {
             logger.info(String.format("\n>>> CURRENT TIME: %d <<<\n", time));
             List<Task> runningTasks = initializeRunningTasks(queue, simulationState, time);
 
@@ -106,7 +109,7 @@ public class CFSSimulator {
         switch (currentTask.stage) {
             case READ:
                 currentTask.readTime -= allocation;
-                if (withinTolerance(currentTask.readTime, 0)) {
+                if (MathUtility.withinTolerance(currentTask.readTime, 0)) {
                     currentTask.stage = Stage.BODY;
                 }
                 else {
@@ -117,7 +120,7 @@ public class CFSSimulator {
                 break;
             case BODY:
                 currentTask.bodyTime -= allocation;
-                if (withinTolerance(currentTask.bodyTime, 0)) {
+                if (MathUtility.withinTolerance(currentTask.bodyTime, 0)) {
                     if (currentTask.writeTime > 0)
                         currentTask.stage = Stage.WRITE;
                     else
@@ -126,7 +129,7 @@ public class CFSSimulator {
                 break;
             case WRITE:
                 currentTask.writeTime -= allocation;
-                if (withinTolerance(currentTask.writeTime, 0)) {
+                if (MathUtility.withinTolerance(currentTask.writeTime, 0)) {
                     currentTask.stage = Stage.COMPLETED;
                     simulationState.writingTaskKey = "-1:0";
                 }
@@ -238,7 +241,8 @@ public class CFSSimulator {
         return runningTasks;
     }
 
-    private void initializeQueue(List<Task> tasks, Queue<Task> queue) {
+    private Queue<Task> initializeQueue(List<Task> tasks) {
+        Queue<Task> queue = new PriorityQueue<>(Comparator.comparingDouble(task -> task.priorityWeight));
         for (Task task : tasks) {
             task.priorityWeight = priorityToWeight.get(task.nice + 20);
             task.originalReadTime = task.readTime;
@@ -247,6 +251,7 @@ public class CFSSimulator {
             task.currentPeriodStart = task.startTime;
             queue.add(task.copy());
         }
+        return queue;
     }
 
     private Queue<Task> copyQueue(Queue<Task> originalQueue) {
@@ -287,44 +292,5 @@ public class CFSSimulator {
 
     private boolean noReadAndWriteTasksRunning(List<Task> runningTasks, BlockingPolicy blockingPolicy) {
         return runningTasks.stream().noneMatch(task -> task.stage == Stage.READ || task.stage == Stage.WRITE) || blockingPolicy == BlockingPolicy.NONE;
-    }
-
-    private void initializelogger() {
-        try {
-            LocalDateTime now = LocalDateTime.now();
-            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
-            String formatDateTime = now.format(formatter);
-
-            FileHandler fileHandler = new FileHandler("./logs/simulation_" + formatDateTime + ".txt");
-            fileHandler.setFormatter(new CustomFormatter());
-            logger.setUseParentHandlers(false);
-            logger.addHandler(fileHandler);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    private void addConsoleLogger() {
-        ConsoleHandler consoleHandler = new ConsoleHandler();
-        consoleHandler.setFormatter(new CustomFormatter());
-        logger.addHandler(consoleHandler);
-    }
-
-    private boolean withinTolerance(double a, double b) {
-        double tolerance = 1E-10;
-        return (a - b) < tolerance;
-    }
-
-    private int getLCM(List<Task> tasks) {
-        return tasks.stream().map(task -> task.period)
-                .reduce(1, (a, b) -> a * (b / getGCD(a, b)));
-    }
-
-    private int getGCD(int a, int b) {
-        if (b == 0) {
-            return a;
-        } else {
-            return getGCD(b, a % b);
-        }
     }
 }
