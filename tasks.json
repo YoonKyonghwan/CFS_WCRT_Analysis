@@ -1,20 +1,42 @@
 [
   {
     "id": 1,
-    "startTime": 0,
-    "readTime": 1,
-    "bodyTime": 2,
-    "writeTime": 1,
-    "nice": 0,
-    "period": 10
+    "tasks": [
+      {
+        "id": 1,
+        "startTime": 0,
+        "readTime": 1,
+        "bodyTime": 2,
+        "writeTime": 1,
+        "nice": 0,
+        "period": 10,
+        "index": 0
+      },
+      {
+        "id": 2,
+        "startTime": 0,
+        "readTime": 1,
+        "bodyTime": 2,
+        "writeTime": 1,
+        "nice": 0,
+        "period": 10,
+        "index": 1
+      }
+    ]
   },
   {
     "id": 2,
-    "startTime": 0,
-    "readTime": 1,
-    "bodyTime": 2,
-    "writeTime": 1,
-    "nice": 0,
-    "period": 10
+    "tasks": [
+      {
+        "id": 3,
+        "startTime": 0,
+        "readTime": 1,
+        "bodyTime": 2,
+        "writeTime": 1,
+        "nice": 0,
+        "period": 10,
+        "index": 0
+      }
+    ]
   }
 ]

@@ -22,6 +22,8 @@ public class Task {
     // Period of the task
     public int period;
 
+    public int index;
+
     // Current stage of the task
     public Stage stage = Stage.READ;
 
@@ -34,8 +36,8 @@ public class Task {
     // Original time required to write the task
     public double originalWriteTime;
 
-    // Start of the current period
-    public int currentPeriodStart;
+    // Release time for the task
+    public int releaseTime;
 
     // Weight for task priority
     public double priorityWeight;
@@ -49,16 +51,17 @@ public class Task {
         newTask.writeTime = this.writeTime;
         newTask.nice = this.nice;
         newTask.period = this.period;
+        newTask.index = this.index;
         newTask.stage = this.stage;
         newTask.originalReadTime = this.originalReadTime;
         newTask.originalBodyTime = this.originalBodyTime;
         newTask.originalWriteTime = this.originalWriteTime;
-        newTask.currentPeriodStart = this.currentPeriodStart;
+        newTask.releaseTime = this.releaseTime;
         newTask.priorityWeight = this.priorityWeight;
         return newTask;
     }
 
-    public Task(int id, int startTime, double readTime, double bodyTime, double writeTime, int nice, int period) {
+    public Task(int id, int startTime, double readTime, double bodyTime, double writeTime, int nice, int period, int index) {
         this.id = id;
         this.startTime = startTime;
         this.readTime = readTime;
@@ -66,6 +69,7 @@ public class Task {
         this.writeTime = writeTime;
         this.nice = nice;
         this.period = period;
+        this.index = index;
     }
 
     public Task() {

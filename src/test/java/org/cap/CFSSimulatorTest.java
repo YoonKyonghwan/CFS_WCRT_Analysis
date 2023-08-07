@@ -18,6 +18,7 @@ public class CFSSimulatorTest {
         simulator = new CFSSimulator();
     }
 
+    // TODO update test cases to support multi-core
     @Test
     public void testOneTask() {
         // Define test tasks
