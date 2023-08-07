@@ -36,8 +36,14 @@ public class Task {
     // Original time required to write the task
     public double originalWriteTime;
 
-    // Release time for the task
-    public int releaseTime;
+    // Release time for read stage of the task
+    public int readReleaseTime;
+
+    // Release time for body stage of the task
+    public int bodyReleaseTime;
+
+    // Release time for write stage of the task
+    public int writeReleaseTime;
 
     // Weight for task priority
     public double priorityWeight;
@@ -56,7 +62,9 @@ public class Task {
         newTask.originalReadTime = this.originalReadTime;
         newTask.originalBodyTime = this.originalBodyTime;
         newTask.originalWriteTime = this.originalWriteTime;
-        newTask.releaseTime = this.releaseTime;
+        newTask.readReleaseTime = this.readReleaseTime;
+        newTask.bodyReleaseTime = this.bodyReleaseTime;
+        newTask.writeReleaseTime = this.writeReleaseTime;
         newTask.priorityWeight = this.priorityWeight;
         return newTask;
     }
