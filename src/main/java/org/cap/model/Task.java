@@ -42,6 +42,11 @@ public class Task {
     // Weight for task priority
     public double priorityWeight;
 
+    // Execution time with Concurrent Execution Interference
+    public double Eir;
+    public double Eiw;
+    public double Eib;
+
     public Task copy() {
         Task newTask = new Task();
         newTask.id = this.id;
@@ -58,6 +63,9 @@ public class Task {
         newTask.originalWriteTime = this.originalWriteTime;
         newTask.releaseTime = this.releaseTime;
         newTask.priorityWeight = this.priorityWeight;
+        newTask.Eir = this.Eir;
+        newTask.Eiw = this.Eiw;
+        newTask.Eib = this.Eib;
         return newTask;
     }
 
