@@ -19,10 +19,12 @@ public class Analyzer {
         36, 29, 23, 18, 15
     );
 
-    private static final double min_granularity = 1;
+    private boolean is_min_timeslice;
+    private static final int min_timeslice = 2;
 
-    public boolean analyze(List<Core> cores, boolean verbose) {
+    public boolean analyze(List<Core> cores, boolean verbose, boolean is_min_timeslice) {
         this.cores = cores;
+        this.is_min_timeslice = is_min_timeslice;
 
         // convert nice_value to weight
         for (Core core : this.cores) {
@@ -69,25 +71,26 @@ public class Analyzer {
     /* 
     Equation1 in the paper.
     */
-    private double computeInterference(Task i, Task j, double t) {
+    private int computeInterference(Task i, Task j, int t) {
         double Tj = j.period;
         double Cj = j.readTime + j.bodyTime + j.writeTime;
         double wj = j.priorityWeight;
         double wi = i.priorityWeight;
 
         double I = Math.floor(t / Tj) * Cj;
-        double candidate1 = ceilByGranularity((wj / (wi + wj)) * (t % Tj));
-        double candidate2 = Cj;
-        I += Math.min(candidate1, candidate2);
+        double computed_interfernce = (wj / (wi + wj)) * (t % Tj);
+        double max_interference = Cj;
 
-        return I;
+        I += postprocessInterference(computed_interfernce, max_interference);
+
+        return (int) Math.ceil(I);
     }
 
 
     /* 
     Equation2 in the paper.
     */
-    private double computeIr(Task task_i, Task task_j, double t){
+    private int computeIr(Task task_i, Task task_j, int t){
         double Cjr = task_j.readTime;
         double Cjb = task_j.bodyTime;
         double Cjw = task_j.writeTime;
@@ -98,18 +101,18 @@ public class Analyzer {
         if (Cjw == 0) {
             I = computeInterference(task_i, task_j, t);
         } else {
-            double candidate1 = ceilByGranularity((wj / (wi + wj)) * t);
-            double candidate2 = Cjr + Cjb;
-            I = Math.min(candidate1, candidate2);
+            double computed_interfernce = (wj / (wi + wj)) * t;
+            double max_interference = Cjr + Cjb;
+            I = postprocessInterference(computed_interfernce, max_interference);
         }
-        return I;
+        return (int) Math.ceil(I);
     }
 
 
     /* 
     Equation4 in the paper.
     */
-    private double computeIw(Task task_i, Task task_j, double t){
+    private int computeIw(Task task_i, Task task_j, int t){
         double Cjr = task_j.readTime;
         double Cjb = task_j.bodyTime;
         double Cjw = task_j.writeTime;
@@ -120,26 +123,26 @@ public class Analyzer {
         if (Cjr == 0 && Cjw == 0) {
             I = computeInterference(task_i, task_j, t);
         } else {
-            double candidate1 = ceilByGranularity((wj / (wi + wj)) * t);
-            double candidate2 = Cjb;
-            I = Math.min(candidate1, candidate2);
+            double computed_interfernce = (wj / (wi + wj)) * t;
+            double max_interference = Cjb;
+            I = postprocessInterference(computed_interfernce, max_interference);
         }
-        return I;
+        return (int) Math.ceil(I);
     }
 
 
     /* 
     Equation3 in the paper.
     */
-    private double computeEr(Core core, int task_id){
+    private int computeEr(Core core, int task_id){
         Task task_i = getTask_i(core, task_id);
 
-        double Eir = task_i.readTime; // initial Eir
-        double Eir_prev = 0;
+        int Eir = (int) task_i.readTime; // initial Eir
+        int Eir_prev = 0;
         // compute Eir iteratively until Eir_k == Eir_k+1        
         while (Eir_prev != Eir) {
             Eir_prev = Eir;
-            Eir = task_i.readTime;
+            Eir = (int) task_i.readTime;
             for (Task task_j : core.tasks) {
                 if (task_i.id != task_j.id) {
                     Eir += computeIr(task_i, task_j, Eir_prev);
@@ -158,15 +161,15 @@ public class Analyzer {
     /* 
     Equation5 in the paper.
     */
-    private double computeEw(Core core, int task_id){
+    private int computeEw(Core core, int task_id){
         Task task_i = getTask_i(core, task_id);
 
-        double Eiw = task_i.writeTime; // initial Eiw
-        double Eiw_prev = 0;
+        int Eiw = (int) task_i.writeTime; // initial Eiw
+        int Eiw_prev = 0;
         // compute Eiw iteratively until Eiw_k == Eiw_k+1
         while (Eiw_prev != Eiw) {
             Eiw_prev = Eiw;
-            Eiw = task_i.writeTime;
+            Eiw = (int) task_i.writeTime;
             for (Task task_j : core.tasks) {
                 if (task_i.id != task_j.id) {
                     Eiw += computeIw(task_i, task_j, Eiw_prev);
@@ -185,15 +188,15 @@ public class Analyzer {
     /* 
     Equation7 in the paper.
     */
-    private double computeEb(Core core, int task_id){
+    private int computeEb(Core core, int task_id){
         Task task_i = getTask_i(core, task_id);
 
-        double Eib = task_i.bodyTime; // initial Eib
-        double Eib_prev = 0;
+        int Eib = (int) task_i.bodyTime; // initial Eib
+        int Eib_prev = 0;
         // compute Eib iteratively until Eib_k == Eib_k+1
         while (Eib_prev != Eib) {
             Eib_prev = Eib;
-            Eib = task_i.bodyTime;
+            Eib = (int) task_i.bodyTime;
             for (Task task_j : core.tasks) {
                 if (task_i.id != task_j.id) {
                     Eib += computeInterference(task_i, task_j, Eib_prev);
@@ -211,8 +214,8 @@ public class Analyzer {
     /* 
     Equation6 in the paper
     */
-    private double computeRr(Task task_i){
-        double Rir = task_i.Eir;
+    private int computeRr(Task task_i){
+        int Rir = task_i.Eir;
         for (Core core : this.cores){
             for (Task task_j : core.tasks){
                 if (task_i.id != task_j.id){
@@ -227,7 +230,7 @@ public class Analyzer {
     /* 
     Equation7 in the paper
     */
-    private double computeRb(Task task_i){
+    private int computeRb(Task task_i){
         return task_i.Eib;
     }
 
@@ -235,8 +238,8 @@ public class Analyzer {
     /* 
     Equation8 in the paper
     */
-    private double computeRw(Task task_i){
-        double Riw = task_i.Eiw;
+    private int computeRw(Task task_i){
+        int Riw = task_i.Eiw;
         for (Core core : this.cores){
             for (Task task_j : core.tasks){
                 if (task_i.id != task_j.id){
@@ -267,7 +270,26 @@ public class Analyzer {
         return task_i;
     }
 
-    private double ceilByGranularity(double x) {
-        return Math.ceil(x / min_granularity) * min_granularity;
+
+    private double postprocessInterference(double computed_interfernce, double max_interference) {
+        double interference = 0;
+        if (computed_interfernce > max_interference) {
+            interference = max_interference;
+        }else{
+            if (is_min_timeslice){
+                if (computed_interfernce > min_timeslice){
+                    interference = computed_interfernce;
+                }else{
+                    if(max_interference > min_timeslice){
+                        interference = min_timeslice;
+                    }else{
+                        interference = max_interference;
+                    }
+                }
+            }else{
+                interference = computed_interfernce;
+            }
+        }
+        return interference;
     }
 }

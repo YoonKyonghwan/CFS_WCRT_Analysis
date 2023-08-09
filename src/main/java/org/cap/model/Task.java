@@ -43,9 +43,9 @@ public class Task {
     public double priorityWeight;
 
     // Execution time with Concurrent Execution Interference
-    public double Eir;
-    public double Eiw;
-    public double Eib;
+    public int Eir;
+    public int Eiw;
+    public int Eib;
 
     public Task copy() {
         Task newTask = new Task();

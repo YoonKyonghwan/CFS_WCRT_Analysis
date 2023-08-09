@@ -16,7 +16,7 @@ public class Main {
         // cfsSimulator.simulateCFS(cores);
 
         Analyzer analyzer = new Analyzer();
-        boolean schedulability = analyzer.analyze(cores, true);
+        boolean schedulability = analyzer.analyze(cores, true, true);
         if (schedulability) {
             System.out.println("All tasks are schedulable");
         } else {
