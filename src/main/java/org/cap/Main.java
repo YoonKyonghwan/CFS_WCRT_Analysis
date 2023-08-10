@@ -12,7 +12,7 @@ public class Main {
         JsonReader jsonReader = new JsonReader();
         List<Core> cores = jsonReader.readTasksFromFile("tasks.json");
 
-        analyze_by_simulator(cores);
+        // analyze_by_simulator(cores);
         analyze_by_proposed(cores);
     }
 
@@ -20,7 +20,7 @@ public class Main {
         CFSSimulator cfsSimulator = new CFSSimulator();
 
         long startTime = System.nanoTime();
-        boolean schedulability = cfsSimulator.simulateCFS(cores);
+        boolean schedulability = cfsSimulator.simulateCFS(cores).schedulability;
         long duration = (System.nanoTime() - startTime)/1000;
         System.out.println("Time consumption (simulator): " + duration + " us");
 

@@ -28,7 +28,7 @@ public class CFSSimulator {
      *
      * @return WCRT - list of worst case response times
      */
-    public boolean simulateCFS(List<Core> cores) {
+    public SimulationResult simulateCFS(List<Core> cores) {
         LoggerUtility.initializeLogger();
         logger.info("Starting CFS simulation");
 
@@ -356,7 +356,7 @@ public class CFSSimulator {
         }
     }
 
-    private boolean checkSchedulability(List<Core> cores, List<List<Double>> WCRTs, List<Queue<Task>> queues) {
+    private SimulationResult checkSchedulability(List<Core> cores, List<List<Double>> WCRTs, List<Queue<Task>> queues) {
         boolean schedulability = true;
 
         logger.info("\n******************************");
@@ -377,7 +377,7 @@ public class CFSSimulator {
                     schedulability = false;
             }
         }
-        return schedulability;
+        return new SimulationResult(schedulability, WCRTs);
     }
 
     // TODO check if condition has to change
