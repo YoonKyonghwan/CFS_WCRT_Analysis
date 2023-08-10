@@ -28,7 +28,7 @@ public class CFSSimulator {
      *
      * @return WCRT - list of worst case response times
      */
-    public List<List<Double>> simulateCFS(List<Core> cores) {
+    public boolean simulateCFS(List<Core> cores) {
         LoggerUtility.initializeLogger();
         logger.info("Starting CFS simulation");
 
@@ -40,8 +40,7 @@ public class CFSSimulator {
         performSimulation(cores, WCRTs, queues, simulationState, time);
 
         LoggerUtility.addConsoleLogger();
-        displayResult(WCRTs, queues);
-        return WCRTs;
+        return checkSchedulability(cores, WCRTs, queues);
     }
 
     /**
@@ -97,7 +96,7 @@ public class CFSSimulator {
 
         performSimulation(cores, cloneWCRTs, cloneQueues, simulationState, time);
 
-        displayResult(cloneWCRTs, cloneQueues);
+        checkSchedulability(cores, cloneWCRTs, cloneQueues);
         return cloneWCRTs;
     }
 
@@ -357,7 +356,9 @@ public class CFSSimulator {
         }
     }
 
-    private void displayResult(List<List<Double>> WCRTs, List<Queue<Task>> queues) {
+    private boolean checkSchedulability(List<Core> cores, List<List<Double>> WCRTs, List<Queue<Task>> queues) {
+        boolean schedulability = true;
+
         logger.info("\n******************************");
         logger.info("***** Simulation Results *****");
         logger.info("******************************");
@@ -367,13 +368,16 @@ public class CFSSimulator {
             logger.info("Unfinished tasks in core " + (i+1) + ": " + queue.stream().map(task -> task.id).collect(Collectors.toList()));
         }
 
-        // TODO check if cores have to be passed to log task id
-        for (int i = 0; i < WCRTs.size(); i++) {
+        for (int i = 0; i < cores.size(); i++) {
             logger.info("\n******* Core " + (i+1) + " Results *******");
-            for (int j = 0; j < WCRTs.get(i).size(); j++) {
-                logger.info("Task " + (j+1) + " WCRT: " + WCRTs.get(i).get(j));
+            for (int j = 0; j < cores.get(i).tasks.size(); j++) {
+                Task task = cores.get(i).tasks.get(j);
+                logger.info("Task " + task.id + " WCRT: " + WCRTs.get(i).get(j) + " period: " + task.period);
+                if (WCRTs.get(i).get(j) > task.period)
+                    schedulability = false;
             }
         }
+        return schedulability;
     }
 
     // TODO check if condition has to change
