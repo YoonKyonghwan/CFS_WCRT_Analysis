@@ -37,44 +37,23 @@ public class Analyzer {
             }
         }
 
-        // compute Eir, Eiw, Eib for each task
         for (Core core : this.cores) {
             for (Task task : core.tasks) {
-                task.Eir = computeEr(core, task.id);
-                task.Eiw = computeEw(core, task.id);
-                task.Eib = computeEb(core, task.id);
-
-                if (task.Eir == -1 || task.Eiw == -1 || task.Eib == -1) {
-                    if (verbose) {
-                        if (task.Eir == -1) {
-                            System.out.println("E_ir of task " + task.id + " is larger than its period");
-                        }
-                        if(task.Eiw == -1){
-                            System.out.println("E_iw of task " + task.id + " is larger than its period");
-                        }
-                        if(task.Eib == -1){
-                            System.out.println("E_ib of task " + task.id + " is larger than its period");
-                        }
-                    }
-                    return false;
-                }
+                computeE(core, task, verbose);
             }
+        }
+
+        if(!checkSchedulabilityByE()){
+            return false;
         }
 
         for (Core core : this.cores) {
             for (Task task : core.tasks) {
-                task.WCRT_by_proposed = computeRr(task) + computeRw(task) + computeRb(task);
-                if (task.WCRT_by_proposed > task.period){
-                    if (verbose) {
-                        System.out.println("The WCRT of task " + task.id + " is larger than its period" +
-                                " (WCRT: " + task.WCRT_by_proposed + " period: " + task.period + ")");
-                    }
-                    return false;
-                }
+                computeR(task, verbose);
             }
         }
-        
-        return true;
+
+        return checkSchedulabilityByR();
     }
 
 
@@ -96,20 +75,7 @@ public class Analyzer {
                 Runnable task_computeE = new Runnable() {
                     @Override
                     public void run() {
-                        task.Eir = computeEr(core, task.id);
-                        task.Eiw = computeEw(core, task.id);
-                        task.Eib = computeEb(core, task.id);
-                        if (verbose) {
-                            if (task.Eir == -1) {
-                                System.out.println("E_ir of task " + task.id + " is larger than its period");
-                            }
-                            if(task.Eiw == -1){
-                                System.out.println("E_iw of task " + task.id + " is larger than its period");
-                            }
-                            if(task.Eib == -1){
-                                System.out.println("E_ib of task " + task.id + " is larger than its period");
-                            }
-                        }
+                        computeE(core, task, verbose);
                     }
                 };
                 threads_for_E.execute(task_computeE);
@@ -117,28 +83,18 @@ public class Analyzer {
         }
         threads_for_E.shutdown();
 
-        // check schedulability in terms of E
-        for (Core core : this.cores) {
-            for (Task task : core.tasks) {
-                if (task.Eir == -1 || task.Eiw == -1 || task.Eib == -1) return false;
-            }
+        if(!checkSchedulabilityByE()){
+            return false;
         }
 
         // compute R for each task in parallel
         ExecutorService threads_for_R = Executors.newFixedThreadPool(max_num_threads);
         for (Core core : this.cores) {
             for (Task task : core.tasks) {
-                // compute Rir, Riw, Rib with executors parallely
                 Runnable task_computeR = new Runnable() {
                     @Override
                     public void run() {
-                        task.WCRT_by_proposed = computeRr(task) + computeRw(task) + computeRb(task);
-                        if (verbose) {
-                            if (task.WCRT_by_proposed > task.period) {
-                                System.out.println("The WCRT of task " + task.id + " is larger than its period" +
-                                        " (WCRT: " + task.WCRT_by_proposed + " period: " + task.period + ")");
-                            }
-                        }
+                        computeR(task, verbose);
                     }
                 };
                 threads_for_R.execute(task_computeR);
@@ -146,13 +102,55 @@ public class Analyzer {
         }
         threads_for_R.shutdown();
 
-        // check schedulability in terms of E
+        return checkSchedulabilityByR();
+    }
+
+
+    private void computeR(Task task, boolean verbose) {
+        task.WCRT_by_proposed = computeRr(task) + computeRw(task) + computeRb(task);
+        if (verbose) {
+            if (task.WCRT_by_proposed > task.period) {
+                System.out.println("The WCRT of task " + task.id + " is larger than its period" +
+                        " (WCRT: " + task.WCRT_by_proposed + " period: " + task.period + ")");
+            }
+        }
+    }
+
+
+    private void computeE(Core core, Task task, boolean verbose) {
+        task.Eir = computeEr(core, task.id);
+        task.Eiw = computeEw(core, task.id);
+        task.Eib = computeEb(core, task.id);
+        if (verbose) {
+            if (task.Eir == -1) {
+                System.out.println("E_ir of task " + task.id + " is larger than its period");
+            }
+            if(task.Eiw == -1){
+                System.out.println("E_iw of task " + task.id + " is larger than its period");
+            }
+            if(task.Eib == -1){
+                System.out.println("E_ib of task " + task.id + " is larger than its period");
+            }
+        }
+    }
+
+
+    private boolean checkSchedulabilityByE() {
+        for (Core core : this.cores) {
+            for (Task task : core.tasks) {
+                if (task.Eir == -1 || task.Eiw == -1 || task.Eib == -1) return false;
+            }
+        }
+        return true;
+    }
+
+
+    private boolean checkSchedulabilityByR() {
         for (Core core : this.cores) {
             for (Task task : core.tasks) {
                 if (task.WCRT_by_proposed > task.period) return false;
             }
         }
-
         return true;
     }
 
