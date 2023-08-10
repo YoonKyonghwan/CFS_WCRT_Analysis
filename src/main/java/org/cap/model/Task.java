@@ -52,6 +52,7 @@ public class Task {
     public int Eir;
     public int Eiw;
     public int Eib;
+    public int WCRT_by_proposed;
 
     public Task copy() {
         Task newTask = new Task();

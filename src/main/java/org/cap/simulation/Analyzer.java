@@ -2,6 +2,9 @@ package org.cap.simulation;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+
 import org.cap.model.Core;
 import org.cap.model.Task;
 
@@ -21,6 +24,7 @@ public class Analyzer {
 
     private boolean is_min_timeslice;
     private static final int min_timeslice = 2;
+    private static final int max_num_threads = 8;
 
     public boolean analyze(List<Core> cores, boolean verbose, boolean is_min_timeslice) {
         this.cores = cores;
@@ -42,7 +46,15 @@ public class Analyzer {
 
                 if (task.Eir == -1 || task.Eiw == -1 || task.Eib == -1) {
                     if (verbose) {
-                        System.out.println("Task " + task.id + " in core " + core.id + " is not schedulable");
+                        if (task.Eir == -1) {
+                            System.out.println("E_ir of task " + task.id + " is larger than its period");
+                        }
+                        if(task.Eiw == -1){
+                            System.out.println("E_iw of task " + task.id + " is larger than its period");
+                        }
+                        if(task.Eib == -1){
+                            System.out.println("E_ib of task " + task.id + " is larger than its period");
+                        }
                     }
                     return false;
                 }
@@ -51,19 +63,96 @@ public class Analyzer {
 
         for (Core core : this.cores) {
             for (Task task : core.tasks) {
-                double Rir = computeRr(task);
-                double Riw = computeRw(task);
-                double Rib = computeRb(task);
-
-                if (Rir+Riw+Rib > task.period){
+                task.WCRT_by_proposed = computeRr(task) + computeRw(task) + computeRb(task);
+                if (task.WCRT_by_proposed > task.period){
                     if (verbose) {
-                        System.out.println("Task " + task.id + " in core " + core.id + " is not schedulable");
+                        System.out.println("The WCRT of task " + task.id + " is larger than its period" +
+                                " (WCRT: " + task.WCRT_by_proposed + " period: " + task.period + ")");
                     }
                     return false;
                 }
             }
         }
         
+        return true;
+    }
+
+
+    public boolean analyze_parallel(List<Core> cores, boolean verbose, boolean is_min_timeslice) {
+        this.cores = cores;
+        this.is_min_timeslice = is_min_timeslice;
+
+        // convert nice_value to weight
+        for (Core core : this.cores) {
+            for (Task task : core.tasks) {
+                task.priorityWeight = priorityToWeight.get(task.nice + 20);
+            }
+        }
+        
+        // compute E for each task in parallel
+        ExecutorService threads_for_E = Executors.newFixedThreadPool(max_num_threads);
+        for (Core core : this.cores) {
+            for (Task task : core.tasks) {
+                Runnable task_computeE = new Runnable() {
+                    @Override
+                    public void run() {
+                        task.Eir = computeEr(core, task.id);
+                        task.Eiw = computeEw(core, task.id);
+                        task.Eib = computeEb(core, task.id);
+                        if (verbose) {
+                            if (task.Eir == -1) {
+                                System.out.println("E_ir of task " + task.id + " is larger than its period");
+                            }
+                            if(task.Eiw == -1){
+                                System.out.println("E_iw of task " + task.id + " is larger than its period");
+                            }
+                            if(task.Eib == -1){
+                                System.out.println("E_ib of task " + task.id + " is larger than its period");
+                            }
+                        }
+                    }
+                };
+                threads_for_E.execute(task_computeE);
+            }
+        }
+        threads_for_E.shutdown();
+
+        // check schedulability in terms of E
+        for (Core core : this.cores) {
+            for (Task task : core.tasks) {
+                if (task.Eir == -1 || task.Eiw == -1 || task.Eib == -1) return false;
+            }
+        }
+
+        // compute R for each task in parallel
+        ExecutorService threads_for_R = Executors.newFixedThreadPool(max_num_threads);
+        for (Core core : this.cores) {
+            for (Task task : core.tasks) {
+                // compute Rir, Riw, Rib with executors parallely
+                Runnable task_computeR = new Runnable() {
+                    @Override
+                    public void run() {
+                        task.WCRT_by_proposed = computeRr(task) + computeRw(task) + computeRb(task);
+                        if (verbose) {
+                            if (task.WCRT_by_proposed > task.period) {
+                                System.out.println("The WCRT of task " + task.id + " is larger than its period" +
+                                        " (WCRT: " + task.WCRT_by_proposed + " period: " + task.period + ")");
+                            }
+                        }
+                    }
+                };
+                threads_for_R.execute(task_computeR);
+            }
+        }
+        threads_for_R.shutdown();
+
+        // check schedulability in terms of E
+        for (Core core : this.cores) {
+            for (Task task : core.tasks) {
+                if (task.WCRT_by_proposed > task.period) return false;
+            }
+        }
+
         return true;
     }
 
