@@ -366,6 +366,7 @@ public class CFSSimulator {
         for (int i = 0; i < queues.size(); i++) {
             Queue<Task> queue = queues.get(i);
             logger.info("Unfinished tasks in core " + (i+1) + ": " + queue.stream().map(task -> task.id).collect(Collectors.toList()));
+            schedulability = false;
         }
 
         for (int i = 0; i < cores.size(); i++) {

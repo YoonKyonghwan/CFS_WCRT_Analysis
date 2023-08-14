@@ -5,21 +5,21 @@
       {
         "id": 1,
         "startTime": 0,
-        "readTime": 1,
-        "bodyTime": 2,
-        "writeTime": 1,
+        "readTime": 0,
+        "bodyTime": 2000,
+        "writeTime": 0,
         "nice": 0,
-        "period": 14,
+        "period": 5000,
         "index": 0
       },
       {
         "id": 2,
         "startTime": 0,
-        "readTime": 1,
-        "bodyTime": 2,
-        "writeTime": 1,
+        "readTime": 0,
+        "bodyTime": 5000,
+        "writeTime": 0,
         "nice": 0,
-        "period": 18,
+        "period": 5000,
         "index": 1
       }
     ]
@@ -30,12 +30,22 @@
       {
         "id": 3,
         "startTime": 0,
-        "readTime": 1,
-        "bodyTime": 2,
-        "writeTime": 1,
+        "readTime": 0,
+        "bodyTime": 700,
+        "writeTime": 0,
         "nice": 0,
-        "period": 12,
+        "period": 5000,
         "index": 0
+      },
+      {
+        "id": 4,
+        "startTime": 0,
+        "readTime": 0,
+        "bodyTime": 500,
+        "writeTime": 0,
+        "nice": 0,
+        "period": 5000,
+        "index": 1
       }
     ]
   }
