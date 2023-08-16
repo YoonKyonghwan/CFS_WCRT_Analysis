@@ -2,19 +2,19 @@ package org.cap;
 
 import org.cap.model.Core;
 import org.cap.model.Task;
-import org.cap.simulation.CFSSimulator;
+import org.cap.simulation.PFSSimulator;
 import org.junit.Before;
 import org.junit.Test;
 import static org.junit.Assert.*;
 
 import java.util.List;
 
-public class CFSSimulatorTest {
-    private CFSSimulator simulator;
+public class PFSSimulatorTest {
+    private PFSSimulator simulator;
 
     @Before
     public void setUp() {
-        simulator = new CFSSimulator();
+        simulator = new PFSSimulator();
     }
 
     @Test
@@ -28,7 +28,7 @@ public class CFSSimulatorTest {
         );
 
         // Execute the method
-        List<List<Double>> WCRTs = simulator.simulateCFS(cores).WCRTs;
+        List<List<Double>> WCRTs = simulator.simulatePFS(cores).WCRTs;
 
         // Make assertions about the expected result
         List<List<Double>> expectedResult = List.of(
@@ -51,7 +51,7 @@ public class CFSSimulatorTest {
         );
 
         // Execute the method
-        List<List<Double>> WCRTs = simulator.simulateCFS(cores).WCRTs;
+        List<List<Double>> WCRTs = simulator.simulatePFS(cores).WCRTs;
 
         // Make assertions about the expected result
         List<List<Double>> expectedResult = List.of(
@@ -75,7 +75,7 @@ public class CFSSimulatorTest {
         );
 
         // Execute the method
-        List<List<Double>> WCRTs = simulator.simulateCFS(cores).WCRTs;
+        List<List<Double>> WCRTs = simulator.simulatePFS(cores).WCRTs;
 
         // Make assertions about the expected result
         List<List<Double>> expectedResult = List.of(
@@ -99,7 +99,7 @@ public class CFSSimulatorTest {
         );
 
         // Execute the method
-        List<List<Double>> WCRTs = simulator.simulateCFS(cores).WCRTs;
+        List<List<Double>> WCRTs = simulator.simulatePFS(cores).WCRTs;
 
         // Make assertions about the expected result
         List<List<Double>> expectedResult = List.of(
@@ -123,7 +123,7 @@ public class CFSSimulatorTest {
         );
 
         // Execute the method
-        List<List<Double>> WCRTs = simulator.simulateCFS(cores).WCRTs;
+        List<List<Double>> WCRTs = simulator.simulatePFS(cores).WCRTs;
 
         // Make assertions about the expected result
         List<List<Double>> expectedResult = List.of(
@@ -147,7 +147,7 @@ public class CFSSimulatorTest {
         );
 
         // Execute the method
-        List<List<Double>> WCRTs = simulator.simulateCFS(cores).WCRTs;
+        List<List<Double>> WCRTs = simulator.simulatePFS(cores).WCRTs;
 
         // Make assertions about the expected result
         List<List<Double>> expectedResult = List.of(
@@ -172,7 +172,7 @@ public class CFSSimulatorTest {
         );
 
         // Execute the method
-        List<List<Double>> WCRTs = simulator.simulateCFS(cores).WCRTs;
+        List<List<Double>> WCRTs = simulator.simulatePFS(cores).WCRTs;
 
         // Make assertions about the expected result
         List<List<Double>> expectedResult = List.of(
@@ -198,7 +198,7 @@ public class CFSSimulatorTest {
         );
 
         // Execute the method
-        List<List<Double>> WCRTs = simulator.simulateCFS(cores).WCRTs;
+        List<List<Double>> WCRTs = simulator.simulatePFS(cores).WCRTs;
 
         // Make assertions about the expected result
         List<List<Double>> expectedResult = List.of(
@@ -224,7 +224,7 @@ public class CFSSimulatorTest {
         );
 
         // Execute the method
-        List<List<Double>> WCRTs = simulator.simulateCFS(cores).WCRTs;
+        List<List<Double>> WCRTs = simulator.simulatePFS(cores).WCRTs;
 
         // Make assertions about the expected result
         List<List<Double>> expectedResult = List.of(

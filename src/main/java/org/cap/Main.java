@@ -2,7 +2,7 @@ package org.cap;
 
 import org.cap.model.Core;
 import org.cap.simulation.Analyzer;
-import org.cap.simulation.CFSSimulator;
+import org.cap.simulation.PFSSimulator;
 import org.cap.utility.JsonReader;
 
 import java.util.*;
@@ -12,15 +12,17 @@ public class Main {
         JsonReader jsonReader = new JsonReader();
         List<Core> cores = jsonReader.readTasksFromFile("tasks.json");
 
-        // analyze_by_simulator(cores);
+        analyze_by_simulator(cores);
+
+        cores = jsonReader.readTasksFromFile("tasks.json");
         analyze_by_proposed(cores);
     }
 
     private static void analyze_by_simulator(List<Core> cores) {
-        CFSSimulator cfsSimulator = new CFSSimulator();
+        PFSSimulator PFSSimulator = new PFSSimulator();
 
         long startTime = System.nanoTime();
-        boolean schedulability = cfsSimulator.simulateCFS(cores).schedulability;
+        boolean schedulability = PFSSimulator.simulatePFS(cores).schedulability;
         long duration = (System.nanoTime() - startTime)/1000;
         System.out.println("Time consumption (simulator): " + duration + " us");
 

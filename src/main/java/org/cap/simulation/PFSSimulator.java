@@ -8,7 +8,7 @@ import java.util.*;
 import java.util.logging.*;
 import java.util.stream.Collectors;
 
-public class CFSSimulator {
+public class PFSSimulator {
     private static final Logger logger = LoggerUtility.getLogger();
 
     private static final List<Integer> priorityToWeight = Arrays.asList(
@@ -23,14 +23,14 @@ public class CFSSimulator {
     );
 
     /**
-     * This method starts the CFS simulation, initializes the simulation state, and the queue.
+     * This method starts the PFS simulation, initializes the simulation state, and the queue.
      * Then, it performs the simulation and displays the result.
      *
      * @return WCRT - list of worst case response times
      */
-    public SimulationResult simulateCFS(List<Core> cores) {
+    public SimulationResult simulatePFS(List<Core> cores) {
         LoggerUtility.initializeLogger();
-        logger.info("Starting CFS simulation");
+        logger.info("Starting PFS simulation");
 
         List<List<Double>> WCRTs = initializeWCRTs(cores);
         List<Queue<Task>> queues = initializeQueues(cores);
