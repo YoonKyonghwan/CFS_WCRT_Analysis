@@ -48,6 +48,9 @@ public class Task {
     // Weight of task
     public double weight;
 
+    // Virtual runtime
+    public double virtualRuntime;
+
     // Execution time with Concurrent Execution Interference
     public int Eir;
     public int Eiw;
