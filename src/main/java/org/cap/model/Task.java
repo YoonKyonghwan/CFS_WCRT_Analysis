@@ -45,8 +45,8 @@ public class Task {
     // Release time for write stage of the task
     public int writeReleaseTime;
 
-    // Weight for task priority
-    public double priorityWeight;
+    // Weight of task
+    public double weight;
 
     // Execution time with Concurrent Execution Interference
     public int Eir;
@@ -71,7 +71,7 @@ public class Task {
         newTask.readReleaseTime = this.readReleaseTime;
         newTask.bodyReleaseTime = this.bodyReleaseTime;
         newTask.writeReleaseTime = this.writeReleaseTime;
-        newTask.priorityWeight = this.priorityWeight;
+        newTask.weight = this.weight;
         newTask.Eir = this.Eir;
         newTask.Eiw = this.Eiw;
         newTask.Eib = this.Eib;

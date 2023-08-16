@@ -11,17 +11,6 @@ import java.util.stream.Collectors;
 public class PFSSimulator {
     private static final Logger logger = LoggerUtility.getLogger();
 
-    private static final List<Integer> priorityToWeight = Arrays.asList(
-        88761, 71755, 56483, 46273, 36291,
-        29154, 23254, 18705, 14949, 11916,
-        9548, 7620, 6100, 4904, 3906,
-        3121, 2501, 1991, 1586, 1277,
-        1024, 820, 655, 526, 423,
-        335, 272, 215, 172, 137,
-        110, 87, 70, 56, 45,
-        36, 29, 23, 18, 15
-    );
-
     /**
      * This method starts the PFS simulation, initializes the simulation state, and the queue.
      * Then, it performs the simulation and displays the result.
@@ -61,9 +50,9 @@ public class PFSSimulator {
             // Share the CPU proportional to priority weight
             for (int i = 0; i < cores.size(); i++) {
                 List<Task> runningTasksInCore = runningTasks.get(i);
-                double totalPriorityWeight = runningTasksInCore.stream().mapToDouble(t -> t.priorityWeight).sum();
+                double totalWeight = runningTasksInCore.stream().mapToDouble(t -> t.weight).sum();
                 for (Task task : runningTasksInCore) {
-                    double allocation = 1.0 * (task.priorityWeight / totalPriorityWeight);
+                    double allocation = 1.0 * (task.weight / totalWeight);
                     executeTask(task, allocation, queues.get(i), WCRTs.get(i), simulationState, time);
                 }
             }
@@ -307,7 +296,7 @@ public class PFSSimulator {
             Queue<Task> queueInCore = new PriorityQueue<>(Comparator.comparingDouble(task -> task.readReleaseTime));
             // TODO add to queue in order of release time
             for (Task task : core.tasks) {
-                task.priorityWeight = priorityToWeight.get(task.nice + 20);
+                task.weight = NiceToWeight.getWeight(task.nice);
                 task.originalReadTime = task.readTime;
                 task.originalBodyTime = task.bodyTime;
                 task.originalWriteTime = task.writeTime;

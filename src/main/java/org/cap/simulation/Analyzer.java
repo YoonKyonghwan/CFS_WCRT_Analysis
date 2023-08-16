@@ -6,21 +6,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.cap.model.Core;
+import org.cap.model.NiceToWeight;
 import org.cap.model.Task;
 
 public class Analyzer {
     private List<Core> cores;
-
-    private static final List<Integer> priorityToWeight = Arrays.asList(
-        88761, 71755, 56483, 46273, 36291,
-        29154, 23254, 18705, 14949, 11916,
-        9548, 7620, 6100, 4904, 3906,
-        3121, 2501, 1991, 1586, 1277,
-        1024, 820, 655, 526, 423,
-        335, 272, 215, 172, 137,
-        110, 87, 70, 56, 45,
-        36, 29, 23, 18, 15
-    );
 
     private boolean is_min_timeslice;
     private static final int min_timeslice = 2;
@@ -33,7 +23,7 @@ public class Analyzer {
         // convert nice_value to weight
         for (Core core : this.cores) {
             for (Task task : core.tasks) {
-                task.priorityWeight = priorityToWeight.get(task.nice + 20);
+                task.weight = NiceToWeight.getWeight(task.nice);
             }
         }
 
@@ -64,7 +54,7 @@ public class Analyzer {
         // convert nice_value to weight
         for (Core core : this.cores) {
             for (Task task : core.tasks) {
-                task.priorityWeight = priorityToWeight.get(task.nice + 20);
+                task.weight = NiceToWeight.getWeight(task.nice);
             }
         }
         
@@ -161,8 +151,8 @@ public class Analyzer {
     private int computeInterference(Task i, Task j, int t) {
         double Tj = j.period;
         double Cj = j.readTime + j.bodyTime + j.writeTime;
-        double wj = j.priorityWeight;
-        double wi = i.priorityWeight;
+        double wj = j.weight;
+        double wi = i.weight;
 
         double I = Math.floor(t / Tj) * Cj;
         double computed_interfernce = (wj / (wi + wj)) * (t % Tj);
@@ -181,8 +171,8 @@ public class Analyzer {
         double Cjr = task_j.readTime;
         double Cjb = task_j.bodyTime;
         double Cjw = task_j.writeTime;
-        double wj = task_j.priorityWeight;
-        double wi = task_i.priorityWeight;
+        double wj = task_j.weight;
+        double wi = task_i.weight;
 
         double I = 0;
         if (Cjw == 0) {
@@ -203,8 +193,8 @@ public class Analyzer {
         double Cjr = task_j.readTime;
         double Cjb = task_j.bodyTime;
         double Cjw = task_j.writeTime;
-        double wj = task_j.priorityWeight;
-        double wi = task_i.priorityWeight;
+        double wj = task_j.weight;
+        double wi = task_i.weight;
 
         double I = 0;
         if (Cjr == 0 && Cjw == 0) {
