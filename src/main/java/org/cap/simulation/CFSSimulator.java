@@ -6,10 +6,20 @@ import org.cap.utility.MathUtility;
 
 import java.util.*;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
 public class CFSSimulator {
     private static final Logger logger = LoggerUtility.getLogger();
+
+    // TODO refactor to simulation state later
+    // TODO remainingRuntime
+    boolean isReadBlocked = false;
+    boolean isWriteBlocked = false;
+    Task currentTask = null;
+    boolean isRunning = false;
+    int remainingRuntime = 0;
+    // TODO receive as parameters
+    int targetedLatency = 20;
+    int minimumGranularity = 4;
 
     public SimulationResult simulateCFS(List<Core> cores) {
         LoggerUtility.initializeLogger();
@@ -17,9 +27,7 @@ public class CFSSimulator {
 
         boolean schedulability = true;
         int time = 0;
-        // TODO receive as parameters
-        int targetedLatency = 20;
-        int minimumGranularity = 4;
+        // TODO consider using red-black trees
         List<Queue<Task>> queues = initializeQueues(cores);
 
         performSimulation(cores, queues, targetedLatency, minimumGranularity, time);
@@ -29,36 +37,33 @@ public class CFSSimulator {
     }
 
     private void performSimulation(List<Core> cores, List<Queue<Task>> queues, int targetedLatency, int minimumGranularity, int time) {
-        // TODO CFS simulation
-        // TODO set vruntime
         int hyperperiod = MathUtility.getLCM(cores);
+
+        // TODO apply read, body, write
+
         while (time < hyperperiod) {
-            logger.info(String.format("\n>>> CURRENT TIME: %d <<<\n", time));
-            List<List<Task>> runningTasks = initializeRunningTasks(queues, time);
-
-            // TODO if empty, increase time 
-
             for (int i = 0; i < cores.size(); i++) {
-                List<Task> runningTasksInCore = runningTasks.get(i);
-                double totalWeight = runningTasksInCore.stream().mapToDouble(t -> t.weight).sum();
-                for (Task task : runningTasksInCore) {
-                    // Iterate in order of minimum vruntime
-                    double runtime = targetedLatency * (task.weight / totalWeight);
-                    if (runtime < minimumGranularity)
-                        runtime = minimumGranularity;
-                    // Execute task for runtime by subtracting runtime from body time
-                    task.bodyTime -= runtime;
-                    if (MathUtility.withinTolerance(task.bodyTime, 0)) {
-                        // If task finishes, update WCRT
-                        // Update runtime
-                    }
-                    // Update virtualRuntime
-                    task.virtualRuntime += runtime * (1024/task.weight);
-                    // Increase time
-                    time += runtime;
-                    // Reschedule if task is released or task finishes
+                Queue<Task> queue = queues.get(i);
+                Task task = selectTask(queue); // selectTask 함수 안에 minimum virtual runtime 로직 존재
+                if (task == null)
+                    continue;
+
+                task.bodyTime--;
+                if (task.bodyTime <= 0) {
+                    task.WCRT_by_CFS_simulator = time + 1 - task.startTime;
+                    isRunning = false;
+                    remainingRuntime = 0;
                 }
+                else {
+                    remainingRuntime--;
+                    if (remainingRuntime <= 0)
+                        isRunning = false;
+                    // TODO add task back to queue and reschedule after modifying virtual runtime
+                }
+                // The vruntime variable is updated after each run of the process.
+                task.virtualRuntime += 1024/task.weight;
             }
+            time++;
         }
     }
 
@@ -76,25 +81,25 @@ public class CFSSimulator {
         return queues;
     }
 
-    private List<List<Task>> initializeRunningTasks(List<Queue<Task>> queues, int time) {
-        List<List<Task>> runningTasks = new ArrayList<>();
-
-        for (Queue<Task> queueInCore : queues) {
-            Iterator<Task> iterator = queueInCore.iterator();
-            List<Task> runningTasksInCore = new ArrayList<>();
-            while (iterator.hasNext()) {
-                Task task = iterator.next();
-                if (task.startTime > time)
-                    continue;
-                runningTasksInCore.add(task);
-                iterator.remove();
-            }
-
-            runningTasks.add(runningTasksInCore);
-            logger.info("Running tasks in core " + runningTasks.size() + ": " + runningTasksInCore.stream().map(task -> task.id).collect(Collectors.toList()));
+    private Task selectTask(Queue<Task> queue) {
+        // Case 1: running task already exists
+        // Use a flag
+        if (isRunning) {
+            return currentTask;
         }
+        // Case 2: select a new task if a new task is released
+        // Choose task with minimum virtual runtime
+        // runtime with following formula: runtime = max(targetedLatency * (task.weight / totalWeight), minimumGranularity)
+        else {
+            // TODO check if diverging is needed
+            Task task = queue.poll();
+            if (task == null)
+                return null;
 
-        return runningTasks;
+            double totalWeight = queue.stream().mapToDouble(t -> t.weight).sum();
+            remainingRuntime = (int) Math.max(targetedLatency * task.weight / totalWeight, minimumGranularity);
+            isRunning = true;
+            return task;
+        }
     }
-
 }

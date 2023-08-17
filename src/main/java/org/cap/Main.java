@@ -2,6 +2,7 @@ package org.cap;
 
 import org.cap.model.Core;
 import org.cap.simulation.Analyzer;
+import org.cap.simulation.CFSSimulator;
 import org.cap.simulation.PFSSimulator;
 import org.cap.utility.JsonReader;
 
@@ -11,20 +12,34 @@ public class Main {
     public static void main(String[] args) {
         JsonReader jsonReader = new JsonReader();
         List<Core> cores = jsonReader.readTasksFromFile("tasks.json");
-
-        analyze_by_simulator(cores);
+        analyze_by_CFS_simulator(cores);
 
         cores = jsonReader.readTasksFromFile("tasks.json");
         analyze_by_proposed(cores);
     }
 
-    private static void analyze_by_simulator(List<Core> cores) {
+    private static void analyze_by_PFS_simulator(List<Core> cores) {
         PFSSimulator PFSSimulator = new PFSSimulator();
 
         long startTime = System.nanoTime();
         boolean schedulability = PFSSimulator.simulatePFS(cores).schedulability;
         long duration = (System.nanoTime() - startTime)/1000;
-        System.out.println("Time consumption (simulator): " + duration + " us");
+        System.out.println("Time consumption (PFS simulator): " + duration + " us");
+
+        if (schedulability) {
+            System.out.println("All tasks are schedulable");
+        } else {
+            System.out.println("Not all tasks are schedulable");
+        }
+    }
+
+    private static void analyze_by_CFS_simulator(List<Core> cores) {
+        CFSSimulator CFSSimulator = new CFSSimulator();
+
+        long startTime = System.nanoTime();
+        boolean schedulability = CFSSimulator.simulateCFS(cores).schedulability;
+        long duration = (System.nanoTime() - startTime)/1000;
+        System.out.println("Time consumption (CFS simulator): " + duration + " us");
 
         if (schedulability) {
             System.out.println("All tasks are schedulable");

@@ -57,6 +57,10 @@ public class Task {
     public int Eib;
     public int WCRT_by_proposed;
 
+    public int WCRT_by_CFS_simulator;
+
+    public int WCRT_by_PFS_simulator;
+
     public Task copy() {
         Task newTask = new Task();
         newTask.id = this.id;

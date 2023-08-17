@@ -57,7 +57,7 @@ public class PFSSimulator {
                 }
             }
 
-            time += 1;
+            time++;
             if (time != hyperperiod)
                 addPeriodicJobs(cores, queues, time);
 
