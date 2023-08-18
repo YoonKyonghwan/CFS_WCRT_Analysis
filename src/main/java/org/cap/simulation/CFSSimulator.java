@@ -38,8 +38,9 @@ public class CFSSimulator {
         int hyperperiod = MathUtility.getLCM(cores);
 
         while (time < hyperperiod) {
+            addPeriodicJobs(cores, queues, time);
+
             for (int i = 0; i < cores.size(); i++) {
-                // TODO add periodic jobs
                 Queue<Task> queue = queues.get(i);
                 Task task = selectTask(queue); // selectTask 함수 안에 minimum virtual runtime 로직 존재
                 if (task == null)
@@ -47,6 +48,7 @@ public class CFSSimulator {
 
                 executeTask(task, queue, time);
             }
+
             time++;
         }
     }
@@ -122,12 +124,36 @@ public class CFSSimulator {
             Queue<Task> queueInCore = new PriorityQueue<>(Comparator.comparingDouble(task -> task.virtualRuntime));
             for (Task task : core.tasks) {
                 task.weight = NiceToWeight.getWeight(task.nice);
+                task.originalReadTime = task.readTime;
                 task.originalBodyTime = task.bodyTime;
+                task.originalWriteTime = task.writeTime;
+                task.readReleaseTime = task.startTime;
+                skipReadStageIfNoReadTime(task);
                 queueInCore.add(task.copy());
             }
             queues.add(queueInCore);
         }
         return queues;
+    }
+
+    private void addPeriodicJobs(List<Core> cores, List<Queue<Task>> queues, int time) {
+        for (Core core : cores) {
+            for (Task task : core.tasks) {
+                if (time > task.startTime && task.period > 0 && time % task.period == 0) {
+                    logger.info("Task " + task.id + " released with read time " + task.readTime + ", body Time " + task.bodyTime + ", write time " + task.writeTime);
+                    task.readReleaseTime = time;
+                    skipReadStageIfNoReadTime(task);
+                    queues.get(core.id-1).add(task.copy());
+                }
+            }
+        }
+    }
+
+    private void skipReadStageIfNoReadTime(Task task) {
+        if (task.stage == Stage.READ && task.readTime <= 0) {
+            task.stage = Stage.BODY;
+            task.bodyReleaseTime = task.readReleaseTime;
+        }
     }
 
     private Task selectTask(Queue<Task> queueInCore) {

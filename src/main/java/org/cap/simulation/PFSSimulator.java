@@ -329,10 +329,10 @@ public class PFSSimulator {
             // TODO add to core in order of release time
             for (Task task : core.tasks) {
                 if (time > task.startTime && task.period > 0 && time % task.period == 0) {
+                    logger.info("Task " + task.id + " released with read time " + task.readTime + ", body Time " + task.bodyTime + ", write time " + task.writeTime);
                     task.readReleaseTime = time;
                     skipReadStageIfNoReadTime(task);
                     queues.get(core.id-1).add(task.copy());
-                    logger.info("Task " + task.id + " released with read time " + task.readTime + ", write time " + task.writeTime + ", body Time " + task.bodyTime);
                 }
             }
         }
