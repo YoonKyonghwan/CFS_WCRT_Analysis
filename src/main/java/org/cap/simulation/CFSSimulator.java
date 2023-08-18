@@ -11,8 +11,7 @@ public class CFSSimulator {
     private static final Logger logger = LoggerUtility.getLogger();
 
     // TODO refactor to simulation state later
-    boolean isReadBlocked = false;
-    boolean isWriteBlocked = false;
+    BlockingPolicy blockingPolicy = BlockingPolicy.NONE;
     Task currentTask = null;
     boolean isRunning = false;
     int remainingRuntime = 0;
@@ -26,7 +25,7 @@ public class CFSSimulator {
 
         boolean schedulability = true;
         int time = 0;
-        // TODO consider using red-black trees
+        // TODO consider using a red-black tree or other data structures
         List<Queue<Task>> queues = initializeQueues(cores);
 
         performSimulation(cores, queues, time);
@@ -70,10 +69,11 @@ public class CFSSimulator {
                 if (task.readTime <= 0) {
                     task.stage = Stage.BODY;
                     task.bodyReleaseTime = time + 1;
+                    blockingPolicy = BlockingPolicy.NONE;
                 }
                 else {
                     if (isRunning)
-                        isReadBlocked = true;
+                        blockingPolicy = BlockingPolicy.READ;
                 }
                 break;
             case BODY:
@@ -94,9 +94,10 @@ public class CFSSimulator {
                 if (task.writeTime <= 0) {
                     task.stage = Stage.COMPLETED;
                     isRunning = false;
+                    blockingPolicy = BlockingPolicy.NONE;
                 }
                 else
-                    isWriteBlocked = true;
+                    blockingPolicy = BlockingPolicy.WRITE;
                 break;
         }
 
@@ -104,8 +105,11 @@ public class CFSSimulator {
         if (task.stage != Stage.COMPLETED) {
             if (isRunning)
                 currentTask = task;
-            else
+            else {
                 queueInCore.add(task);
+                if (blockingPolicy == BlockingPolicy.READ)
+                    blockingPolicy = BlockingPolicy.NONE;
+            }
         } else {
             logger.info("Task " + task.id + " completed at time " + (time + 1) + " with RT " + (time - task.readReleaseTime + 1));
             task.WCRT_by_CFS_simulator = time + 1 - task.readReleaseTime;
@@ -132,10 +136,38 @@ public class CFSSimulator {
             return currentTask;
         }
         // Case 2: select a new task if a new task is released
-        // TODO consider blocking policy
         else {
             // TODO check if diverging is needed
-            Task task = queueInCore.poll();
+            Task task = null;
+            switch (blockingPolicy) {
+                case NONE:
+                    task = queueInCore.poll();
+                    break;
+                case READ:
+                    List<Task> readTasks = new ArrayList<>();
+                    queueInCore.removeIf(t -> {
+                        if (t.stage == Stage.READ) {
+                            readTasks.add(t);
+                            return true;
+                        }
+                        return false;
+                    });
+                    task = queueInCore.poll();
+                    queueInCore.addAll(readTasks);
+                    break;
+                case WRITE:
+                    List<Task> writeTasks = new ArrayList<>();
+                    queueInCore.removeIf(t -> {
+                        if (t.stage == Stage.WRITE) {
+                            writeTasks.add(t);
+                            return true;
+                        }
+                        return false;
+                    });
+                    task = queueInCore.poll();
+                    queueInCore.addAll(writeTasks);
+                    break;
+            }
             if (task == null)
                 return null;
 
