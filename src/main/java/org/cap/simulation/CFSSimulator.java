@@ -10,31 +10,24 @@ import java.util.logging.Logger;
 public class CFSSimulator {
     private static final Logger logger = LoggerUtility.getLogger();
 
-    // TODO refactor to simulation state later
-    BlockingPolicy blockingPolicy = BlockingPolicy.NONE;
-    Task currentTask = null;
-    boolean isRunning = false;
-    int remainingRuntime = 0;
-    // TODO receive as parameters
-    int targetedLatency = 20;
-    int minimumGranularity = 4;
-
     public SimulationResult simulateCFS(List<Core> cores) {
         LoggerUtility.initializeLogger();
         logger.info("Starting CFS simulation");
 
         boolean schedulability = true;
+        CFSSimulationState simulationState = new CFSSimulationState(20, 4);
         int time = 0;
         // TODO consider using a red-black tree or other data structures
         List<Queue<Task>> queues = initializeQueues(cores);
 
-        performSimulation(cores, queues, time);
+        performSimulation(cores, queues, simulationState, time);
 
         LoggerUtility.addConsoleLogger();
+        // TODO modify schedulability
         return new SimulationResult(schedulability);
     }
 
-    private void performSimulation(List<Core> cores, List<Queue<Task>> queues, int time) {
+    private void performSimulation(List<Core> cores, List<Queue<Task>> queues, CFSSimulationState simulationState, int time) {
         int hyperperiod = MathUtility.getLCM(cores);
 
         while (time < hyperperiod) {
@@ -42,24 +35,24 @@ public class CFSSimulator {
 
             for (int i = 0; i < cores.size(); i++) {
                 Queue<Task> queue = queues.get(i);
-                Task task = selectTask(queue); // selectTask 함수 안에 minimum virtual runtime 로직 존재
+                Task task = selectTask(queue, simulationState);
                 if (task == null)
                     continue;
 
-                executeTask(task, queue, time);
+                executeTask(task, queue, simulationState, time);
             }
 
             time++;
         }
     }
 
-    private void executeTask(Task task, Queue<Task> queueInCore, int time) {
+    private void executeTask(Task task, Queue<Task> queueInCore, CFSSimulationState simulationState, int time) {
         logger.info("Task " + task.id + " executed for 1 in stage: " + task.stage);
 
         // Decrease runtime
-        remainingRuntime--;
-        if (remainingRuntime <= 0)
-            isRunning = false;
+        simulationState.remainingRuntime--;
+        if (simulationState.remainingRuntime <= 0)
+            simulationState.isRunning = false;
 
         // Update virtual runtime
         task.virtualRuntime += 1024/ task.weight;
@@ -71,11 +64,11 @@ public class CFSSimulator {
                 if (task.readTime <= 0) {
                     task.stage = Stage.BODY;
                     task.bodyReleaseTime = time + 1;
-                    blockingPolicy = BlockingPolicy.NONE;
+                    simulationState.blockingPolicy = BlockingPolicy.NONE;
                 }
                 else {
-                    if (isRunning)
-                        blockingPolicy = BlockingPolicy.READ;
+                    if (simulationState.isRunning)
+                        simulationState.blockingPolicy = BlockingPolicy.READ;
                 }
                 break;
             case BODY:
@@ -87,7 +80,7 @@ public class CFSSimulator {
                     }
                     else {
                         task.stage = Stage.COMPLETED;
-                        isRunning = false;
+                        simulationState.isRunning = false;
                     }
                 }
                 break;
@@ -95,22 +88,22 @@ public class CFSSimulator {
                 task.writeTime--;
                 if (task.writeTime <= 0) {
                     task.stage = Stage.COMPLETED;
-                    isRunning = false;
-                    blockingPolicy = BlockingPolicy.NONE;
+                    simulationState.isRunning = false;
+                    simulationState.blockingPolicy = BlockingPolicy.NONE;
                 }
                 else
-                    blockingPolicy = BlockingPolicy.WRITE;
+                    simulationState.blockingPolicy = BlockingPolicy.WRITE;
                 break;
         }
 
         // Add task back to queue if task is not finished but runtime is over
         if (task.stage != Stage.COMPLETED) {
-            if (isRunning)
-                currentTask = task;
+            if (simulationState.isRunning)
+                simulationState.currentTask = task;
             else {
                 queueInCore.add(task);
-                if (blockingPolicy == BlockingPolicy.READ)
-                    blockingPolicy = BlockingPolicy.NONE;
+                if (simulationState.blockingPolicy == BlockingPolicy.READ)
+                    simulationState.blockingPolicy = BlockingPolicy.NONE;
             }
         } else {
             logger.info("Task " + task.id + " completed at time " + (time + 1) + " with RT " + (time - task.readReleaseTime + 1));
@@ -156,16 +149,19 @@ public class CFSSimulator {
         }
     }
 
-    private Task selectTask(Queue<Task> queueInCore) {
+    // TODO check if start time has to be compared
+    // periodic jobs are added later, but when initializing, it adds all tasks with start time
+    // initializeTasks를 할 때, start time이 0인 task들만 더하고, 나머지는 addPeriodicJobs에서 추가하는 식으로 처리하면?
+    private Task selectTask(Queue<Task> queueInCore, CFSSimulationState simulationState) {
         // Case 1: running task already exists
-        if (isRunning) {
-            return currentTask;
+        if (simulationState.isRunning) {
+            return simulationState.currentTask;
         }
         // Case 2: select a new task if a new task is released
         else {
             // TODO check if diverging is needed
             Task task = null;
-            switch (blockingPolicy) {
+            switch (simulationState.blockingPolicy) {
                 case NONE:
                     task = queueInCore.poll();
                     break;
@@ -198,8 +194,8 @@ public class CFSSimulator {
                 return null;
 
             double totalWeight = queueInCore.stream().mapToDouble(t -> t.weight).sum();
-            remainingRuntime = (int) Math.max(targetedLatency * task.weight / totalWeight, minimumGranularity);
-            isRunning = true;
+            simulationState.remainingRuntime = (int) Math.max(simulationState.targetedLatency * task.weight / totalWeight, simulationState.minimumGranularity);
+            simulationState.isRunning = true;
             return task;
         }
     }

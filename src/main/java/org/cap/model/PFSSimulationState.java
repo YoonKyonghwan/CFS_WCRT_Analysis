@@ -1,10 +1,10 @@
 package org.cap.model;
 
-public class SimulationState {
+public class PFSSimulationState {
     public BlockingPolicy blockingPolicy;
     public String writingTaskKey;
 
-    public SimulationState(BlockingPolicy blockingPolicy, String writingTaskKey) {
+    public PFSSimulationState(BlockingPolicy blockingPolicy, String writingTaskKey) {
         this.blockingPolicy = blockingPolicy;
         this.writingTaskKey = writingTaskKey;
     }
