@@ -39,20 +39,20 @@ public class CFSSimulator {
                 List<Double> WCRT = WCRTs.get(i);
                 CoreState coreState = simulationState.coreStates.get(i);
 
-                Task task;
+                Task task = null;
                 if (coreState.isRunning)
                     task = coreState.currentTask;
                 else {
                     List<Task> minRuntimeTasks = getMinRuntimeTasks(queue, simulationState);
                     if (minRuntimeTasks.size() > 1) {
-                        pathDiverges(i, minRuntimeTasks, cores, queues, WCRTs, simulationState, time);
+                        pathDiverges(i, minRuntimeTasks, cores, queues, WCRTs, simulationState, time, hyperperiod);
                         break outerLoop;
                     }
                     else if (minRuntimeTasks.size() == 1)
                         task = minRuntimeTasks.get(0);
-                    else
-                        continue;
                 }
+                if (task == null)
+                    continue; 
                 setRuntime(i, task, queue, simulationState);
                 executeTask(task, queue, WCRT, simulationState, coreState, time);
             }
@@ -183,11 +183,10 @@ public class CFSSimulator {
         }
     }
 
-    private void pathDiverges(int coreIndex, List<Task> minRuntimeTasks, List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time) {
+    private void pathDiverges(int coreIndex, List<Task> minRuntimeTasks, List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time, int hyperperiod) {
         List<List<List<Double>>> possibleWCRTs = new ArrayList<>();
-        for (int i = 0; i < minRuntimeTasks.size(); i++) {
-            possibleWCRTs.add(simulatePath(cores, queues, WCRTs, simulationState, time, minRuntimeTasks.get(i), coreIndex));
-        }
+        for (int i = 0; i < minRuntimeTasks.size(); i++)
+            possibleWCRTs.add(simulatePath(cores, queues, WCRTs, simulationState, time, hyperperiod, minRuntimeTasks, i, coreIndex));
 
         for (int i = 0; i < WCRTs.size(); i++) {
             List<Double> WCRTInCore = WCRTs.get(i);
@@ -253,19 +252,61 @@ public class CFSSimulator {
         return minRuntimeTasks;
     }
 
-    private List<List<Double>> simulatePath(List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time, Task minRuntimeTask, int coreIndex) {
+    private List<List<Double>> simulatePath(List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time, int hyperperiod, List<Task> minRuntimeTasks, int taskIndex, int coreIndex) {
         logger.info("\n******* Path diverged *******");
 
+        List<Task> cloneMinRuntimeTasks = new ArrayList<>(minRuntimeTasks);
+        Task minRuntimeTask = cloneMinRuntimeTasks.remove(taskIndex);
+        queues.get(coreIndex).addAll(cloneMinRuntimeTasks);
+
+        CFSSimulationState cloneSimulationState = simulationState.copy();
         List<Queue<Task>> cloneQueues = copyQueues(queues);
         List<List<Double>> cloneWCRTs = WCRTs.stream()
                 .map(ArrayList::new)
                 .collect(Collectors.toList());
+
+        Queue<Task> cloneQueue = cloneQueues.get(coreIndex);
+        List<Double> cloneWCRT = cloneWCRTs.get(coreIndex);
+        CoreState coreState = simulationState.coreStates.get(coreIndex);
 
         // TODO n번째 코어에서 시작해 runtime을 우선 계산하고 task를 실행시키고 나머지 시뮬레이션을 진행한다.
         // 1. 주어진 minRuntimeTask에 대해 runtime을 계산한다.
         // 2. 나머지 코어에 대해서 task를 고르고 coreState에 저장하고 runtime을 계산한다.
         // 3. 나머지 시뮬레이션을 동일하게 진행하고, WCRTs를 업데이트한다.
 
+        setRuntime(coreIndex, minRuntimeTask, cloneQueues.get(coreIndex), cloneSimulationState);
+        executeTask(minRuntimeTask, cloneQueue, cloneWCRT, cloneSimulationState, coreState, time);
+        time++;
+
+        outerLoop:
+        while (time < hyperperiod) {
+            addJobs(cores, cloneQueues, time);
+
+            for (int i = 0; i < cores.size(); i++) {
+                Queue<Task> queue = cloneQueues.get(i);
+                List<Double> WCRT = cloneWCRTs.get(i);
+                CoreState pathCoreState = cloneSimulationState.coreStates.get(i);
+
+                Task task = null;
+                if (pathCoreState.isRunning)
+                    task = pathCoreState.currentTask;
+                else {
+                    List<Task> pathMinRuntimeTasks = getMinRuntimeTasks(cloneQueue, cloneSimulationState);
+                    if (pathMinRuntimeTasks.size() > 1) {
+                        pathDiverges(i, pathMinRuntimeTasks, cores, cloneQueues, cloneWCRTs, cloneSimulationState, time, hyperperiod);
+                        break outerLoop;
+                    }
+                    else if (pathMinRuntimeTasks.size() == 1)
+                        task = pathMinRuntimeTasks.get(0);
+                }
+                if (task == null)
+                    continue;
+                setRuntime(i, task, queue, cloneSimulationState);
+                executeTask(task, queue, WCRT, cloneSimulationState, pathCoreState, time);
+            }
+
+            time++;
+        }
         checkSchedulability(cores, cloneQueues, cloneWCRTs);
 
         return cloneWCRTs;
