@@ -207,6 +207,9 @@ public class CFSSimulator {
     }
 
     private static List<Task> getMinRuntimeTasks(Queue<Task> queueInCore, CFSSimulationState simulationState) {
+        if (queueInCore.isEmpty())
+            return new ArrayList<>();
+
         List<Task> minRuntimeTasks = new ArrayList<>();
         double minRuntime;
         switch (simulationState.blockingPolicy) {
@@ -269,10 +272,10 @@ public class CFSSimulator {
                 .collect(Collectors.toList());
         Queue<Task> cloneQueue = cloneQueues.get(coreIndex);
         List<Double> cloneWCRT = cloneWCRTs.get(coreIndex);
-        CoreState coreState = simulationState.coreStates.get(coreIndex);
+        CoreState cloneCoreState = cloneSimulationState.coreStates.get(coreIndex);
 
         setRuntime(coreIndex, minRuntimeTask, cloneQueue, cloneSimulationState);
-        executeTask(minRuntimeTask, cloneQueue, cloneWCRT, cloneSimulationState, coreState, time);
+        executeTask(minRuntimeTask, cloneQueue, cloneWCRT, cloneSimulationState, cloneCoreState, time);
         time++;
 
         performSimulation(cores, cloneQueues, cloneWCRTs, cloneSimulationState, time, hyperperiod);
