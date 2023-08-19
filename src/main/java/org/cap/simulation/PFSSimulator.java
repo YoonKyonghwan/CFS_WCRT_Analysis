@@ -29,7 +29,7 @@ public class PFSSimulator {
         performSimulation(cores, queues, WCRTs, simulationState, time);
 
         LoggerUtility.addConsoleLogger();
-        return checkSchedulability(cores, WCRTs, queues);
+        return checkSchedulability(cores, queues, WCRTs);
     }
 
     /**
@@ -85,7 +85,7 @@ public class PFSSimulator {
 
         performSimulation(cores, cloneQueues, cloneWCRTs, simulationState, time);
 
-        checkSchedulability(cores, cloneWCRTs, cloneQueues);
+        checkSchedulability(cores, cloneQueues, cloneWCRTs);
         return cloneWCRTs;
     }
 
@@ -196,12 +196,12 @@ public class PFSSimulator {
 
             for (int i = 0; i < WCRTs.size(); i++) {
                 List<Double> WCRTInCore = WCRTs.get(i);
-                for (int k = 0; k < WCRTInCore.size(); k++) {
+                for (int j = 0; j < WCRTInCore.size(); j++) {
                     double maxWCRT = 0;
                     for (List<List<Double>> wcrts : possibleWCRTs) {
-                        maxWCRT = Math.max(maxWCRT, wcrts.get(i).get(k));
+                        maxWCRT = Math.max(maxWCRT, wcrts.get(i).get(j));
                     }
-                    WCRTInCore.set(k, maxWCRT);
+                    WCRTInCore.set(j, maxWCRT);
                 }
             }
             return true;
@@ -214,12 +214,12 @@ public class PFSSimulator {
 
             for (int i = 0; i< WCRTs.size(); i++) {
                 List<Double> WCRTInCore = WCRTs.get(i);
-                for (int k = 0; k< WCRTInCore.size(); k++) {
+                for (int j = 0; j< WCRTInCore.size(); j++) {
                     double maxWCRT = 0;
                     for (List<List<Double>> wcrts : possibleWCRTs) {
-                        maxWCRT = Math.max(maxWCRT, wcrts.get(i).get(k));
+                        maxWCRT = Math.max(maxWCRT, wcrts.get(i).get(j));
                     }
-                    WCRTInCore.set(k, maxWCRT);
+                    WCRTInCore.set(j, maxWCRT);
                 }
             }
             return true;
@@ -352,7 +352,7 @@ public class PFSSimulator {
                 .noneMatch(task -> task.stage == Stage.READ || task.stage == Stage.WRITE) || blockingPolicy == BlockingPolicy.NONE;
     }
 
-    private SimulationResult checkSchedulability(List<Core> cores, List<List<Double>> WCRTs, List<Queue<Task>> queues) {
+    private SimulationResult checkSchedulability(List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs) {
         boolean schedulability = true;
 
         logger.info("\n******************************");

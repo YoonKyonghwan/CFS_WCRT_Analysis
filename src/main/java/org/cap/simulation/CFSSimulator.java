@@ -24,12 +24,13 @@ public class CFSSimulator {
         performSimulation(cores, queues, WCRTs, simulationState, time);
 
         LoggerUtility.addConsoleLogger();
-        return checkSchedulability(cores, WCRTs, queues);
+        return checkSchedulability(cores, queues, WCRTs);
     }
 
     private void performSimulation(List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time) {
         int hyperperiod = MathUtility.getLCM(cores);
 
+        outerLoop:
         while (time < hyperperiod) {
             addJobs(cores, queues, time);
 
@@ -37,10 +38,22 @@ public class CFSSimulator {
                 Queue<Task> queue = queues.get(i);
                 List<Double> WCRT = WCRTs.get(i);
                 CoreState coreState = simulationState.coreStates.get(i);
-                Task task = selectTask(queue, simulationState, coreState);
-                if (task == null)
-                    continue;
 
+                Task task;
+                if (coreState.isRunning)
+                    task = coreState.currentTask;
+                else {
+                    List<Task> minRuntimeTasks = getMinRuntimeTasks(queue, simulationState);
+                    if (minRuntimeTasks.size() > 1) {
+                        pathDiverges(i, minRuntimeTasks, cores, queues, WCRTs, simulationState, time);
+                        break outerLoop;
+                    }
+                    else if (minRuntimeTasks.size() == 1)
+                        task = minRuntimeTasks.get(0);
+                    else
+                        continue;
+                }
+                setRuntime(i, task, queue, simulationState);
                 executeTask(task, queue, WCRT, simulationState, coreState, time);
             }
 
@@ -170,76 +183,110 @@ public class CFSSimulator {
         }
     }
 
-    private Task selectTask(Queue<Task> queueInCore, CFSSimulationState simulationState, CoreState coreState) {
-        // Case 1: running task already exists
-        if (coreState.isRunning) {
-            return coreState.currentTask;
+    private void pathDiverges(int coreIndex, List<Task> minRuntimeTasks, List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time) {
+        List<List<List<Double>>> possibleWCRTs = new ArrayList<>();
+        for (int i = 0; i < minRuntimeTasks.size(); i++) {
+            possibleWCRTs.add(simulatePath(cores, queues, WCRTs, simulationState, time, minRuntimeTasks.get(i), coreIndex));
         }
-        // Case 2: select a new task if a new task is released
-        else {
-            if (queueInCore.isEmpty())
-                return null;
 
-            Task task = null;
-            List<Task> minRuntimeTasks = new ArrayList<>();
-            double minRuntime;
-            switch (simulationState.blockingPolicy) {
-                case NONE:
-                    minRuntime = queueInCore.peek().virtualRuntime;
-                    while (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
-                        minRuntimeTasks.add(queueInCore.poll());
-                    break;
-                case READ:
-                    List<Task> readTasks = new ArrayList<>();
-                    queueInCore.removeIf(t -> {
-                        if (t.stage == Stage.READ) {
-                            readTasks.add(t);
-                            return true;
-                        }
-                        return false;
-                    });
-
-                    minRuntime = queueInCore.peek().virtualRuntime;
-                    while (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
-                        minRuntimeTasks.add(queueInCore.poll());
-
-                    queueInCore.addAll(readTasks);
-                    break;
-                case WRITE:
-                    List<Task> writeTasks = new ArrayList<>();
-                    queueInCore.removeIf(t -> {
-                        if (t.stage == Stage.WRITE) {
-                            writeTasks.add(t);
-                            return true;
-                        }
-                        return false;
-                    });
-
-                    minRuntime = queueInCore.peek().virtualRuntime;
-                    while (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
-                        minRuntimeTasks.add(queueInCore.poll());
-
-                    queueInCore.addAll(writeTasks);
-                    break;
+        for (int i = 0; i < WCRTs.size(); i++) {
+            List<Double> WCRTInCore = WCRTs.get(i);
+            for (int j = 0; j < WCRTInCore.size(); j++) {
+                double maxWCRT = 0;
+                for (List<List<Double>> wcrts : possibleWCRTs) {
+                    maxWCRT = Math.max(maxWCRT, wcrts.get(i).get(j));
+                }
+                WCRTInCore.set(j, maxWCRT);
             }
-
-            // May need to revert to WCRTs since task has to be copied
-            if (minRuntimeTasks.size() > 1)
-                diverge();
-            else
-                task = minRuntimeTasks.get(0);
-
-            double totalWeight = queueInCore.stream().mapToDouble(t -> t.weight).sum();
-            coreState.remainingRuntime = (int) Math.max(simulationState.targetedLatency * task.weight / totalWeight, simulationState.minimumGranularity);
-            coreState.isRunning = true;
-            return task;
         }
     }
 
-    private void diverge(List<Core> cores, List<Queue<Task>> queues, CFSSimulationState simulationState, int time) {
+    private void setRuntime(int coreIndex, Task task, Queue<Task> queueInCore, CFSSimulationState simulationState) {
+        CoreState coreState = simulationState.coreStates.get(coreIndex);
+        double totalWeight = queueInCore.stream().mapToDouble(t -> t.weight).sum();
+        coreState.remainingRuntime = (int) Math.max(simulationState.targetedLatency * task.weight / totalWeight, simulationState.minimumGranularity);
+        coreState.isRunning = true;
     }
 
-    private SimulationResult checkSchedulability(List<Core> cores, List<List<Double>> WCRTs, List<Queue<Task>> queues) {
+    private static List<Task> getMinRuntimeTasks(Queue<Task> queueInCore, CFSSimulationState simulationState) {
+        List<Task> minRuntimeTasks = new ArrayList<>();
+        double minRuntime;
+        switch (simulationState.blockingPolicy) {
+            case NONE:
+                minRuntime = queueInCore.peek().virtualRuntime;
+                while (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
+                    minRuntimeTasks.add(queueInCore.poll());
+                break;
+            case READ:
+                List<Task> readTasks = new ArrayList<>();
+                queueInCore.removeIf(t -> {
+                    if (t.stage == Stage.READ) {
+                        readTasks.add(t);
+                        return true;
+                    }
+                    return false;
+                });
+
+                minRuntime = queueInCore.peek().virtualRuntime;
+                while (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
+                    minRuntimeTasks.add(queueInCore.poll());
+
+                queueInCore.addAll(readTasks);
+                break;
+            case WRITE:
+                List<Task> writeTasks = new ArrayList<>();
+                queueInCore.removeIf(t -> {
+                    if (t.stage == Stage.WRITE) {
+                        writeTasks.add(t);
+                        return true;
+                    }
+                    return false;
+                });
+
+                minRuntime = queueInCore.peek().virtualRuntime;
+                while (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
+                    minRuntimeTasks.add(queueInCore.poll());
+
+                queueInCore.addAll(writeTasks);
+                break;
+        }
+        return minRuntimeTasks;
+    }
+
+    private List<List<Double>> simulatePath(List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time, Task minRuntimeTask, int coreIndex) {
+        logger.info("\n******* Path diverged *******");
+
+        List<Queue<Task>> cloneQueues = copyQueues(queues);
+        List<List<Double>> cloneWCRTs = WCRTs.stream()
+                .map(ArrayList::new)
+                .collect(Collectors.toList());
+
+        // TODO n번째 코어에서 시작해 runtime을 우선 계산하고 task를 실행시키고 나머지 시뮬레이션을 진행한다.
+        // 1. 주어진 minRuntimeTask에 대해 runtime을 계산한다.
+        // 2. 나머지 코어에 대해서 task를 고르고 coreState에 저장하고 runtime을 계산한다.
+        // 3. 나머지 시뮬레이션을 동일하게 진행하고, WCRTs를 업데이트한다.
+
+        checkSchedulability(cores, cloneQueues, cloneWCRTs);
+
+        return cloneWCRTs;
+    }
+
+    private List<Queue<Task>> copyQueues(List<Queue<Task>> originalQueues) {
+        List<Queue<Task>> newQueues = new ArrayList<>();
+
+        for (Queue<Task> originalQueueInCore : originalQueues) {
+            Queue<Task> newQueueInCore = new PriorityQueue<>(Comparator.comparingDouble(task -> task.virtualRuntime));
+            for (Task task : originalQueueInCore) {
+                newQueueInCore.add(task.copy());
+            }
+            newQueues.add(newQueueInCore);
+        }
+
+        return newQueues;
+    }
+
+
+    private SimulationResult checkSchedulability(List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs) {
         boolean schedulability = true;
 
         logger.info("\n******************************");
