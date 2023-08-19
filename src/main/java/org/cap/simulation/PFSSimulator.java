@@ -26,7 +26,7 @@ public class PFSSimulator {
         PFSSimulationState simulationState = new PFSSimulationState(BlockingPolicy.NONE, "-1:0");
         int time = 0;
 
-        performSimulation(cores, WCRTs, queues, simulationState, time);
+        performSimulation(cores, queues, WCRTs, simulationState, time);
 
         LoggerUtility.addConsoleLogger();
         return checkSchedulability(cores, WCRTs, queues);
@@ -36,7 +36,7 @@ public class PFSSimulator {
      * This method performs the simulation while the current time is less than the LCM of the tasks.
      * It calculates the allocation for each task and executes it accordingly.
      */
-    private void performSimulation(List<Core> cores, List<List<Double>> WCRTs, List<Queue<Task>> queues, PFSSimulationState simulationState, int time) {
+    private void performSimulation(List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, PFSSimulationState simulationState, int time) {
         int hyperperiod = MathUtility.getLCM(cores);
         while (time < hyperperiod) {
             logger.info(String.format("\n>>> CURRENT TIME: %d <<<\n", time));
@@ -83,7 +83,7 @@ public class PFSSimulator {
             .map(ArrayList::new)
             .collect(Collectors.toList());
 
-        performSimulation(cores, cloneWCRTs, cloneQueues, simulationState, time);
+        performSimulation(cores, cloneQueues, cloneWCRTs, simulationState, time);
 
         checkSchedulability(cores, cloneWCRTs, cloneQueues);
         return cloneWCRTs;
@@ -345,6 +345,13 @@ public class PFSSimulator {
         }
     }
 
+    // TODO check if condition has to change
+    private boolean noReadAndWriteTasksRunning(List<List<Task>> runningTasks, BlockingPolicy blockingPolicy) {
+        return runningTasks.stream()
+                .flatMap(List::stream)
+                .noneMatch(task -> task.stage == Stage.READ || task.stage == Stage.WRITE) || blockingPolicy == BlockingPolicy.NONE;
+    }
+
     private SimulationResult checkSchedulability(List<Core> cores, List<List<Double>> WCRTs, List<Queue<Task>> queues) {
         boolean schedulability = true;
 
@@ -370,10 +377,4 @@ public class PFSSimulator {
         return new SimulationResult(schedulability, WCRTs);
     }
 
-    // TODO check if condition has to change
-    private boolean noReadAndWriteTasksRunning(List<List<Task>> runningTasks, BlockingPolicy blockingPolicy) {
-        return runningTasks.stream()
-                .flatMap(List::stream)
-                .noneMatch(task -> task.stage == Stage.READ || task.stage == Stage.WRITE) || blockingPolicy == BlockingPolicy.NONE;
-    }
 }
