@@ -281,7 +281,7 @@ public class PFSSimulator {
         return runningTasks;
     }
 
-    private static List<List<Double>> initializeWCRTs(List<Core> cores) {
+    private List<List<Double>> initializeWCRTs(List<Core> cores) {
         List<List<Double>> WCRTs = new ArrayList<>();
         for (Core core: cores) {
             WCRTs.add(new ArrayList<>(Collections.nCopies(core.tasks.size(), 0.0)));

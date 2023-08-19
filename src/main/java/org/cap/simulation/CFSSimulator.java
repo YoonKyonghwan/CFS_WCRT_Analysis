@@ -31,7 +31,7 @@ public class CFSSimulator {
         int hyperperiod = MathUtility.getLCM(cores);
 
         while (time < hyperperiod) {
-            addPeriodicJobs(cores, queues, time);
+            addJobs(cores, queues, time);
 
             for (int i = 0; i < cores.size(); i++) {
                 Queue<Task> queue = queues.get(i);
@@ -122,24 +122,34 @@ public class CFSSimulator {
                 task.originalWriteTime = task.writeTime;
                 task.readReleaseTime = task.startTime;
                 skipReadStageIfNoReadTime(task);
-                queueInCore.add(task.copy());
+                if (task.startTime == 0)
+                    queueInCore.add(task.copy());
             }
             queues.add(queueInCore);
         }
         return queues;
     }
 
-    private void addPeriodicJobs(List<Core> cores, List<Queue<Task>> queues, int time) {
+    private void addJobs(List<Core> cores, List<Queue<Task>> queues, int time) {
         for (Core core : cores) {
             for (Task task : core.tasks) {
-                if (time > task.startTime && task.period > 0 && time % task.period == 0) {
+                if (initialJobs(time, task) || periodicJobs(time, task)) {
                     logger.info("Task " + task.id + " released with read time " + task.readTime + ", body Time " + task.bodyTime + ", write time " + task.writeTime);
                     task.readReleaseTime = time;
                     skipReadStageIfNoReadTime(task);
                     queues.get(core.id-1).add(task.copy());
+
                 }
             }
         }
+    }
+
+    private boolean initialJobs(int time, Task task) {
+        return task.startTime > 0 && time == task.startTime;
+    }
+
+    private boolean periodicJobs(int time, Task task) {
+        return time > task.startTime && task.period > 0 && (time - task.startTime) % task.period == 0;
     }
 
     private void skipReadStageIfNoReadTime(Task task) {
@@ -149,9 +159,6 @@ public class CFSSimulator {
         }
     }
 
-    // TODO check if start time has to be compared
-    // periodic jobs are added later, but when initializing, it adds all tasks with start time
-    // initializeTasks를 할 때, start time이 0인 task들만 더하고, 나머지는 addPeriodicJobs에서 추가하는 식으로 처리하면?
     private Task selectTask(Queue<Task> queueInCore, CFSSimulationState simulationState) {
         // Case 1: running task already exists
         if (simulationState.isRunning) {
@@ -159,11 +166,17 @@ public class CFSSimulator {
         }
         // Case 2: select a new task if a new task is released
         else {
-            // TODO check if diverging is needed
+            if (queueInCore.isEmpty())
+                return null;
+
             Task task = null;
+            List<Task> minRuntimeTasks = new ArrayList<>();
+            double minRuntime;
             switch (simulationState.blockingPolicy) {
                 case NONE:
-                    task = queueInCore.poll();
+                    minRuntime = queueInCore.peek().virtualRuntime;
+                    while (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
+                        minRuntimeTasks.add(queueInCore.poll());
                     break;
                 case READ:
                     List<Task> readTasks = new ArrayList<>();
@@ -174,7 +187,11 @@ public class CFSSimulator {
                         }
                         return false;
                     });
-                    task = queueInCore.poll();
+
+                    minRuntime = queueInCore.peek().virtualRuntime;
+                    while (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
+                        minRuntimeTasks.add(queueInCore.poll());
+
                     queueInCore.addAll(readTasks);
                     break;
                 case WRITE:
@@ -186,17 +203,30 @@ public class CFSSimulator {
                         }
                         return false;
                     });
-                    task = queueInCore.poll();
+
+                    minRuntime = queueInCore.peek().virtualRuntime;
+                    while (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
+                        minRuntimeTasks.add(queueInCore.poll());
+
                     queueInCore.addAll(writeTasks);
                     break;
             }
-            if (task == null)
-                return null;
+
+            // May need to revert to WCRTs since task has to be copied
+            if (minRuntimeTasks.size() > 1)
+                // TODO diverge
+                diverge();
+            else
+                task = minRuntimeTasks.get(0);
 
             double totalWeight = queueInCore.stream().mapToDouble(t -> t.weight).sum();
             simulationState.remainingRuntime = (int) Math.max(simulationState.targetedLatency * task.weight / totalWeight, simulationState.minimumGranularity);
             simulationState.isRunning = true;
             return task;
         }
+    }
+
+    // TODO receive simulation state
+    private void diverge() {
     }
 }
