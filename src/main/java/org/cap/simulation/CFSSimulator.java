@@ -20,16 +20,15 @@ public class CFSSimulator {
         List<Queue<Task>> queues = initializeQueues(cores);
         CFSSimulationState simulationState = new CFSSimulationState(20, 4, cores.size());
         int time = 0;
+        int hyperperiod = MathUtility.getLCM(cores);
 
-        performSimulation(cores, queues, WCRTs, simulationState, time);
+        performSimulation(cores, queues, WCRTs, simulationState, time, hyperperiod);
 
         LoggerUtility.addConsoleLogger();
         return checkSchedulability(cores, queues, WCRTs);
     }
 
-    private void performSimulation(List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time) {
-        int hyperperiod = MathUtility.getLCM(cores);
-
+    private void performSimulation(List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time, int hyperperiod) {
         outerLoop:
         while (time < hyperperiod) {
             addJobs(cores, queues, time);
@@ -252,63 +251,32 @@ public class CFSSimulator {
         return minRuntimeTasks;
     }
 
+    /**
+     * 주어진 minRuntimeTask에 대해 runtime을 계산한다.
+     * 나머지 코어에 대해서 task를 고르고 coreState에 저장하고 runtime을 계산한다.
+     * 나머지 시뮬레이션을 동일하게 진행하고, WCRTs를 업데이트한다.
+     */
     private List<List<Double>> simulatePath(List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time, int hyperperiod, List<Task> minRuntimeTasks, int taskIndex, int coreIndex) {
         logger.info("\n******* Path diverged *******");
 
         List<Task> cloneMinRuntimeTasks = new ArrayList<>(minRuntimeTasks);
         Task minRuntimeTask = cloneMinRuntimeTasks.remove(taskIndex);
         queues.get(coreIndex).addAll(cloneMinRuntimeTasks);
-
         CFSSimulationState cloneSimulationState = simulationState.copy();
         List<Queue<Task>> cloneQueues = copyQueues(queues);
         List<List<Double>> cloneWCRTs = WCRTs.stream()
                 .map(ArrayList::new)
                 .collect(Collectors.toList());
-
         Queue<Task> cloneQueue = cloneQueues.get(coreIndex);
         List<Double> cloneWCRT = cloneWCRTs.get(coreIndex);
         CoreState coreState = simulationState.coreStates.get(coreIndex);
 
-        // TODO n번째 코어에서 시작해 runtime을 우선 계산하고 task를 실행시키고 나머지 시뮬레이션을 진행한다.
-        // 1. 주어진 minRuntimeTask에 대해 runtime을 계산한다.
-        // 2. 나머지 코어에 대해서 task를 고르고 coreState에 저장하고 runtime을 계산한다.
-        // 3. 나머지 시뮬레이션을 동일하게 진행하고, WCRTs를 업데이트한다.
-
-        setRuntime(coreIndex, minRuntimeTask, cloneQueues.get(coreIndex), cloneSimulationState);
+        setRuntime(coreIndex, minRuntimeTask, cloneQueue, cloneSimulationState);
         executeTask(minRuntimeTask, cloneQueue, cloneWCRT, cloneSimulationState, coreState, time);
         time++;
 
-        outerLoop:
-        while (time < hyperperiod) {
-            addJobs(cores, cloneQueues, time);
-
-            for (int i = 0; i < cores.size(); i++) {
-                Queue<Task> queue = cloneQueues.get(i);
-                List<Double> WCRT = cloneWCRTs.get(i);
-                CoreState pathCoreState = cloneSimulationState.coreStates.get(i);
-
-                Task task = null;
-                if (pathCoreState.isRunning)
-                    task = pathCoreState.currentTask;
-                else {
-                    List<Task> pathMinRuntimeTasks = getMinRuntimeTasks(cloneQueue, cloneSimulationState);
-                    if (pathMinRuntimeTasks.size() > 1) {
-                        pathDiverges(i, pathMinRuntimeTasks, cores, cloneQueues, cloneWCRTs, cloneSimulationState, time, hyperperiod);
-                        break outerLoop;
-                    }
-                    else if (pathMinRuntimeTasks.size() == 1)
-                        task = pathMinRuntimeTasks.get(0);
-                }
-                if (task == null)
-                    continue;
-                setRuntime(i, task, queue, cloneSimulationState);
-                executeTask(task, queue, WCRT, cloneSimulationState, pathCoreState, time);
-            }
-
-            time++;
-        }
+        performSimulation(cores, cloneQueues, cloneWCRTs, cloneSimulationState, time, hyperperiod);
         checkSchedulability(cores, cloneQueues, cloneWCRTs);
-
         return cloneWCRTs;
     }
 
