@@ -262,11 +262,14 @@ public class CFSSimulator {
     private List<List<Double>> simulatePath(List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time, int hyperperiod, List<Task> minRuntimeTasks, int taskIndex, int coreIndex) {
         logger.info("\n******* Path diverged *******");
 
-        List<Task> cloneMinRuntimeTasks = new ArrayList<>(minRuntimeTasks);
+        List<Task> cloneMinRuntimeTasks = new ArrayList<>();
+        for (Task task : minRuntimeTasks)
+            cloneMinRuntimeTasks.add(task.copy());
         Task minRuntimeTask = cloneMinRuntimeTasks.remove(taskIndex);
-        queues.get(coreIndex).addAll(cloneMinRuntimeTasks);
+
         CFSSimulationState cloneSimulationState = simulationState.copy();
         List<Queue<Task>> cloneQueues = copyQueues(queues);
+        cloneQueues.get(coreIndex).addAll(cloneMinRuntimeTasks);
         List<List<Double>> cloneWCRTs = WCRTs.stream()
                 .map(ArrayList::new)
                 .collect(Collectors.toList());
