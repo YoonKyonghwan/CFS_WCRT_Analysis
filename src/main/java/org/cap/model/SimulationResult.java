@@ -10,8 +10,4 @@ public class SimulationResult {
         this.schedulability = schedulability;
         this.WCRTs = WCRTs;
     }
-
-    public SimulationResult(boolean schedulability) {
-        this.schedulability = schedulability;
-    }
 }
