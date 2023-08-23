@@ -61,7 +61,7 @@ public class CFSSimulator {
     }
 
     private void executeTask(Task task, Queue<Task> queueInCore, List<Double> WCRTInCore, CFSSimulationState simulationState, CoreState coreState, int time) {
-        logger.info("Task " + task.id + " executed for 1 in stage: " + task.stage);
+        logger.info(time + ": Task " + task.id + " executed in stage: " + task.stage);
 
         // Decrease runtime
         coreState.remainingRuntime--;
@@ -79,6 +79,7 @@ public class CFSSimulator {
                     task.stage = Stage.BODY;
                     task.bodyReleaseTime = time + 1;
                     simulationState.blockingPolicy = BlockingPolicy.NONE;
+                    // Need to set after the second ends to avoid blocking canceled earlier
                 }
                 else {
                     if (coreState.isRunning)
@@ -228,9 +229,11 @@ public class CFSSimulator {
                     return false;
                 });
 
-                minRuntime = queueInCore.peek().virtualRuntime;
-                while (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
-                    minRuntimeTasks.add(queueInCore.poll());
+                if (!queueInCore.isEmpty()) {
+                    minRuntime = queueInCore.peek().virtualRuntime;
+                    while (queueInCore.peek().virtualRuntime == minRuntime)
+                        minRuntimeTasks.add(queueInCore.poll());
+                }
 
                 queueInCore.addAll(readTasks);
                 break;
@@ -244,9 +247,11 @@ public class CFSSimulator {
                     return false;
                 });
 
-                minRuntime = queueInCore.peek().virtualRuntime;
-                while (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
-                    minRuntimeTasks.add(queueInCore.poll());
+                if (!queueInCore.isEmpty()) {
+                    minRuntime = queueInCore.peek().virtualRuntime;
+                    while (queueInCore.peek().virtualRuntime == minRuntime)
+                        minRuntimeTasks.add(queueInCore.poll());
+                }
 
                 queueInCore.addAll(writeTasks);
                 break;
