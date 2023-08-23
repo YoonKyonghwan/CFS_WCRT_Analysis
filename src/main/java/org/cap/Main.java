@@ -9,6 +9,9 @@ import org.cap.simulation.PFSSimulator;
 import org.cap.utility.JsonReader;
 
 import java.util.*;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 public class Main {
     public static void main(String[] args) {
@@ -42,16 +45,33 @@ public class Main {
 
         List<List<Core>> possibleCores = generatePossibleCores(cores);
 
-        for (List<Core> possibleCore : possibleCores) {
-            SimulationResult simulationResult = CFSSimulator.simulateCFS(possibleCore);
+        int maxNumThreads = 8;
+        boolean schedulability = true;
+        ExecutorService threadsForSimulation = Executors.newFixedThreadPool(maxNumThreads);
+        List<Future<SimulationResult>> results = new ArrayList<>();
 
-            if (simulationResult.schedulability) {
-                System.out.println("All tasks are schedulable");
-            } else {
-                System.out.println("Not all tasks are schedulable");
-                break;
+        for (List<Core> possibleCore : possibleCores) {
+            Future<SimulationResult> futureResult = threadsForSimulation.submit(() ->
+                CFSSimulator.simulateCFS(possibleCore));
+            results.add(futureResult);
+        }
+
+        for (Future<SimulationResult> future : results) {
+            try {
+                SimulationResult simulationResult = future.get();
+                if (!simulationResult.schedulability) {
+                    System.out.println("Not all tasks are schedulable");
+                    schedulability = false;
+                    break;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
             }
         }
+        if (schedulability)
+            System.out.println("All tasks are schedulable");
+
+        threadsForSimulation.shutdown();
 
         long duration = (System.currentTimeMillis() - startTime);
         System.out.println("Time consumption (CFS simulator): " + duration + " ms");
