@@ -12,10 +12,11 @@ public class CFSSimulator {
     private static final Logger logger = LoggerUtility.getLogger();
 
     public SimulationResult simulateCFS(List<Core> cores) {
-        logger.info("Starting CFS simulation");
+        logger.info("\n------------------------------");
+        logger.info("*** CFS Simulation Started ***");
+        logger.info("------------------------------");
 
         List<List<Double>> WCRTs = initializeWCRTs(cores);
-        // TODO consider using a red-black tree or other data structures
         List<Queue<Task>> queues = initializeQueues(cores);
         CFSSimulationState simulationState = new CFSSimulationState(20, 4, cores.size());
         int time = 0;
@@ -29,6 +30,7 @@ public class CFSSimulator {
     private void performSimulation(List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time, int hyperperiod) {
         outerLoop:
         while (time < 2 * hyperperiod) {
+            logger.info("\nTime " + time + ":");
             addJobs(cores, queues, time);
 
             for (int i = 0; i < cores.size(); i++) {
@@ -59,7 +61,7 @@ public class CFSSimulator {
     }
 
     private void executeTask(Task task, Queue<Task> queueInCore, List<Double> WCRTInCore, CFSSimulationState simulationState, CoreState coreState, int time) {
-        logger.info(time + ": Task " + task.id + " executed in stage: " + task.stage);
+        logger.info("- Task " + task.id + " executed in stage: " + task.stage);
 
         // Decrease runtime
         coreState.remainingRuntime--;
@@ -151,19 +153,26 @@ public class CFSSimulator {
         }
         return queues;
     }
-    
+
     private void addJobs(List<Core> cores, List<Queue<Task>> queues, int time) {
+        boolean isAdded = false;
         for (Core core : cores) {
             for (Task task : core.tasks) {
+                if (!isAdded && (initialJobs(time, task) || periodicJobs(time, task))) {
+                    logger.info("\nTasks Released:");
+                    isAdded = true;
+                }
+
                 if (initialJobs(time, task) || periodicJobs(time, task)) {
-                    logger.info("Task " + task.id + " released with read time " + task.readTime + ", body Time " + task.bodyTime + ", write time " + task.writeTime);
+                    logger.info("- Task " + task.id + " (Read Time: " + task.readTime + ", Body Time: " + task.bodyTime + ", Write Time: " + task.writeTime + ")");
                     task.readReleaseTime = time;
                     skipReadStageIfNoReadTime(task);
                     queues.get(core.id-1).add(task.copy());
-
                 }
             }
         }
+        if (isAdded)
+            logger.info("");
     }
 
     private boolean initialJobs(int time, Task task) {
@@ -263,7 +272,7 @@ public class CFSSimulator {
      * 나머지 시뮬레이션을 동일하게 진행하고, WCRTs를 업데이트한다.
      */
     private List<List<Double>> simulatePath(List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time, int hyperperiod, List<Task> minRuntimeTasks, int taskIndex, int coreIndex) {
-        logger.info("\n******* Path diverged *******");
+        logger.info("\n*** Path diverged ***");
 
         List<Task> cloneMinRuntimeTasks = new ArrayList<>();
         for (Task task : minRuntimeTasks)
@@ -307,21 +316,22 @@ public class CFSSimulator {
     private SimulationResult checkSchedulability(List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs) {
         boolean schedulability = true;
 
-        logger.info("\n******************************");
+        logger.info("\n------------------------------");
         logger.info("***** Simulation Results *****");
-        logger.info("******************************");
+        logger.info("------------------------------");
 
+        logger.info("Unfinished tasks");
         for (int i = 0; i < queues.size(); i++) {
             Queue<Task> queue = queues.get(i);
-            logger.info("Unfinished tasks in core " + (i+1) + ": " + queue.stream().map(task -> task.id).collect(Collectors.toList()));
+            logger.info("- Core " + (i+1) + ": " + queue.stream().map(task -> task.id).collect(Collectors.toList()));
             schedulability = false;
         }
 
         for (int i = 0; i < cores.size(); i++) {
-            logger.info("\n******* Core " + (i+1) + " Results *******");
+            logger.info("\nCore " + (i+1) + " Results");
             for (int j = 0; j < cores.get(i).tasks.size(); j++) {
                 Task task = cores.get(i).tasks.get(j);
-                logger.info("Task " + task.id + " WCRT: " + WCRTs.get(i).get(j) + " period: " + task.period);
+                logger.info("- Task " + task.id + " (WCRT: " + WCRTs.get(i).get(j) + ", Period: " + task.period + ")");
                 if (WCRTs.get(i).get(j) > task.period)
                     schedulability = false;
             }
