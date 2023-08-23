@@ -12,7 +12,6 @@ public class CFSSimulator {
     private static final Logger logger = LoggerUtility.getLogger();
 
     public SimulationResult simulateCFS(List<Core> cores) {
-        LoggerUtility.initializeLogger();
         logger.info("Starting CFS simulation");
 
         List<List<Double>> WCRTs = initializeWCRTs(cores);
@@ -24,7 +23,6 @@ public class CFSSimulator {
 
         performSimulation(cores, queues, WCRTs, simulationState, time, hyperperiod);
 
-        LoggerUtility.addConsoleLogger();
         return checkSchedulability(cores, queues, WCRTs);
     }
 
@@ -153,7 +151,7 @@ public class CFSSimulator {
         }
         return queues;
     }
-
+    
     private void addJobs(List<Core> cores, List<Queue<Task>> queues, int time) {
         for (Core core : cores) {
             for (Task task : core.tasks) {

@@ -1,9 +1,7 @@
 package org.cap.utility;
 
 import org.cap.model.Core;
-import org.cap.model.Task;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public class MathUtility {
