@@ -30,7 +30,7 @@ public class CFSSimulator {
 
     private void performSimulation(List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time, int hyperperiod) {
         outerLoop:
-        while (time < hyperperiod) {
+        while (time < 2 * hyperperiod) {
             addJobs(cores, queues, time);
 
             for (int i = 0; i < cores.size(); i++) {
