@@ -24,6 +24,9 @@ public class CFSSimulator {
 
         performSimulation(cores, queues, WCRTs, simulationState, time, hyperperiod);
 
+        logger.info("\n------------------------------");
+        logger.info("******** Final Result ********");
+        logger.info("------------------------------");
         return checkSchedulability(cores, queues, WCRTs);
     }
 
@@ -49,10 +52,10 @@ public class CFSSimulator {
                     }
                     else if (minRuntimeTasks.size() == 1)
                         task = minRuntimeTasks.get(0);
+                    if (task == null)
+                        continue;
+                    setRuntime(i, task, queue, simulationState);
                 }
-                if (task == null)
-                    continue; 
-                setRuntime(i, task, queue, simulationState);
                 executeTask(task, queue, WCRT, simulationState, coreState, time);
             }
 
@@ -209,7 +212,7 @@ public class CFSSimulator {
 
     private void setRuntime(int coreIndex, Task task, Queue<Task> queueInCore, CFSSimulationState simulationState) {
         CoreState coreState = simulationState.coreStates.get(coreIndex);
-        double totalWeight = queueInCore.stream().mapToDouble(t -> t.weight).sum();
+        double totalWeight = queueInCore.stream().mapToDouble(t -> t.weight).sum() + task.weight;
         coreState.remainingRuntime = (int) Math.max(simulationState.targetedLatency * task.weight / totalWeight, simulationState.minimumGranularity);
         coreState.isRunning = true;
     }
