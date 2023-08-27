@@ -287,7 +287,7 @@ public class CFSSimulator {
 
                 if (!queueInCore.isEmpty()) {
                     minRuntime = queueInCore.peek().virtualRuntime;
-                    while (queueInCore.peek().virtualRuntime == minRuntime)
+                    while (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
                         minRuntimeTasks.add(queueInCore.poll());
                 }
 
@@ -305,7 +305,7 @@ public class CFSSimulator {
 
                 if (!queueInCore.isEmpty()) {
                     minRuntime = queueInCore.peek().virtualRuntime;
-                    while (queueInCore.peek().virtualRuntime == minRuntime)
+                    while (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
                         minRuntimeTasks.add(queueInCore.poll());
                 }
 

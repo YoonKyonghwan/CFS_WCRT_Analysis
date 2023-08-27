@@ -1,27 +1,37 @@
 package org.cap.model;
 
+import com.google.gson.annotations.Expose;
+
 public class Task {
     // Unique identifier for the task
+    @Expose
     public int id;
 
     // Start time for the task
+    @Expose
     public int startTime;
 
     // Remaining time required to read the task
+    @Expose
     public double readTime;
 
     // Remaining time required for the task body
+    @Expose
     public double bodyTime;
 
     // Remaining time required to write the task
+    @Expose
     public double writeTime;
 
     // Nice value for the task
+    @Expose
     public int nice;
 
     // Period of the task
+    @Expose
     public int period;
 
+    @Expose
     public int index;
 
     // Current stage of the task

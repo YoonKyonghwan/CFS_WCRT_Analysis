@@ -1,10 +1,15 @@
 package org.cap.model;
 
+import com.google.gson.annotations.Expose;
+
 import java.util.List;
 import java.util.ArrayList;
 
 public class Core {
+    @Expose
     public int id;
+
+    @Expose
     public List<Task> tasks;
 
     public Core copy() {

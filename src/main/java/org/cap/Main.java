@@ -7,6 +7,7 @@ import org.cap.simulation.CFSSimulator;
 import org.cap.simulation.PFSSimulator;
 import org.cap.utility.CombinationUtility;
 import org.cap.utility.JsonReader;
+import org.cap.utility.JsonTaskCreator;
 import org.cap.utility.LoggerUtility;
 
 import java.util.*;
@@ -15,12 +16,16 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 public class Main {
-
     private static final int maxNumThreads = 8;
+    private static final int numberOfTasks = 10;
+    private static final double cpuUtilization = 0.70;
 
     public static void main(String[] args) {
+        JsonTaskCreator jsonTaskCreator = new JsonTaskCreator();
+        String fileName = jsonTaskCreator.generateFile(numberOfTasks, cpuUtilization);
+
         JsonReader jsonReader = new JsonReader();
-        List<Core> cores = jsonReader.readTasksFromFile("tasks.json");
+        List<Core> cores = jsonReader.readTasksFromFile(fileName);
         analyze_by_CFS_simulator(cores);
 
         // cores = jsonReader.readTasksFromFile("tasks.json");
@@ -49,6 +54,8 @@ public class Main {
         CFSSimulator CFSSimulator = new CFSSimulator();
 
         long startTime = System.currentTimeMillis();
+
+        CFSSimulator.simulateCFS(cores);
 
         List<List<Core>> possibleCores = CombinationUtility.generatePossibleCores(cores);
 
