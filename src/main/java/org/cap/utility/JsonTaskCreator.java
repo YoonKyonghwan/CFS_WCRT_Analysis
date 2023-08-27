@@ -48,7 +48,7 @@ public class JsonTaskCreator {
             task.id = i;
             task.startTime = 0;
             task.readTime = generateBlockingTime();
-            task.bodyTime = 500 + rand.nextInt(501); // 500~1000
+            task.bodyTime = 500.0 + Math.round(rand.nextDouble() * 100) * 5.0;
             task.writeTime = generateBlockingTime();
             task.nice = 0;
             // TODO fix index; should be initialized based on core
@@ -67,11 +67,12 @@ public class JsonTaskCreator {
     }
 
     private static double generateBlockingTime() {
-        int val = rand.nextInt(100);
-        if (val < 20) {
+        double chance = rand.nextDouble();
+
+        if (chance < 0.2) {
             return 0;
         } else {
-            return 50 + rand.nextInt(51); // 50~100
+            return 50.0 + Math.round(rand.nextDouble() * 10) * 5.0;
         }
     }
 }
