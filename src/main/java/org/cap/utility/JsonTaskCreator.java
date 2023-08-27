@@ -5,8 +5,10 @@ import com.google.gson.GsonBuilder;
 import org.cap.model.Core;
 import org.cap.model.Task;
 
-import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -26,17 +28,7 @@ public class JsonTaskCreator {
             cores.add(core);
         }
 
-        Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().setPrettyPrinting().create();
-        String json = gson.toJson(cores);
-
-        String filename = "2cores_" + numberOfTasks + "tasks.json";
-        try (FileWriter file = new FileWriter(filename)) {
-            file.write(json);
-            file.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return filename;
+        return createFile(numberOfTasks, cpuUtilization, cores);
     }
 
     private static void generateTasks(int numberOfTasks, double cpuUtilization, List<Task> tasks) {
@@ -74,5 +66,38 @@ public class JsonTaskCreator {
         } else {
             return 50.0 + Math.round(rand.nextDouble() * 10) * 5.0;
         }
+    }
+
+    private static String createFile(int numberOfTasks, double cpuUtilization, List<Core> cores) {
+        Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().setPrettyPrinting().create();
+        String json = gson.toJson(cores);
+
+        String baseFilename = "2cores_" + numberOfTasks + "tasks_" + cpuUtilization + "cpuUtilization";
+
+        Path folderPath = Paths.get("inputs");
+        if (!Files.exists(folderPath)) {
+            try {
+                Files.createDirectory(folderPath);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+
+        int counter = 1;
+        String filename = baseFilename + "_1.json";
+        Path filePath = Paths.get(folderPath.toString(), filename);
+
+        while (Files.exists(filePath)) {
+            counter++;
+            filename = baseFilename + "_" + counter + ".json";
+            filePath = Paths.get(folderPath.toString(), filename);
+        }
+
+        try {
+            Files.write(filePath, json.getBytes());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return filePath.toString();
     }
 }
