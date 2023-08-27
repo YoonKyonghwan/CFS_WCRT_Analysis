@@ -9,6 +9,7 @@ public class CFSSimulationState {
     public int targetedLatency = 20;
     public int minimumGranularity = 4;
     public BlockingPolicy blockingPolicy = BlockingPolicy.NONE;
+    public int blockingTaskId;
     public List<CoreState> coreStates;
     // TODO consider moving WCRTs and Queues to here after completion
 

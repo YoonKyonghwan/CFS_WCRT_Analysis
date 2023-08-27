@@ -36,6 +36,12 @@ public class CFSSimulator {
             logger.info("\nTime " + time + ":");
             addJobs(cores, queues, time);
 
+            List<Task> blockingTasks = getBlockingTasks(queues, simulationState);
+            if (blockingTasks.size() > 1) {
+                pathDivergesBlocking(blockingTasks, cores, queues, WCRTs, simulationState, time, hyperperiod);
+                break outerLoop;
+            }
+
             for (int i = 0; i < cores.size(); i++) {
                 Queue<Task> queue = queues.get(i);
                 List<Double> WCRT = WCRTs.get(i);
@@ -47,7 +53,7 @@ public class CFSSimulator {
                 else {
                     List<Task> minRuntimeTasks = getMinRuntimeTasks(queue, simulationState);
                     if (minRuntimeTasks.size() > 1) {
-                        pathDiverges(i, minRuntimeTasks, cores, queues, WCRTs, simulationState, time, hyperperiod);
+                        pathDivergesEqualMinRuntime(i, minRuntimeTasks, cores, queues, WCRTs, simulationState, time, hyperperiod);
                         break outerLoop;
                     }
                     else if (minRuntimeTasks.size() == 1)
@@ -193,10 +199,34 @@ public class CFSSimulator {
         }
     }
 
-    private void pathDiverges(int coreIndex, List<Task> minRuntimeTasks, List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time, int hyperperiod) {
+    private void pathDivergesBlocking(List<Task> blockingTasks, List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time, int hyperperiod) {
+        List<List<List<Double>>> possibleWCRTs = new ArrayList<>();
+        for (int i = 0; i < blockingTasks.size(); i++) {
+            if (blockingTasks.get(i).stage == Stage.READ)
+                simulationState.blockingPolicy = BlockingPolicy.READ;
+            else
+                simulationState.blockingPolicy = BlockingPolicy.WRITE;
+
+            simulationState.blockingTaskId = blockingTasks.get(i).id;
+            possibleWCRTs.add(simulatePathBlocking(cores, queues, WCRTs, simulationState, time, hyperperiod));
+        }
+
+        for (int i = 0; i < WCRTs.size(); i++) {
+            List<Double> WCRTInCore = WCRTs.get(i);
+            for (int j = 0; j < WCRTInCore.size(); j++) {
+                double maxWCRT = 0;
+                for (List<List<Double>> wcrts : possibleWCRTs) {
+                    maxWCRT = Math.max(maxWCRT, wcrts.get(i).get(j));
+                }
+                WCRTInCore.set(j, maxWCRT);
+            }
+        }
+    }
+
+    private void pathDivergesEqualMinRuntime(int coreIndex, List<Task> minRuntimeTasks, List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time, int hyperperiod) {
         List<List<List<Double>>> possibleWCRTs = new ArrayList<>();
         for (int i = 0; i < minRuntimeTasks.size(); i++)
-            possibleWCRTs.add(simulatePath(cores, queues, WCRTs, simulationState, time, hyperperiod, minRuntimeTasks, i, coreIndex));
+            possibleWCRTs.add(simulatePathEqualMinRuntime(cores, queues, WCRTs, simulationState, time, hyperperiod, minRuntimeTasks, i, coreIndex));
 
         for (int i = 0; i < WCRTs.size(); i++) {
             List<Double> WCRTInCore = WCRTs.get(i);
@@ -217,6 +247,22 @@ public class CFSSimulator {
         coreState.isRunning = true;
     }
 
+    private List<Task> getBlockingTasks(List<Queue<Task>> queues, CFSSimulationState simulationState) {
+        if (simulationState.blockingPolicy != BlockingPolicy.NONE)
+            return new ArrayList<>();
+
+        List<Task> readWriteTasks = new ArrayList<>();
+        for (Queue<Task> queue : queues) {
+            if (queue.isEmpty())
+                continue;
+            Task task = queue.peek();
+            if (task.stage == Stage.READ || task.stage == Stage.WRITE)
+                readWriteTasks.add(task);
+        }
+
+        return readWriteTasks;
+    }
+
     private static List<Task> getMinRuntimeTasks(Queue<Task> queueInCore, CFSSimulationState simulationState) {
         if (queueInCore.isEmpty())
             return new ArrayList<>();
@@ -232,7 +278,7 @@ public class CFSSimulator {
             case READ:
                 List<Task> readTasks = new ArrayList<>();
                 queueInCore.removeIf(t -> {
-                    if (t.stage == Stage.READ) {
+                    if (t.stage == Stage.READ && t.id != simulationState.blockingTaskId) {
                         readTasks.add(t);
                         return true;
                     }
@@ -250,7 +296,7 @@ public class CFSSimulator {
             case WRITE:
                 List<Task> writeTasks = new ArrayList<>();
                 queueInCore.removeIf(t -> {
-                    if (t.stage == Stage.WRITE) {
+                    if (t.stage == Stage.WRITE && t.id != simulationState.blockingTaskId) {
                         writeTasks.add(t);
                         return true;
                     }
@@ -269,12 +315,26 @@ public class CFSSimulator {
         return minRuntimeTasks;
     }
 
+    private List<List<Double>> simulatePathBlocking(List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time, int hyperperiod) {
+        logger.info("\n*** Path diverged ***");
+
+        CFSSimulationState cloneSimulationState = simulationState.copy();
+        List<Queue<Task>> cloneQueues = copyQueues(queues);
+        List<List<Double>> cloneWCRTs = WCRTs.stream()
+            .map(ArrayList::new)
+            .collect(Collectors.toList());
+
+        performSimulation(cores, cloneQueues, cloneWCRTs, cloneSimulationState, time, hyperperiod);
+        checkSchedulability(cores, cloneQueues, cloneWCRTs);
+        return cloneWCRTs;
+    }
+
     /**
      * 주어진 minRuntimeTask에 대해 runtime을 계산한다.
      * 나머지 코어에 대해서 task를 고르고 coreState에 저장하고 runtime을 계산한다.
      * 나머지 시뮬레이션을 동일하게 진행하고, WCRTs를 업데이트한다.
      */
-    private List<List<Double>> simulatePath(List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time, int hyperperiod, List<Task> minRuntimeTasks, int taskIndex, int coreIndex) {
+    private List<List<Double>> simulatePathEqualMinRuntime(List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time, int hyperperiod, List<Task> minRuntimeTasks, int taskIndex, int coreIndex) {
         logger.info("\n*** Path diverged ***");
 
         List<Task> cloneMinRuntimeTasks = new ArrayList<>();
@@ -286,8 +346,8 @@ public class CFSSimulator {
         List<Queue<Task>> cloneQueues = copyQueues(queues);
         cloneQueues.get(coreIndex).addAll(cloneMinRuntimeTasks);
         List<List<Double>> cloneWCRTs = WCRTs.stream()
-                .map(ArrayList::new)
-                .collect(Collectors.toList());
+            .map(ArrayList::new)
+            .collect(Collectors.toList());
         Queue<Task> cloneQueue = cloneQueues.get(coreIndex);
         List<Double> cloneWCRT = cloneWCRTs.get(coreIndex);
         CoreState cloneCoreState = cloneSimulationState.coreStates.get(coreIndex);
