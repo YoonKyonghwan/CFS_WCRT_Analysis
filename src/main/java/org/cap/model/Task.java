@@ -85,6 +85,7 @@ public class Task {
         newTask.bodyReleaseTime = this.bodyReleaseTime;
         newTask.writeReleaseTime = this.writeReleaseTime;
         newTask.weight = this.weight;
+        newTask.virtualRuntime = this.virtualRuntime;
         newTask.Eir = this.Eir;
         newTask.Eiw = this.Eiw;
         newTask.Eib = this.Eib;

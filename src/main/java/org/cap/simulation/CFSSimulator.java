@@ -34,7 +34,7 @@ public class CFSSimulator {
         outerLoop:
         while (time < 2 * hyperperiod) {
             logger.info("\nTime " + time + ":");
-            addJobs(cores, queues, time);
+            addJobs(cores, queues, simulationState.coreStates, time);
 
             List<Task> blockingTasks = getBlockingTasks(queues, simulationState);
             if (blockingTasks.size() > 1) {
@@ -63,6 +63,7 @@ public class CFSSimulator {
                     setRuntime(i, task, queue, simulationState);
                 }
                 executeTask(task, queue, WCRT, simulationState, coreState, time);
+                updateMinimumVirtualRuntime(coreState, queue);
             }
 
             time++;
@@ -135,6 +136,11 @@ public class CFSSimulator {
         }
     }
 
+    private void updateMinimumVirtualRuntime(CoreState coreState, Queue<Task> queue) {
+        if (queue.size() >= 1)
+            coreState.minimumVirtualRuntime = queue.peek().virtualRuntime;
+    }
+
     private List<List<Double>> initializeWCRTs(List<Core> cores) {
         List<List<Double>> WCRTs = new ArrayList<>();
         for (Core core: cores) {
@@ -154,6 +160,7 @@ public class CFSSimulator {
                 task.originalBodyTime = task.bodyTime;
                 task.originalWriteTime = task.writeTime;
                 task.readReleaseTime = task.startTime;
+                task.virtualRuntime = 0;
                 skipReadStageIfNoReadTime(task);
                 if (task.startTime == 0)
                     queueInCore.add(task.copy());
@@ -163,9 +170,12 @@ public class CFSSimulator {
         return queues;
     }
 
-    private void addJobs(List<Core> cores, List<Queue<Task>> queues, int time) {
+    private void addJobs(List<Core> cores, List<Queue<Task>> queues, List<CoreState> coreStates, int time) {
         boolean isAdded = false;
         for (Core core : cores) {
+            CoreState coreState = coreStates.get(core.id-1);
+            Queue<Task> queue = queues.get(core.id-1);
+
             for (Task task : core.tasks) {
                 if (!isAdded && (initialJobs(time, task) || periodicJobs(time, task))) {
                     logger.info("\nTasks Released:");
@@ -175,8 +185,9 @@ public class CFSSimulator {
                 if (initialJobs(time, task) || periodicJobs(time, task)) {
                     logger.info("- Task " + task.id + " (Read Time: " + task.readTime + ", Body Time: " + task.bodyTime + ", Write Time: " + task.writeTime + ")");
                     task.readReleaseTime = time;
+                    task.virtualRuntime = coreState.minimumVirtualRuntime;
                     skipReadStageIfNoReadTime(task);
-                    queues.get(core.id-1).add(task.copy());
+                    queue.add(task.copy());
                 }
             }
         }
