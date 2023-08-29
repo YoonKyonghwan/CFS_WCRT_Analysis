@@ -17,7 +17,7 @@ import java.util.concurrent.Future;
 
 public class Main {
     private static final int maxNumThreads = 8;
-    private static final int numberOfTasks = 4;
+    private static final int numberOfTasks = 2;
     private static final double cpuUtilization = 0.90;
 
     public static void main(String[] args) {
@@ -53,13 +53,28 @@ public class Main {
 
         CFSSimulator CFSSimulator = new CFSSimulator();
 
-        long startTime = System.currentTimeMillis();
+        long startTime = System.nanoTime();
+        boolean schedulability = CFSSimulator.simulateCFS(cores).schedulability;
+        long duration = (System.nanoTime() - startTime)/1000;
+        System.out.println("Time consumption (CFS simulator): " + duration + " us");
 
-        CFSSimulator.simulateCFS(cores);
+        if (schedulability) {
+            System.out.println("All tasks are schedulable");
+        } else {
+            System.out.println("Not all tasks are schedulable");
+        }
+    }
 
-        List<List<Core>> possibleCores = CombinationUtility.generatePossibleCores(cores);
 
+    private static void analyze_all_combinations_by_CFS_simulator(List<Core> cores) {
+        LoggerUtility.initializeLogger();
+        LoggerUtility.addConsoleLogger();
+
+        CFSSimulator CFSSimulator = new CFSSimulator();
+
+        long startTime = System.nanoTime();
         boolean schedulability = true;
+        List<List<Core>> possibleCores = CombinationUtility.generatePossibleCores(cores);
         ExecutorService threadsForSimulation = Executors.newFixedThreadPool(maxNumThreads);
         List<Future<SimulationResult>> results = new ArrayList<>();
 
@@ -86,7 +101,7 @@ public class Main {
 
         threadsForSimulation.shutdown();
 
-        long duration = (System.currentTimeMillis() - startTime);
+        long duration = (System.nanoTime() - startTime)/1000;
         System.out.println("Time consumption (CFS simulator): " + duration + " ms");
     }
 

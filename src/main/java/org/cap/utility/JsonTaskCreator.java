@@ -32,7 +32,7 @@ public class JsonTaskCreator {
 
     private static void generateTasks(int numberOfTasks, double cpuUtilization, List<Core> cores) {
         double totalTime = 0;
-        int coreIndex = 0;  
+        int coreIndex = 0;
 
         for (int i = 1; i <= numberOfTasks; i++) {
             Task task = new Task();
