@@ -19,42 +19,44 @@ public class JsonTaskCreator {
 
     public static String generateFile(int numberOfTasks, double cpuUtilization) {
         List<Core> cores = new ArrayList<>();
-        List<Task> tasks = new ArrayList<>();
-
-        generateTasks(numberOfTasks, cpuUtilization, tasks);
 
         for (int i = 1; i <= 2; i++) {
-            Core core = new Core(i, new ArrayList<>(tasks));
+            Core core = new Core(i, new ArrayList<>());
             cores.add(core);
         }
+
+        generateTasks(numberOfTasks, cpuUtilization, cores);
 
         return createFile(numberOfTasks, cpuUtilization, cores);
     }
 
-    private static void generateTasks(int numberOfTasks, double cpuUtilization, List<Task> tasks) {
+    private static void generateTasks(int numberOfTasks, double cpuUtilization, List<Core> cores) {
         double totalTime = 0;
+        int coreIndex = 0;  
 
-        // Generate tasks and calculate total time
         for (int i = 1; i <= numberOfTasks; i++) {
             Task task = new Task();
             task.id = i;
             task.startTime = 0;
             task.readTime = generateBlockingTime();
-            task.bodyTime = 500.0 + Math.round(rand.nextDouble() * 100) * 5.0;
+            task.bodyTime = 500.0 + Math.round(Math.random() * 100) * 5.0;
             task.writeTime = generateBlockingTime();
             task.nice = 0;
-            // TODO fix index; should be initialized based on core
-            task.index = i - 1;
+            task.index = cores.get(coreIndex).tasks.size();
 
             totalTime += task.readTime + task.bodyTime + task.writeTime;
 
-            tasks.add(task);
+            cores.get(coreIndex).tasks.add(task);
+
+            coreIndex = (coreIndex + 1) % cores.size();
         }
 
         int period = (int) Math.ceil(totalTime / cpuUtilization);
 
-        for (Task task : tasks) {
-            task.period = period;
+        for (Core core : cores) {
+            for (Task task : core.tasks) {
+                task.period = period;
+            }
         }
     }
 

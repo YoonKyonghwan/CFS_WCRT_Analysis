@@ -17,8 +17,8 @@ import java.util.concurrent.Future;
 
 public class Main {
     private static final int maxNumThreads = 8;
-    private static final int numberOfTasks = 10;
-    private static final double cpuUtilization = 0.70;
+    private static final int numberOfTasks = 4;
+    private static final double cpuUtilization = 0.90;
 
     public static void main(String[] args) {
         JsonTaskCreator jsonTaskCreator = new JsonTaskCreator();
