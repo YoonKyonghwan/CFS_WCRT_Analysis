@@ -1,27 +1,37 @@
 package org.cap.model;
 
+import com.google.gson.annotations.Expose;
+
 public class Task {
     // Unique identifier for the task
+    @Expose
     public int id;
 
     // Start time for the task
+    @Expose
     public int startTime;
 
     // Remaining time required to read the task
+    @Expose
     public double readTime;
 
     // Remaining time required for the task body
+    @Expose
     public double bodyTime;
 
     // Remaining time required to write the task
+    @Expose
     public double writeTime;
 
     // Nice value for the task
+    @Expose
     public int nice;
 
     // Period of the task
+    @Expose
     public int period;
 
+    @Expose
     public int index;
 
     // Current stage of the task
@@ -45,8 +55,11 @@ public class Task {
     // Release time for write stage of the task
     public int writeReleaseTime;
 
-    // Weight for task priority
-    public double priorityWeight;
+    // Weight of task
+    public double weight;
+
+    // Virtual runtime
+    public double virtualRuntime;
 
     // Execution time with Concurrent Execution Interference
     public int Eir;
@@ -71,7 +84,8 @@ public class Task {
         newTask.readReleaseTime = this.readReleaseTime;
         newTask.bodyReleaseTime = this.bodyReleaseTime;
         newTask.writeReleaseTime = this.writeReleaseTime;
-        newTask.priorityWeight = this.priorityWeight;
+        newTask.weight = this.weight;
+        newTask.virtualRuntime = this.virtualRuntime;
         newTask.Eir = this.Eir;
         newTask.Eiw = this.Eiw;
         newTask.Eib = this.Eib;

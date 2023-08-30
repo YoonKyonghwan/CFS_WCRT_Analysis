@@ -1,0 +1,23 @@
+package org.cap.model;
+
+public class CoreState {
+    public Task currentTask;
+    public boolean isRunning;
+    public int remainingRuntime;
+    public double minimumVirtualRuntime = 0;
+
+    public CoreState copy() {
+        CoreState newState = new CoreState();
+        newState.currentTask = this.currentTask;
+        newState.isRunning = this.isRunning;
+        newState.remainingRuntime = this.remainingRuntime;
+        newState.minimumVirtualRuntime = this.minimumVirtualRuntime;
+        return newState;
+    }
+
+    public CoreState() {
+        this.currentTask = null;
+        this.isRunning = false;
+        this.remainingRuntime = 0;
+    }
+}
