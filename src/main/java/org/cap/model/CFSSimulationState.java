@@ -10,6 +10,7 @@ public class CFSSimulationState {
     public int minimumGranularity = 4;
     public BlockingPolicy blockingPolicy = BlockingPolicy.NONE;
     public int blockingTaskId;
+    public boolean blockingPolicyReset = false;
     public List<CoreState> coreStates;
     // TODO consider moving WCRTs and Queues to here after completion
 
@@ -18,6 +19,7 @@ public class CFSSimulationState {
         newState.targetedLatency = this.targetedLatency;
         newState.minimumGranularity = this.minimumGranularity;
         newState.blockingPolicy = this.blockingPolicy;
+        newState.blockingTaskId = this.blockingTaskId;
         newState.coreStates = new ArrayList<>(this.coreStates.size());
         for (CoreState coreState : this.coreStates) {
             newState.coreStates.add(coreState.copy());

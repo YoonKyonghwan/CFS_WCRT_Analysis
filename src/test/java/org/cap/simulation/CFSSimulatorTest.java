@@ -104,4 +104,84 @@ public class CFSSimulatorTest {
         );
         assertEquals(expectedResult, WCRTs);
     }
+
+    @Test
+    public void testOneReadAndOneBodyTask() {
+        // Define test tasks
+        List<Task> tasksInFirstCore = List.of(
+            new Task(1, 0, 10, 10, 0, 0, 100, 0),
+            new Task(2, 0, 0, 20, 0, 0, 100, 1)
+        );
+        List<Core> cores = List.of(
+            new Core(1, tasksInFirstCore)
+        );
+
+        // Execute the method
+        List<List<Double>> WCRTs = simulator.simulateCFS(cores).WCRTs;
+
+        // Make assertions about the expected result
+        List<List<Double>> expectedResult = List.of(
+            List.of(
+                40.0,
+                40.0
+            )
+        );
+        assertEquals(expectedResult, WCRTs);
+    }
+
+    @Test
+    public void testOneWriteAndOneBodyTask() {
+        // Define test tasks
+        List<Task> tasksInFirstCore = List.of(
+            new Task(1, 0, 0, 10, 10, 0, 100, 0),
+            new Task(2, 0, 0, 20, 0, 0, 100, 1)
+        );
+        List<Core> cores = List.of(
+            new Core(1, tasksInFirstCore)
+        );
+
+        // Execute the method
+        List<List<Double>> WCRTs = simulator.simulateCFS(cores).WCRTs;
+
+        // Make assertions about the expected result
+        List<List<Double>> expectedResult = List.of(
+            List.of(
+                    40.0,
+                    40.0
+            )
+        );
+        assertEquals(expectedResult, WCRTs);
+    }
+
+    @Test
+    public void testReadTasksInTwoCores() {
+        // Define test tasks
+        List<Task> tasksInFirstCore = List.of(
+            new Task(1, 0, 10, 10, 0, 0, 100, 0),
+            new Task(2, 0, 0, 20, 0, 0, 100, 1)
+        );
+        List<Task> tasksInSecondCore = List.of(
+            new Task(3, 0, 10, 10, 0, 0, 100, 0)
+        );
+        List<Core> cores = List.of(
+            new Core(1, tasksInFirstCore),
+            new Core(2, tasksInSecondCore)
+        );
+
+        // Execute the method
+        List<List<Double>> WCRTs = simulator.simulateCFS(cores).WCRTs;
+
+        // Make assertions about the expected result
+        List<List<Double>> expectedResult = List.of(
+            List.of(
+                40.0,
+                40.0
+            ),
+            List.of(
+                30.0
+            )
+        );
+        assertEquals(expectedResult, WCRTs);
+    }
+
 }

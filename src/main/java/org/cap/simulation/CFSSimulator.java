@@ -42,6 +42,7 @@ public class CFSSimulator {
                 break outerLoop;
             }
 
+            simulationState.blockingPolicyReset = false;
             for (int i = 0; i < cores.size(); i++) {
                 Queue<Task> queue = queues.get(i);
                 List<Double> WCRT = WCRTs.get(i);
@@ -65,6 +66,8 @@ public class CFSSimulator {
                 executeTask(task, queue, WCRT, simulationState, coreState, time);
                 updateMinimumVirtualRuntime(coreState, queue);
             }
+            if (simulationState.blockingPolicyReset)
+                simulationState.blockingPolicy = BlockingPolicy.NONE;
 
             time++;
         }
@@ -88,8 +91,7 @@ public class CFSSimulator {
                 if (task.readTime <= 0) {
                     task.stage = Stage.BODY;
                     task.bodyReleaseTime = time + 1;
-                    simulationState.blockingPolicy = BlockingPolicy.NONE;
-                    // Need to set after the second ends to avoid blocking canceled earlier
+                    simulationState.blockingPolicyReset = true;
                 }
                 else {
                     if (coreState.isRunning)
@@ -114,7 +116,7 @@ public class CFSSimulator {
                 if (task.writeTime <= 0) {
                     task.stage = Stage.COMPLETED;
                     coreState.isRunning = false;
-                    simulationState.blockingPolicy = BlockingPolicy.NONE;
+                    simulationState.blockingPolicyReset = true;
                 }
                 else
                     simulationState.blockingPolicy = BlockingPolicy.WRITE;
@@ -128,7 +130,7 @@ public class CFSSimulator {
             else {
                 queueInCore.add(task);
                 if (simulationState.blockingPolicy == BlockingPolicy.READ)
-                    simulationState.blockingPolicy = BlockingPolicy.NONE;
+                    simulationState.blockingPolicyReset = true;
             }
         } else {
             logger.info("Task " + task.id + " completed at time " + (time + 1) + " with RT " + (time - task.readReleaseTime + 1));
