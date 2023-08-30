@@ -329,13 +329,42 @@ public class CFSSimulator {
     }
 
     private List<List<Double>> simulatePathBlocking(List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time, int hyperperiod) {
-        logger.info("\n*** Path diverged ***");
+        logger.info("\n*** Path diverged due to blocking ***");
 
         CFSSimulationState cloneSimulationState = simulationState.copy();
         List<Queue<Task>> cloneQueues = copyQueues(queues);
         List<List<Double>> cloneWCRTs = WCRTs.stream()
             .map(ArrayList::new)
             .collect(Collectors.toList());
+
+        simulationState.blockingPolicyReset = false;
+        for (int i = 0; i < cores.size(); i++) {
+            Queue<Task> cloneQueue = cloneQueues.get(i);
+            List<Double> cloneWCRT = cloneWCRTs.get(i);
+            CoreState cloneCoreState = cloneSimulationState.coreStates.get(i);
+
+            Task cloneTask = null;
+            if (cloneCoreState.isRunning)
+                cloneTask = cloneCoreState.currentTask;
+            else {
+                List<Task> cloneMinRuntimeTasks = getMinRuntimeTasks(cloneQueue, simulationState);
+                if (cloneMinRuntimeTasks.size() > 1) {
+                    pathDivergesEqualMinRuntime(i, cloneMinRuntimeTasks, cores, cloneQueues, cloneWCRTs, cloneSimulationState, time, hyperperiod);
+                    return cloneWCRTs;
+                }
+                else if (cloneMinRuntimeTasks.size() == 1)
+                    cloneTask = cloneMinRuntimeTasks.get(0);
+                if (cloneTask == null)
+                    continue;
+                setRuntime(i, cloneTask, cloneQueue, cloneSimulationState);
+            }
+            executeTask(cloneTask, cloneQueue, cloneWCRT, cloneSimulationState, cloneCoreState, time);
+            updateMinimumVirtualRuntime(cloneCoreState, cloneQueue);
+        }
+        if (cloneSimulationState.blockingPolicyReset)
+            cloneSimulationState.blockingPolicy = BlockingPolicy.NONE;
+
+        time++;
 
         performSimulation(cores, cloneQueues, cloneWCRTs, cloneSimulationState, time, hyperperiod);
         checkSchedulability(cores, cloneQueues, cloneWCRTs);
@@ -348,7 +377,7 @@ public class CFSSimulator {
      * 나머지 시뮬레이션을 동일하게 진행하고, WCRTs를 업데이트한다.
      */
     private List<List<Double>> simulatePathEqualMinRuntime(List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time, int hyperperiod, List<Task> minRuntimeTasks, int taskIndex, int coreIndex) {
-        logger.info("\n*** Path diverged ***");
+        logger.info("\n*** Path diverged due to equal minimum runtime ***");
 
         List<Task> cloneMinRuntimeTasks = new ArrayList<>();
         for (Task task : minRuntimeTasks)
@@ -367,6 +396,32 @@ public class CFSSimulator {
 
         setRuntime(coreIndex, minRuntimeTask, cloneQueue, cloneSimulationState);
         executeTask(minRuntimeTask, cloneQueue, cloneWCRT, cloneSimulationState, cloneCoreState, time);
+        for (int i = coreIndex+1; i < cores.size(); i++) {
+            cloneQueue = cloneQueues.get(i);
+            cloneWCRT = cloneWCRTs.get(i);
+            cloneCoreState = cloneSimulationState.coreStates.get(i);
+
+            Task cloneTask = null;
+            if (cloneCoreState.isRunning)
+                cloneTask = cloneCoreState.currentTask;
+            else {
+                cloneMinRuntimeTasks = getMinRuntimeTasks(cloneQueue, simulationState);
+                if (cloneMinRuntimeTasks.size() > 1) {
+                    pathDivergesEqualMinRuntime(i, cloneMinRuntimeTasks, cores, cloneQueues, cloneWCRTs, cloneSimulationState, time, hyperperiod);
+                    return cloneWCRTs;
+                }
+                else if (cloneMinRuntimeTasks.size() == 1)
+                    cloneTask = cloneMinRuntimeTasks.get(0);
+                if (cloneTask == null)
+                    continue;
+                setRuntime(i, cloneTask, cloneQueue, cloneSimulationState);
+            }
+            executeTask(cloneTask, cloneQueue, cloneWCRT, cloneSimulationState, cloneCoreState, time);
+            updateMinimumVirtualRuntime(cloneCoreState, cloneQueue);
+        }
+        if (simulationState.blockingPolicyReset)
+            simulationState.blockingPolicy = BlockingPolicy.NONE;
+
         time++;
 
         performSimulation(cores, cloneQueues, cloneWCRTs, cloneSimulationState, time, hyperperiod);
