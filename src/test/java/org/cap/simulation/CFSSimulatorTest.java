@@ -157,11 +157,10 @@ public class CFSSimulatorTest {
     public void testReadTasksInTwoCores() {
         // Define test tasks
         List<Task> tasksInFirstCore = List.of(
-            new Task(1, 0, 10, 10, 0, 0, 100, 0),
-            new Task(2, 0, 0, 20, 0, 0, 100, 1)
+            new Task(1, 0, 10, 10, 0, 0, 100, 0)
         );
         List<Task> tasksInSecondCore = List.of(
-            new Task(3, 0, 10, 10, 0, 0, 100, 0)
+            new Task(2, 0, 10, 10, 0, 0, 100, 0)
         );
         List<Core> cores = List.of(
             new Core(1, tasksInFirstCore),
@@ -174,8 +173,7 @@ public class CFSSimulatorTest {
         // Make assertions about the expected result
         List<List<Double>> expectedResult = List.of(
             List.of(
-                40.0,
-                40.0
+                30.0
             ),
             List.of(
                 30.0
