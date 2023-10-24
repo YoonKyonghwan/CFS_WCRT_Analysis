@@ -134,6 +134,8 @@ public class PFSSimulator {
                     }
                 }
                 break;
+            default:
+                break;
         }
 
         if (task.stage != Stage.COMPLETED) {

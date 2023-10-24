@@ -121,6 +121,8 @@ public class CFSSimulator {
                 else
                     simulationState.blockingPolicy = BlockingPolicy.WRITE;
                 break;
+            default:
+                break;
         }
 
         // Add task back to queue if task is not finished but runtime is over

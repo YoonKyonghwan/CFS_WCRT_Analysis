@@ -1,6 +1,5 @@
 package org.cap.simulation;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;

@@ -19,7 +19,6 @@ public class JsonTaskCreator {
 
     public static String generateFile(int numberOfTasks, double cpuUtilization) {
         List<Core> cores = new ArrayList<>();
-
         for (int i = 1; i <= 2; i++) {
             Core core = new Core(i, new ArrayList<>());
             cores.add(core);
