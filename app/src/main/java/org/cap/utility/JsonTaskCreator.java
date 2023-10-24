@@ -15,24 +15,24 @@ import java.util.List;
 public class JsonTaskCreator {
 
     public void generateFile(int numTasksets, int numTasks, int numCores, double utilization, String generatedFilesSaveDir) {
-        List<Core> cores = new ArrayList<>();
-        for (int i = 0; i < numCores; i++) {
-            Core core = new Core(i, new ArrayList<>());
-            cores.add(core);
-        }
-
         for (int tasksetIndex=0; tasksetIndex<numTasksets; tasksetIndex++){
+            List<Core> cores = new ArrayList<>();
+            for (int i = 0; i < numCores; i++) {
+                Core core = new Core(i, new ArrayList<>());
+                cores.add(core);
+            }
+
             generateTasks(numTasks, utilization, cores); //set tasks_info into Core
             saveToFile(cores, numTasks, utilization, tasksetIndex, generatedFilesSaveDir);
         }
         return;
     }
 
-    private static void generateTasks(int numberOfTasks, double cpuUtilization, List<Core> cores) {
-        double totalTime = 0;
+    private void generateTasks(int numTasks, double utilization, List<Core> cores) {
         int coreIndex = 0;
+        double remainingUtilization = utilization;
 
-        for (int i = 1; i <= numberOfTasks; i++) {
+        for (int i = 1; i <= numTasks; i++) {
             Task task = new Task();
             task.id = i;
             task.startTime = 0; // task.readTime = generateBlockingTime();
@@ -41,23 +41,34 @@ public class JsonTaskCreator {
             task.writeTime = 0;  // task.writeTime = generateBlockingTime();
             task.nice = 0;
             task.index = cores.get(coreIndex).tasks.size();
-
-            totalTime += task.readTime + task.bodyTime + task.writeTime;
+            remainingUtilization = setPeriod(numTasks, remainingUtilization, i, task);
+            
             cores.get(coreIndex).tasks.add(task);
             coreIndex = (coreIndex + 1) % cores.size();
+
         }
 
-        int period = (int) Math.ceil(totalTime / cpuUtilization);
-        // round up to nearest 10
-        period = (int) Math.ceil(period / 10.0) * 10;
-
-        for (Core core : cores) {
-            for (Task task : core.tasks) {
-                task.period = period;
-            }
-        }
         return;
     }
+
+    private double setPeriod(int numTasks, double remainingUtilization, int i, Task task) {
+        double totalExecution = task.readTime + task.bodyTime + task.writeTime;
+        double taskUtilization = 0;
+        if (i == numTasks) {
+            taskUtilization = remainingUtilization;
+        } else {
+            //taskUtilization is randomly sampled from [0.1, 2/3*remainingUtilization]
+            taskUtilization = Math.random() * ((2.0 * remainingUtilization) / 3.0);
+            if (taskUtilization < 0.1) taskUtilization = 0.1;
+        }
+        int period = (int) Math.ceil(totalExecution / taskUtilization);
+        // period = (int) Math.ceil(period / 10.0) * 10; // round up to nearest 10
+        
+        task.period = period;
+        remainingUtilization -= taskUtilization;
+        return remainingUtilization;
+    }
+    
 
     private double generateSharedResourceAccessTime() {
         double chance = Math.random();
@@ -75,22 +86,26 @@ public class JsonTaskCreator {
 
         int numCores = cores.size();
         
-        Path saveDir = Paths.get(generatedFilesSaveDir);
+        // get project base directory
+        Path saveDir = Paths.get(generatedFilesSaveDir).toAbsolutePath();
+        // If directory is not existed, create it
         if (!Files.exists(saveDir)) {
             try {
-                Files.createDirectory(saveDir);
+                Files.createDirectories(saveDir);
             } catch (IOException e) {
                 e.printStackTrace();
             }
         }
+        System.out.println("Directory to save : " + saveDir.toString());
         
         String fileName = numCores + "cores_" + numTasks + "tasks_" + utilization + "utilization" + "_" + tasksetIndex + ".json";
-        Path filePath = Paths.get(generatedFilesSaveDir, fileName);
+        Path filePath = Paths.get(saveDir.toString(), fileName);
         try {
             Files.write(filePath, tasks_info.getBytes());
         } catch (IOException e) {
             e.printStackTrace();
         }
+        
         return;
     }
 }

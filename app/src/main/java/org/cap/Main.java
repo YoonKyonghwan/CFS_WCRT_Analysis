@@ -30,6 +30,8 @@ public class Main {
         //parse arguments
         Namespace params = parseArgs(args);
 
+        System.out.println(params.getInt("num_sets"));
+
         // if --gen_tasks is specified, generate tasks and exit
         if (params.getBoolean("gen_tasks")) {
             generateTasksAndSaveIntoFiles(params);
@@ -63,10 +65,10 @@ public class Main {
         int numSets = params.getInt("num_sets");
         int numTasks = params.getInt("num_tasks");
         int numCores = params.getInt("num_cores");
-        // double utilization = params.getDouble("utilization");
-        // String generatedFilesSaveDir = params.getString("generated_files_save_dir");
-        // JsonTaskCreator jsonTaskCreator = new JsonTaskCreator();
-        // jsonTaskCreator.generateFile(numSets, numTasks, numCores, utilization, generatedFilesSaveDir);
+        double utilization = params.getDouble("utilization");
+        String generatedFilesSaveDir = params.getString("generated_files_save_dir");
+        JsonTaskCreator jsonTaskCreator = new JsonTaskCreator();
+        jsonTaskCreator.generateFile(numSets, numTasks, numCores, utilization, generatedFilesSaveDir);
     }
 
 
@@ -81,37 +83,30 @@ public class Main {
         parser.addArgument("--num_sets", "-ns")
                 .dest("num_sets")
                 .type(Integer.class)
-                .nargs(1)
                 .help("number of taskset to generate");
         parser.addArgument("--num_tasks", "-nt")
                 .dest("num_tasks")
                 .type(Integer.class)
-                .nargs(1)
                 .help("number of tasks in a taskset");
         parser.addArgument("--num_cores", "-nc")
                 .dest("num_cores")
                 .type(Integer.class)
-                .nargs(1)
                 .help("number of cores in a system");
         parser.addArgument("--utilization", "-u")
                 .dest("utilization")
                 .type(Double.class)
-                .nargs(1)
                 .help("cpu utilization of tasks");
         parser.addArgument("--generated_files_save_dir", "-gd")
                 .dest("generated_files_save_dir")
                 .type(String.class)
-                .nargs(1)
                 .help("directory to store generated files");
         parser.addArgument("--task_info_path", "-t")
                 .dest("task_info_path")
                 .type(String.class)
-                .nargs(1)
                 .help("task info file path");
         Namespace params = parser.parseArgsOrFail(args);
         return params;
     }
-
     
 
     private static void analyze_by_PFS_simulator(List<Core> cores) {

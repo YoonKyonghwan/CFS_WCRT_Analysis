@@ -50,3 +50,5 @@ gradlew.bat
 logs/
 inputs/
 t/
+
+app/src/main/resources/generated_taskset
