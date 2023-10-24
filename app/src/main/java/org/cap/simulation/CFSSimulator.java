@@ -177,8 +177,8 @@ public class CFSSimulator {
     private void addJobs(List<Core> cores, List<Queue<Task>> queues, List<CoreState> coreStates, int time) {
         boolean isAdded = false;
         for (Core core : cores) {
-            CoreState coreState = coreStates.get(core.id-1);
-            Queue<Task> queue = queues.get(core.id-1);
+            CoreState coreState = coreStates.get(core.coreID-1);
+            Queue<Task> queue = queues.get(core.coreID-1);
 
             for (Task task : core.tasks) {
                 if (!isAdded && (initialJobs(time, task) || periodicJobs(time, task))) {

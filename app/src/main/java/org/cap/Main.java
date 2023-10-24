@@ -1,15 +1,5 @@
 package org.cap;
 
-// public class Main {
-//     public String getGreeting() {
-//         return "Hello World!";
-//     }
-
-//     public static void main(String[] args) {
-//         System.out.println(new Main().getGreeting());
-//     }
-// }
-
 
 import org.cap.model.Core;
 import org.cap.model.SimulationResult;
@@ -26,9 +16,8 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import javax.annotation.Syntax;
-
 import net.sourceforge.argparse4j.ArgumentParsers;
+import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.Namespace;
 
@@ -39,29 +28,11 @@ public class Main {
 
     public static void main(String[] args) {
         //parse arguments
-        ArgumentParser parser = ArgumentParsers.newFor("Main").build()
-                .defaultHelp(true)
-                .description("Simulate CFS and PFS schedulers");
-        parser.addArgument("--gen_tasks", "-gt").help("generate tasks and exit").setDefault(false);
-        parser.addArgument("--num_tasksets", "-ns").help("number of taskset to generate");
-        parser.addArgument("--num_tasks", "-nt").help("number of tasks in a taskset");
-        parser.addArgument("--cpu_utilization", "-u").help("cpu utilization of tasks");
-        Namespace params = parser.parseArgsOrFail(args);
-        
-        System.out.println("Hello World!");
-        System.out.println();
-
-
+        Namespace params = parseArgs(args);
 
         // if --gen_tasks is specified, generate tasks and exit
-        if (params.getBoolean("gen_tasks") == true) {
-            assert params.get("num_tasksets") != null && params.get("num_tasks") != null && params.get("cpu_utilization") != null: "num_tasksets, num_tasks, and cpu_utilization should be specified";
-            int numberOfTasksets = Integer.parseInt(params.get("num_tasksets"));
-            int numberOfTasks = Integer.parseInt(params.get("num_tasks"));
-            double cpuUtilization = Double.parseDouble(params.get("cpu_utilization"));
-            System.out.println("Generating tasks...");
-            // String fileName = jsonTaskCreator.generateFile(numberOfTasks, cpuUtilization);
-            return;
+        if (params.getBoolean("gen_tasks")) {
+            generateTasksAndSaveIntoFiles(params);
         }
 
         // // filepath should be specified
@@ -78,6 +49,67 @@ public class Main {
         // cores = jsonReader.readTasksFromFile("tasks.json");
         // analyze_by_proposed(cores);
 
+    }
+
+
+    private static void generateTasksAndSaveIntoFiles(Namespace params) {
+        assert params.getInt("num_sets") != null
+                && params.getInt("num_tasks") != null 
+                && params.getInt("num_cores") != null
+                && params.getDouble("utilization") != null
+                && params.getString("generated_files_save_dir") != null:
+            "Please specify the #tasksets, #tasks, #cores, utilization and directory to store generated files";
+        System.out.println("Generating tasks...");
+        int numSets = params.getInt("num_sets");
+        int numTasks = params.getInt("num_tasks");
+        int numCores = params.getInt("num_cores");
+        // double utilization = params.getDouble("utilization");
+        // String generatedFilesSaveDir = params.getString("generated_files_save_dir");
+        // JsonTaskCreator jsonTaskCreator = new JsonTaskCreator();
+        // jsonTaskCreator.generateFile(numSets, numTasks, numCores, utilization, generatedFilesSaveDir);
+    }
+
+
+    private static Namespace parseArgs(String[] args) {
+        ArgumentParser parser = ArgumentParsers.newFor("Main").build()
+                .defaultHelp(true)
+                .description("Simulate CFS and compute the proposed schedulability test");
+        parser.addArgument("--genTasks", "-gt")
+                .dest("gen_tasks")
+                .action(Arguments.storeTrue())
+                .help("generate tasks and exit");
+        parser.addArgument("--num_sets", "-ns")
+                .dest("num_sets")
+                .type(Integer.class)
+                .nargs(1)
+                .help("number of taskset to generate");
+        parser.addArgument("--num_tasks", "-nt")
+                .dest("num_tasks")
+                .type(Integer.class)
+                .nargs(1)
+                .help("number of tasks in a taskset");
+        parser.addArgument("--num_cores", "-nc")
+                .dest("num_cores")
+                .type(Integer.class)
+                .nargs(1)
+                .help("number of cores in a system");
+        parser.addArgument("--utilization", "-u")
+                .dest("utilization")
+                .type(Double.class)
+                .nargs(1)
+                .help("cpu utilization of tasks");
+        parser.addArgument("--generated_files_save_dir", "-gd")
+                .dest("generated_files_save_dir")
+                .type(String.class)
+                .nargs(1)
+                .help("directory to store generated files");
+        parser.addArgument("--task_info_path", "-t")
+                .dest("task_info_path")
+                .type(String.class)
+                .nargs(1)
+                .help("task info file path");
+        Namespace params = parser.parseArgsOrFail(args);
+        return params;
     }
 
     

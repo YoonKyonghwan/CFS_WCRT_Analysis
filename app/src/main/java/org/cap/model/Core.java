@@ -7,14 +7,14 @@ import java.util.ArrayList;
 
 public class Core {
     @Expose
-    public int id;
+    public int coreID;
 
     @Expose
     public List<Task> tasks;
 
     public Core copy() {
         Core newCore = new Core();
-        newCore.id = this.id;
+        newCore.coreID = this.coreID;
         newCore.tasks = new ArrayList<>(this.tasks.size());
         for (Task task : this.tasks) {
             newCore.tasks.add(task.copy());
@@ -23,7 +23,7 @@ public class Core {
     }
 
     public Core(int id, List<Task> tasks) {
-        this.id = id;
+        this.coreID = id;
         this.tasks = tasks;
     }
 

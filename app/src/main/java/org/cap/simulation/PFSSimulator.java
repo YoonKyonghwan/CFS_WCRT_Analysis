@@ -334,7 +334,7 @@ public class PFSSimulator {
                     logger.info("Task " + task.id + " released with read time " + task.readTime + ", body Time " + task.bodyTime + ", write time " + task.writeTime);
                     task.readReleaseTime = time;
                     skipReadStageIfNoReadTime(task);
-                    queues.get(core.id-1).add(task.copy());
+                    queues.get(core.coreID-1).add(task.copy());
                 }
             }
         }

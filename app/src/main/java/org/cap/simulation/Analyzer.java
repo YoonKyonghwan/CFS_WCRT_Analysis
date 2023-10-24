@@ -337,7 +337,7 @@ public class Analyzer {
         }
 
         if (task_index_in_core == -1) {
-            System.out.println(task_id + " is not found in core " + core.id);
+            System.out.println(task_id + " is not found in core " + core.coreID);
             System.exit(1);
         }
 
