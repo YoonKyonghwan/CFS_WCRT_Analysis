@@ -67,6 +67,10 @@ public class Main {
 
             // save analysis results into file
             AnalysisResultSaver analysisResultSaver = new AnalysisResultSaver();
+            // (for testing purpose) if taskInfoPath is "tasks.json", then change taskInfoPath
+            if (taskInfoPath.equals("tasks.json")) {
+                taskInfoPath ="app/src/main/resources/generated_taskset/1cores_3tasks_0.5utilization_0.json";
+            }
             analysisResultSaver.saveResultSummary(resultDir, taskInfoPath, simulator_schedulability, simulator_timeConsumption,
                     proposed_schedulability, proposed_timeConsumption);
             analysisResultSaver.saveDetailedResult(resultDir, taskInfoPath, testConf);
