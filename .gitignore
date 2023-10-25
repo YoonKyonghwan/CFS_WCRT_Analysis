@@ -54,4 +54,4 @@ t/
 app/src/main/resources/generated_taskset
 exp_results/
 ./run.jar
-script/python/venv/
+script/analysis/venv/
