@@ -1,5 +1,7 @@
 package org.cap.utility;
 
+import org.cap.model.ScheduleSimulationMethod;
+
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
 import net.sourceforge.argparse4j.inf.ArgumentParser;
@@ -38,11 +40,18 @@ public class ArgParser {
         parser.addArgument("--task_info_path", "-t")
                 .dest("task_info_path")
                 .type(String.class)
+                .nargs("?")
                 .help("task info file path");
         parser.addArgument("--resultDir", "-rd")
                 .dest("result_dir")
                 .type(String.class)
                 .help("directory to store result files");
+        parser.addArgument("--schedule_simulation_method", "-ssm")
+                .dest("schedule_simulation_method")
+                .type(Arguments.enumStringType(ScheduleSimulationMethod.class))
+                .setDefault(ScheduleSimulationMethod.BRUTE_FORCE.toString())
+                .nargs("?")
+                .help("search method (either brute-force or priority-queue) ");
         Namespace params = parser.parseArgsOrFail(args);
         return params;
     }

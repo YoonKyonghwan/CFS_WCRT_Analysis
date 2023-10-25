@@ -2,7 +2,7 @@ package org.cap.model;
 
 import com.google.gson.annotations.Expose;
 
-public class Task {
+public class Task implements Comparable<Task> {
     // Unique identifier for the task
     @Expose
     public int id;
@@ -61,6 +61,9 @@ public class Task {
     // Virtual runtime
     public double virtualRuntime;
 
+    // target task id
+    public boolean isTargetTask;
+
     // Execution time with Concurrent Execution Interference
     public int WCRT_by_proposed;
     public boolean isSchedulable_by_proposed;
@@ -84,6 +87,7 @@ public class Task {
         newTask.writeReleaseTime = this.writeReleaseTime;
         newTask.weight = this.weight;
         newTask.virtualRuntime = this.virtualRuntime;
+        newTask.isTargetTask = this.isTargetTask;
         return newTask;
     }
 
@@ -99,5 +103,27 @@ public class Task {
     }
 
     public Task() {
+        this.isTargetTask = false;
+    }
+
+    @Override
+    public int compareTo(Task o) {
+        if (this.virtualRuntime > o.virtualRuntime) {
+            return 1;
+        }
+        else if(this.virtualRuntime == o.virtualRuntime) {
+            if(this.isTargetTask == true && o.isTargetTask == false) {
+                return 1;
+            }
+            else if(this.isTargetTask == false && o.isTargetTask == true) {
+                return -1;
+            }
+            else {
+                return 0;
+            }
+        }
+        else  {
+            return -1;
+        }
     }
 }

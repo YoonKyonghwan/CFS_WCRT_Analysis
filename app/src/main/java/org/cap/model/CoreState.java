@@ -8,7 +8,13 @@ public class CoreState {
 
     public CoreState copy() {
         CoreState newState = new CoreState();
-        newState.currentTask = this.currentTask;
+        if( this.currentTask != null) {
+            newState.currentTask = this.currentTask.copy();
+        }
+        else {
+            newState.currentTask = null;
+        }
+        
         newState.isRunning = this.isRunning;
         newState.remainingRuntime = this.remainingRuntime;
         newState.minimumVirtualRuntime = this.minimumVirtualRuntime;

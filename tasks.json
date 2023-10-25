@@ -1,4 +1,11 @@
-[
+{
+  "idNameMap" : {
+    "1" : "Task1",
+    "2" : "Task2",
+    "3" : "Task3",
+    "4" : "Task4"
+  },
+  "mappingInfo" : [
   {
     "coreID": 1,
     "tasks": [
@@ -6,20 +13,20 @@
         "id": 1,
         "startTime": 0,
         "readTime": 0,
-        "bodyTime": 2000,
+        "bodyTime": 20,
         "writeTime": 0,
         "nice": 0,
-        "period": 5000,
+        "period": 50,
         "index": 0
       },
       {
         "id": 2,
         "startTime": 0,
         "readTime": 0,
-        "bodyTime": 5000,
+        "bodyTime": 5,
         "writeTime": 0,
         "nice": 0,
-        "period": 5000,
+        "period": 50,
         "index": 1
       }
     ]
@@ -31,22 +38,23 @@
         "id": 3,
         "startTime": 0,
         "readTime": 0,
-        "bodyTime": 700,
+        "bodyTime": 7,
         "writeTime": 0,
         "nice": 0,
-        "period": 5000,
+        "period": 50,
         "index": 0
       },
       {
         "id": 4,
         "startTime": 0,
         "readTime": 0,
-        "bodyTime": 500,
+        "bodyTime": 5,
         "writeTime": 0,
         "nice": 0,
-        "period": 5000,
+        "period": 50,
         "index": 1
       }
     ]
   }
 ]
+}
