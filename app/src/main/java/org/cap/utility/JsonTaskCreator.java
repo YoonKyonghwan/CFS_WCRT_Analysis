@@ -110,9 +110,6 @@ public class JsonTaskCreator {
     // }
 
     private void saveToFile(TestConfiguration testConf, int numCores, int numTasks, double utilization, int tasksetIndex, String generatedFilesSaveDir) {
-
-
-
         Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().setPrettyPrinting().create();
         String tasks_info = gson.toJson(testConf);
         
@@ -126,8 +123,8 @@ public class JsonTaskCreator {
                 e.printStackTrace();
             }
         }
-        System.out.println("Directory to save : " + saveDir.toString());
-        
+
+        // System.out.println("Directory to save : " + saveDir.toString());
         String fileName = numCores + "cores_" + numTasks + "tasks_" + utilization + "utilization" + "_" + tasksetIndex + ".json";
         Path filePath = Paths.get(saveDir.toString(), fileName);
         try {

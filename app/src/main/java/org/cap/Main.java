@@ -57,10 +57,13 @@ public class Main {
                     ComparatorCase.fromValue(params.getString("tie_comparator")));
             int simulator_timeConsumption = (int)((System.nanoTime() - startTime)/1000); //us
             
+            //(only for testing)
+            // boolean simulator_schedulability = true;
+            // int simulator_timeConsumption = 0;
+
             // analyze by proposed
             startTime = System.nanoTime();
             CFSAnalyzer analyzer = new CFSAnalyzer(testConf.mappingInfo, targetLatency);
-            startTime = System.nanoTime();
             analyzer.analyze(); // without parallel
             boolean proposed_schedulability = analyzer.checkSchedulability();
             int proposed_timeConsumption = (int) ((System.nanoTime() - startTime) / 1000);
