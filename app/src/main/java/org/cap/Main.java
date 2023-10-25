@@ -25,8 +25,6 @@ import net.sourceforge.argparse4j.inf.Namespace;
 
 public class Main {
     private static final int maxNumThreads = 8;
-    // private static final int numberOfTasks = 2;
-    // private static final double cpuUtilization = 0.90;
 
     public static void main(String[] args) {
         //parse arguments
@@ -65,10 +63,10 @@ public class Main {
         int numSets = params.getInt("num_sets");
         int numTasks = params.getInt("num_tasks");
         int numCores = params.getInt("num_cores");
-        // double utilization = params.getDouble("utilization");
-        // String generatedFilesSaveDir = params.getString("generated_files_save_dir");
-        // JsonTaskCreator jsonTaskCreator = new JsonTaskCreator();
-        // jsonTaskCreator.generateFile(numSets, numTasks, numCores, utilization, generatedFilesSaveDir);
+        double utilization = params.getDouble("utilization");
+        String generatedFilesSaveDir = params.getString("generated_files_save_dir");
+        JsonTaskCreator jsonTaskCreator = new JsonTaskCreator();
+        jsonTaskCreator.generateFile(numSets, numTasks, numCores, utilization, generatedFilesSaveDir);
     }
 
 
@@ -83,27 +81,22 @@ public class Main {
         parser.addArgument("--num_sets", "-ns")
                 .dest("num_sets")
                 .type(Integer.class)
-                .nargs(1)
                 .help("number of taskset to generate");
         parser.addArgument("--num_tasks", "-nt")
                 .dest("num_tasks")
                 .type(Integer.class)
-                .nargs(1)
                 .help("number of tasks in a taskset");
         parser.addArgument("--num_cores", "-nc")
                 .dest("num_cores")
                 .type(Integer.class)
-                .nargs(1)
                 .help("number of cores in a system");
         parser.addArgument("--utilization", "-u")
                 .dest("utilization")
                 .type(Double.class)
-                .nargs(1)
                 .help("cpu utilization of tasks");
         parser.addArgument("--generated_files_save_dir", "-gd")
                 .dest("generated_files_save_dir")
                 .type(String.class)
-                .nargs(1)
                 .help("directory to store generated files");
         parser.addArgument("--task_info_path", "-t")
                 .dest("task_info_path")
