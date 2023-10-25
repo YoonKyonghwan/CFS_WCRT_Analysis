@@ -16,7 +16,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class JsonTaskCreator {
 
@@ -100,15 +99,15 @@ public class JsonTaskCreator {
     }
     
 
-    private double generateSharedResourceAccessTime() {
-        double chance = Math.random();
+    // private double generateSharedResourceAccessTime() {
+    //     double chance = Math.random();
 
-        if (chance < 0.2) {
-            return 0;
-        } else {
-            return 50.0 + Math.round(Math.random() * 10) * 5.0;
-        }
-    }
+    //     if (chance < 0.2) {
+    //         return 0;
+    //     } else {
+    //         return 50.0 + Math.round(Math.random() * 10) * 5.0;
+    //     }
+    // }
 
     private void saveToFile(TestConfiguration testConf, int numCores, int numTasks, double utilization, int tasksetIndex, String generatedFilesSaveDir) {
 

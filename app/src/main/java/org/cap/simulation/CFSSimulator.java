@@ -521,8 +521,13 @@ public class CFSSimulator {
             for (int j = 0; j < cores.get(i).tasks.size(); j++) {
                 Task task = cores.get(i).tasks.get(j);
                 logger.info("- Task " + task.id + " (WCRT: " + WCRTs.get(i).get(j) + ", Period: " + task.period + ")");
-                if (WCRTs.get(i).get(j) > task.period)
+                if (WCRTs.get(i).get(j) > task.period){
                     schedulability = false;
+                    task.isSchedulable_by_simulator = false;
+                } else{
+                    task.isSchedulable_by_simulator = true;
+                }
+                task.WCRT_by_simulator = (int) Math.floor(WCRTs.get(i).get(j));
             }
         }
         return new SimulationResult(schedulability, WCRTs);

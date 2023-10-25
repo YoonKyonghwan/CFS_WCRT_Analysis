@@ -67,6 +67,8 @@ public class Task implements Comparable<Task> {
     // Execution time with Concurrent Execution Interference
     public int WCRT_by_proposed;
     public boolean isSchedulable_by_proposed;
+    public int WCRT_by_simulator;
+    public boolean isSchedulable_by_simulator;
 
     public Task copy() {
         Task newTask = new Task();

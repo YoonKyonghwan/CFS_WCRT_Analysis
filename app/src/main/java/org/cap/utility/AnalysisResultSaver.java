@@ -4,8 +4,13 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.cap.model.Core;
+import org.cap.model.Task;
+import org.cap.model.TestConfiguration;
 
 public class AnalysisResultSaver {
     public void saveResultSummary(String resultDir, String taskInfoPath, boolean simulator_schedulability,
@@ -27,12 +32,6 @@ public class AnalysisResultSaver {
         String utilization = matcher.group(3);
         String tasksetIndex = matcher.group(4);
 
-        // Prepare data to be written to the CSV file
-        String dataToWrite = String.format("%s,%s,%s,%s,%s,%d,%s,%d\n",
-                numCores, numTasks, utilization, tasksetIndex,
-                simulator_schedulability, simulator_timeConsumption,
-                proposed_schedulability, proposed_timeConsumption);
-
         // Create the result directory if it doesn't exist
         File dir = new File(resultDir);
         if (!dir.exists()) {
@@ -44,18 +43,67 @@ public class AnalysisResultSaver {
         File file = new File(resultFileName);
         
         boolean shouldWriteHeaders = !file.exists();
-
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(resultFileName, true))) {
-            
             if (shouldWriteHeaders) {
                 // If the file didn't exist before, write the headers first
-                writer.write("numCores,numTasks,utilization,tasksetIndex,simulator_schedulability,simulator_timeConsumption,proposed_schedulability,proposed_timeConsumption\n");
+                String header = "numCores,numTasks,utilization,tasksetIndex,simulator_schedulability,simulator_timeConsumption(us),proposed_schedulability,proposed_timeConsumption(us)\n";
+                writer.write(header);
             }
 
+            // Prepare data to be written to the CSV file
+            String dataToWrite = String.format("%s,%s,%s,%s,%s,%d,%s,%d\n",
+                    numCores, numTasks, utilization, tasksetIndex,
+                    simulator_schedulability, simulator_timeConsumption,
+                    proposed_schedulability, proposed_timeConsumption);
             writer.write(dataToWrite);
             System.out.println("Results saved to " + resultFileName);
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public void saveDetailedResult(String resultDir, String taskInfoPath, TestConfiguration testConf){
+        // Create the result directory if it doesn't exist
+        String detailResultDir = resultDir + "/detailed_result";
+        File dir = new File(detailResultDir);
+        if (!dir.exists()) {
+            dir.mkdirs();
+        }
+
+        String inputFileName = new File(taskInfoPath).getName();
+        String resultFileName = detailResultDir + "/" + inputFileName.substring(0, inputFileName.length() - 5) + "_result.csv";
+        File file = new File(resultFileName);
+        if (file.exists()) {
+            file.delete();
+        }
+
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(resultFileName, true))) {
+            // write the header first
+            String header = "id,name,WCRT_by_proposed,isSchedulable_by_proposed,WCRT_by_simulator,isSchedulable_by_simulator\n";
+            writer.write(header);
+
+            // write the result for each task
+            String dataToWrite;
+            for (Core core : testConf.mappingInfo){
+                for (Task task : core.tasks){
+                    int id = task.id;
+                    String name = testConf.idNameMap.get(task.id);
+                    int WCRT_by_proposed = task.WCRT_by_proposed;
+                    boolean isSchedulable_by_proposed = task.isSchedulable_by_proposed;
+                    int WCRT_by_simulator = task.WCRT_by_simulator;
+                    boolean isSchedulable_by_simulator = task.isSchedulable_by_simulator;
+
+                    // Prepare data to be written to the CSV file
+                    dataToWrite = String.format("%d,%s,%d,%b,%d,%b\n",
+                            id, name, WCRT_by_proposed, isSchedulable_by_proposed, WCRT_by_simulator, isSchedulable_by_simulator);
+                    
+                    writer.write(dataToWrite);
+                }
+            }
+            System.out.println("Detailed results saved to " + detailResultDir);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
     }
 }

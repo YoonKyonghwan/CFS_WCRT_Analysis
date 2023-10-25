@@ -7,7 +7,6 @@ import org.cap.model.SimulationResult;
 import org.cap.model.TestConfiguration;
 import org.cap.simulation.CFSAnalyzer;
 import org.cap.simulation.CFSSimulator;
-import org.cap.simulation.PFSSimulator;
 import org.cap.utility.AnalysisResultSaver;
 import org.cap.utility.ArgParser;
 import org.cap.utility.CombinationUtility;
@@ -51,50 +50,36 @@ public class Main {
             TestConfiguration testConf = jsonReader.readTasksFromFile(taskInfoPath);
 
             // analyze by simulator
-            analyze_by_CFS_simulator(testConf, ScheduleSimulationMethod.fromValue(params.getString("schedule_simulation_method")));
-
-            // analyze by proposed
-            CFSAnalyzer analyzer = new CFSAnalyzer(testConf.mappingInfo, targetLatency);
             long startTime = System.nanoTime();
+            boolean simulator_schedulability = analyze_by_CFS_simulator(testConf, ScheduleSimulationMethod.fromValue(params.getString("schedule_simulation_method")));
+            int simulator_timeConsumption = (int)((System.nanoTime() - startTime)/1000); //us
+            
+            // analyze by proposed
+            startTime = System.nanoTime();
+            CFSAnalyzer analyzer = new CFSAnalyzer(testConf.mappingInfo, targetLatency);
             analyzer.analyze(); //without parallel
             boolean proposed_schedulability = analyzer.checkSchedulability();
-            int proposed_timeConsumption = (int)((System.nanoTime() - startTime)/1000);
-
-            // for test
-            boolean simulator_schedulability = true;
-            int simulator_timeConsumption = 0;
+            int proposed_timeConsumption = (int)((System.nanoTime() - startTime)/1000); //us
 
             // save analysis results into file
             AnalysisResultSaver analysisResultSaver = new AnalysisResultSaver();
+            // (for testing purpose) if taskInfoPath is "tasks.json", then change taskInfoPath 
+            if (taskInfoPath.equals("tasks.json")) taskInfoPath = "app/src/main/resources/generated_taskset/1cores_3tasks_0.5utilization_0.json";
             analysisResultSaver.saveResultSummary(resultDir, taskInfoPath, simulator_schedulability, simulator_timeConsumption,
                     proposed_schedulability, proposed_timeConsumption);
+            analysisResultSaver.saveDetailedResult(resultDir, taskInfoPath, testConf);
         }
     }
 
 
-    private static void analyze_by_PFS_simulator(List<Core> cores) {
-        PFSSimulator PFSSimulator = new PFSSimulator();
-
-        long startTime = System.nanoTime();
-        boolean schedulability = PFSSimulator.simulatePFS(cores).schedulability;
-        long duration = (System.nanoTime() - startTime)/1000;
-        System.out.println("Time consumption (PFS simulator): " + duration + " us");
-
-        if (schedulability) {
-            System.out.println("All tasks are schedulable");
-        } else {
-            System.out.println("Not all tasks are schedulable");
-        }
-    }
-
-    private static void analyze_by_CFS_simulator(TestConfiguration testConf, ScheduleSimulationMethod scheduleMethod) {
+    private static boolean analyze_by_CFS_simulator(TestConfiguration testConf, ScheduleSimulationMethod scheduleMethod) {
         LoggerUtility.initializeLogger();
         LoggerUtility.addConsoleLogger();
 
         CFSSimulator CFSSimulator = new CFSSimulator(scheduleMethod);
         Logger logger = LoggerUtility.getLogger();
 
-        long startTime = System.nanoTime();
+        boolean system_schedulability = true;
         if(scheduleMethod == ScheduleSimulationMethod.PRIORITY_QUEUE) {
             for (Integer taskID : testConf.idNameMap.keySet()) {
                 logger.info("Start simulation with target task " + taskID);
@@ -104,22 +89,20 @@ public class Main {
                     logger.info("Task ID with " + taskID + " is schedulable");
                 } else {
                     logger.info("Task ID with " + taskID + " is not schedulable");
+                    system_schedulability = false;
                 }
             }
         } else {
-            boolean schedulability = CFSSimulator.simulateCFS(testConf.mappingInfo, -1).schedulability;
-            if (schedulability) {
+            system_schedulability = CFSSimulator.simulateCFS(testConf.mappingInfo, -1).schedulability;
+            if (system_schedulability) {
                 System.out.println("All tasks are schedulable");
             } else {
                 System.out.println("Not all tasks are schedulable");
             }
         }
 
-
-         
-         //boolean schedulability = CFSSimulator.simulateCFS(testConf.mappingInfo).schedulability;
-         long duration = (System.nanoTime() - startTime)/1000;
-         logger.info("Time consumption (CFS simulator - " + scheduleMethod.toString() + "): " + duration + " us");
+        //boolean schedulability = CFSSimulator.simulateCFS(testConf.mappingInfo).schedulability;
+        return system_schedulability;
     }
 
 
