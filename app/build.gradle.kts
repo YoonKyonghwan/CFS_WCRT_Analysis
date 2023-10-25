@@ -29,6 +29,7 @@ dependencies {
 
     // The dependencies are used by the application.
     implementation("com.google.code.gson:gson:2.8.9")
+    implementation("org.jfree:jfreechart:1.5.4")
     implementation("com.google.guava:guava:31.1-jre")
     implementation("net.sourceforge.argparse4j:argparse4j:0.9.0")
 }

@@ -10,15 +10,20 @@ import java.util.stream.Collectors;
 
 public class CFSSimulator {
     private static final Logger logger = LoggerUtility.getLogger();
+    ScheduleSimulationMethod method;
 
-    public SimulationResult simulateCFS(List<Core> cores) {
+    public CFSSimulator(ScheduleSimulationMethod method) {
+        this.method = method;
+    }
+
+    public SimulationResult simulateCFS(List<Core> cores, int targetTaskID) {
         logger.info("\n------------------------------");
         logger.info("*** CFS Simulation Started ***");
         logger.info("------------------------------");
 
         List<List<Double>> WCRTs = initializeWCRTs(cores);
-        List<Queue<Task>> queues = initializeQueues(cores);
-        CFSSimulationState simulationState = new CFSSimulationState(20, 4, cores.size());
+        List<Queue<Task>> queues = initializeQueues(cores, targetTaskID);
+        CFSSimulationState simulationState = new CFSSimulationState(20, 4, cores.size(), this.method);
         int time = 0;
         int hyperperiod = MathUtility.getLCM(cores);
 
@@ -31,6 +36,8 @@ public class CFSSimulator {
     }
 
     private void performSimulation(List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time, int hyperperiod) {
+        boolean diverged = false;
+        int i = 0;
         outerLoop:
         while (time < 2 * hyperperiod) {
             logger.info("\nTime " + time + ":");
@@ -43,7 +50,7 @@ public class CFSSimulator {
             }
 
             simulationState.blockingPolicyReset = false;
-            for (int i = 0; i < cores.size(); i++) {
+            for (i = 0; i < cores.size(); i++) {
                 Queue<Task> queue = queues.get(i);
                 List<Double> WCRT = WCRTs.get(i);
                 CoreState coreState = simulationState.coreStates.get(i);
@@ -53,17 +60,23 @@ public class CFSSimulator {
                     task = coreState.currentTask;
                 else {
                     List<Task> minRuntimeTasks = getMinRuntimeTasks(queue, simulationState);
-                    if (minRuntimeTasks.size() > 1) {
-                        pathDivergesEqualMinRuntime(i, minRuntimeTasks, cores, queues, WCRTs, simulationState, time, hyperperiod);
-                        break outerLoop;
+                    if(simulationState.getMethod() == ScheduleSimulationMethod.PRIORITY_QUEUE) {
+                        if(minRuntimeTasks.size() > 0)
+                            task = minRuntimeTasks.get(0);
+                    } else { // BRUTE_FORCE
+                        if (minRuntimeTasks.size() > 1) {
+                            pathDivergesEqualMinRuntime(i, minRuntimeTasks, cores, queues, WCRTs, simulationState, time, hyperperiod);
+                            diverged = true;
+                            break outerLoop;
+                        }
+                        else if (minRuntimeTasks.size() == 1)
+                            task = minRuntimeTasks.get(0);
                     }
-                    else if (minRuntimeTasks.size() == 1)
-                        task = minRuntimeTasks.get(0);
                     if (task == null)
                         continue;
                     setRuntime(i, task, queue, simulationState);
                 }
-                executeTask(task, queue, WCRT, simulationState, coreState, time);
+                executeTask(task, queue, WCRT, simulationState, coreState, time, i);
                 updateMinimumVirtualRuntime(coreState, queue);
             }
             if (simulationState.blockingPolicyReset)
@@ -71,10 +84,17 @@ public class CFSSimulator {
 
             time++;
         }
+
+        if(diverged == true) {
+            for (i = i+1; i < cores.size(); i++) {
+                Queue<Task> queue = queues.get(i);
+                queue.clear();
+            }
+        }
     }
 
-    private void executeTask(Task task, Queue<Task> queueInCore, List<Double> WCRTInCore, CFSSimulationState simulationState, CoreState coreState, int time) {
-        logger.info("- Task " + task.id + " executed in stage: " + task.stage);
+    private void executeTask(Task task, Queue<Task> queueInCore, List<Double> WCRTInCore, CFSSimulationState simulationState, CoreState coreState, int time, int coreIndex) {
+        logger.info("-Core: "+ coreIndex + ", Task " + task.id + " executed in stage: " + task.stage);
 
         // Decrease runtime
         coreState.remainingRuntime--;
@@ -121,6 +141,9 @@ public class CFSSimulator {
                 else
                     simulationState.blockingPolicy = BlockingPolicy.WRITE;
                 break;
+            case COMPLETED:
+                logger.info("Task " + task.id + " entered with completed stage." );
+                break;
             default:
                 break;
         }
@@ -148,16 +171,20 @@ public class CFSSimulator {
     private List<List<Double>> initializeWCRTs(List<Core> cores) {
         List<List<Double>> WCRTs = new ArrayList<>();
         for (Core core: cores) {
-            WCRTs.add(new ArrayList<>(Collections.nCopies(core.tasks.size(), 0.0)));
+            ArrayList<Double> wcrtListPerCore = new ArrayList<Double>();
+            for(int i = 0 ; i < core.tasks.size() ; i++) {
+                wcrtListPerCore.add(0.0);
+            }
+            WCRTs.add(wcrtListPerCore);
         }
         return WCRTs;
     }
 
 
-    private List<Queue<Task>> initializeQueues(List<Core> cores) {
+    private List<Queue<Task>> initializeQueues(List<Core> cores, int targetTaskID) {
         List<Queue<Task>> queues = new ArrayList<>();
         for (Core core : cores) {
-            Queue<Task> queueInCore = new PriorityQueue<>(Comparator.comparingDouble(task -> task.virtualRuntime));
+            Queue<Task> queueInCore = new PriorityQueue<Task>();
             for (Task task : core.tasks) {
                 task.weight = NiceToWeight.getWeight(task.nice);
                 task.originalReadTime = task.readTime;
@@ -165,6 +192,10 @@ public class CFSSimulator {
                 task.originalWriteTime = task.writeTime;
                 task.readReleaseTime = task.startTime;
                 task.virtualRuntime = 0;
+                if(targetTaskID == task.id) 
+                    task.isTargetTask = true;
+                else   
+                    task.isTargetTask = false;
                 skipReadStageIfNoReadTime(task);
                 if (task.startTime == 0)
                     queueInCore.add(task.copy());
@@ -287,8 +318,13 @@ public class CFSSimulator {
         switch (simulationState.blockingPolicy) {
             case NONE:
                 minRuntime = queueInCore.peek().virtualRuntime;
-                while (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
-                    minRuntimeTasks.add(queueInCore.poll());
+                if(simulationState.getMethod() == ScheduleSimulationMethod.PRIORITY_QUEUE) {
+                    if(!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
+                        minRuntimeTasks.add(queueInCore.poll());
+                } else { // BRUTE_FORCE
+                    while (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
+                        minRuntimeTasks.add(queueInCore.poll());
+                }
                 break;
             case READ:
                 List<Task> readTasks = new ArrayList<>();
@@ -302,10 +338,14 @@ public class CFSSimulator {
 
                 if (!queueInCore.isEmpty()) {
                     minRuntime = queueInCore.peek().virtualRuntime;
-                    while (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
-                        minRuntimeTasks.add(queueInCore.poll());
+                    if(simulationState.getMethod() == ScheduleSimulationMethod.PRIORITY_QUEUE) {
+                        if(!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
+                            minRuntimeTasks.add(queueInCore.poll());
+                    } else { // BRUTE_FORCE
+                        while (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
+                            minRuntimeTasks.add(queueInCore.poll());
+                    }
                 }
-
                 queueInCore.addAll(readTasks);
                 break;
             case WRITE:
@@ -320,13 +360,18 @@ public class CFSSimulator {
 
                 if (!queueInCore.isEmpty()) {
                     minRuntime = queueInCore.peek().virtualRuntime;
-                    while (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
-                        minRuntimeTasks.add(queueInCore.poll());
+                    if(simulationState.getMethod() == ScheduleSimulationMethod.PRIORITY_QUEUE) {
+                        if(!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
+                            minRuntimeTasks.add(queueInCore.poll());
+                    } else { // BRUTE_FORCE
+                        while (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
+                            minRuntimeTasks.add(queueInCore.poll());                 
+                    }
                 }
-
                 queueInCore.addAll(writeTasks);
                 break;
         }
+
         return minRuntimeTasks;
     }
 
@@ -350,17 +395,22 @@ public class CFSSimulator {
                 cloneTask = cloneCoreState.currentTask;
             else {
                 List<Task> cloneMinRuntimeTasks = getMinRuntimeTasks(cloneQueue, simulationState);
-                if (cloneMinRuntimeTasks.size() > 1) {
-                    pathDivergesEqualMinRuntime(i, cloneMinRuntimeTasks, cores, cloneQueues, cloneWCRTs, cloneSimulationState, time, hyperperiod);
-                    return cloneWCRTs;
+                if(simulationState.getMethod() == ScheduleSimulationMethod.PRIORITY_QUEUE) {
+                    if(cloneMinRuntimeTasks.size() > 0)
+                        cloneTask = cloneMinRuntimeTasks.get(0);
+                } else { // BRUTE_FORCE
+                    if (cloneMinRuntimeTasks.size() > 1) {
+                        pathDivergesEqualMinRuntime(i, cloneMinRuntimeTasks, cores, cloneQueues, cloneWCRTs, cloneSimulationState, time, hyperperiod);
+                        return cloneWCRTs;
+                    }
+                    else if (cloneMinRuntimeTasks.size() == 1)
+                        cloneTask = cloneMinRuntimeTasks.get(0);
                 }
-                else if (cloneMinRuntimeTasks.size() == 1)
-                    cloneTask = cloneMinRuntimeTasks.get(0);
                 if (cloneTask == null)
                     continue;
                 setRuntime(i, cloneTask, cloneQueue, cloneSimulationState);
             }
-            executeTask(cloneTask, cloneQueue, cloneWCRT, cloneSimulationState, cloneCoreState, time);
+            executeTask(cloneTask, cloneQueue, cloneWCRT, cloneSimulationState, cloneCoreState, time, i);
             updateMinimumVirtualRuntime(cloneCoreState, cloneQueue);
         }
         if (cloneSimulationState.blockingPolicyReset)
@@ -397,7 +447,7 @@ public class CFSSimulator {
         CoreState cloneCoreState = cloneSimulationState.coreStates.get(coreIndex);
 
         setRuntime(coreIndex, minRuntimeTask, cloneQueue, cloneSimulationState);
-        executeTask(minRuntimeTask, cloneQueue, cloneWCRT, cloneSimulationState, cloneCoreState, time);
+        executeTask(minRuntimeTask, cloneQueue, cloneWCRT, cloneSimulationState, cloneCoreState, time, coreIndex);
         for (int i = coreIndex+1; i < cores.size(); i++) {
             cloneQueue = cloneQueues.get(i);
             cloneWCRT = cloneWCRTs.get(i);
@@ -408,17 +458,22 @@ public class CFSSimulator {
                 cloneTask = cloneCoreState.currentTask;
             else {
                 cloneMinRuntimeTasks = getMinRuntimeTasks(cloneQueue, simulationState);
-                if (cloneMinRuntimeTasks.size() > 1) {
-                    pathDivergesEqualMinRuntime(i, cloneMinRuntimeTasks, cores, cloneQueues, cloneWCRTs, cloneSimulationState, time, hyperperiod);
-                    return cloneWCRTs;
+                if(simulationState.getMethod() == ScheduleSimulationMethod.PRIORITY_QUEUE) {
+                    if(cloneMinRuntimeTasks.size() > 0)
+                        cloneTask = cloneMinRuntimeTasks.get(0);
+                } else { // BRUTE_FORCE
+                    if (cloneMinRuntimeTasks.size() > 1) {
+                        pathDivergesEqualMinRuntime(i, cloneMinRuntimeTasks, cores, cloneQueues, cloneWCRTs, cloneSimulationState, time, hyperperiod);
+                        return cloneWCRTs;
+                    }
+                    else if (cloneMinRuntimeTasks.size() == 1)
+                        cloneTask = cloneMinRuntimeTasks.get(0);
                 }
-                else if (cloneMinRuntimeTasks.size() == 1)
-                    cloneTask = cloneMinRuntimeTasks.get(0);
                 if (cloneTask == null)
                     continue;
                 setRuntime(i, cloneTask, cloneQueue, cloneSimulationState);
             }
-            executeTask(cloneTask, cloneQueue, cloneWCRT, cloneSimulationState, cloneCoreState, time);
+            executeTask(cloneTask, cloneQueue, cloneWCRT, cloneSimulationState, cloneCoreState, time, i);
             updateMinimumVirtualRuntime(cloneCoreState, cloneQueue);
         }
         if (simulationState.blockingPolicyReset)
@@ -457,7 +512,8 @@ public class CFSSimulator {
         for (int i = 0; i < queues.size(); i++) {
             Queue<Task> queue = queues.get(i);
             logger.info("- Core " + (i+1) + ": " + queue.stream().map(task -> task.id).collect(Collectors.toList()));
-            schedulability = false;
+            if(queue.size() > 0)
+                schedulability = false;
         }
 
         for (int i = 0; i < cores.size(); i++) {

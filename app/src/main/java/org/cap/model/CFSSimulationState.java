@@ -1,7 +1,6 @@
 package org.cap.model;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 public class CFSSimulationState {
@@ -12,10 +11,12 @@ public class CFSSimulationState {
     public int blockingTaskId;
     public boolean blockingPolicyReset = false;
     public List<CoreState> coreStates;
+    private ScheduleSimulationMethod method;
+
     // TODO consider moving WCRTs and Queues to here after completion
 
     public CFSSimulationState copy() {
-        CFSSimulationState newState = new CFSSimulationState();
+        CFSSimulationState newState = new CFSSimulationState(this.method);
         newState.targetedLatency = this.targetedLatency;
         newState.minimumGranularity = this.minimumGranularity;
         newState.blockingPolicy = this.blockingPolicy;
@@ -27,14 +28,31 @@ public class CFSSimulationState {
         return newState;
     }
 
-    public CFSSimulationState(int targetedLatency, int minimumGranularity, int numberOfCores) {
+    public CFSSimulationState(int targetedLatency, int minimumGranularity, int numberOfCores, ScheduleSimulationMethod method) {
         this.targetedLatency = targetedLatency;
         this.minimumGranularity = minimumGranularity;
+        this.method = method;
 
-        this.coreStates = new ArrayList<>(Collections.nCopies(numberOfCores, new CoreState()));
+        //this.coreStates = new ArrayList<>(Collections.nCopies(numberOfCores, new CoreState()));
+
+        this.coreStates = new ArrayList<>();
+
+        for(int i = 0 ; i < numberOfCores ; i++) {
+            CoreState coreState = new CoreState();
+            this.coreStates.add(coreState);
+        }
     }
 
-    public CFSSimulationState() {
+    public ScheduleSimulationMethod getMethod() {
+        return method;
+    }
+
+    public void setMethod(ScheduleSimulationMethod method) {
+        this.method = method;
+    }
+
+    public CFSSimulationState(ScheduleSimulationMethod method) {
+        this.method = ScheduleSimulationMethod.BRUTE_FORCE;
     }
 }
 

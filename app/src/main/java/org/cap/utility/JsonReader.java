@@ -2,18 +2,17 @@ package org.cap.utility;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
-import org.cap.model.Core;
+import org.cap.model.TestConfiguration;
 
 import java.io.FileReader;
 import java.io.IOException;
 import java.lang.reflect.Type;
-import java.util.List;
 
 public class JsonReader {
 
-    public List<Core> readTasksFromFile(String filename) {
+    public TestConfiguration readTasksFromFile(String filename) {
         Gson gson = new Gson();
-        Type taskListType = new TypeToken<List<Core>>(){}.getType();
+        Type taskListType = new TypeToken<TestConfiguration>(){}.getType();
 
         try (FileReader reader = new FileReader(filename)) {
             return gson.fromJson(reader, taskListType);
