@@ -62,10 +62,8 @@ public class Task {
     public double virtualRuntime;
 
     // Execution time with Concurrent Execution Interference
-    public int Eir;
-    public int Eiw;
-    public int Eib;
     public int WCRT_by_proposed;
+    public boolean isSchedulable_by_proposed;
 
     public Task copy() {
         Task newTask = new Task();
@@ -86,9 +84,6 @@ public class Task {
         newTask.writeReleaseTime = this.writeReleaseTime;
         newTask.weight = this.weight;
         newTask.virtualRuntime = this.virtualRuntime;
-        newTask.Eir = this.Eir;
-        newTask.Eiw = this.Eiw;
-        newTask.Eib = this.Eib;
         return newTask;
     }
 

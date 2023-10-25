@@ -3,9 +3,11 @@ package org.cap;
 
 import org.cap.model.Core;
 import org.cap.model.SimulationResult;
-import org.cap.simulation.Analyzer;
+import org.cap.simulation.CFSAnalyzer;
 import org.cap.simulation.CFSSimulator;
 import org.cap.simulation.PFSSimulator;
+import org.cap.utility.AnalysisResultSaver;
+import org.cap.utility.ArgParser;
 import org.cap.utility.CombinationUtility;
 import org.cap.utility.JsonReader;
 import org.cap.utility.JsonTaskCreator;
@@ -16,92 +18,53 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import net.sourceforge.argparse4j.ArgumentParsers;
-import net.sourceforge.argparse4j.impl.Arguments;
-import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.Namespace;
 
 public class Main {
     private static final int maxNumThreads = 8;
+    private static final int targetLatency = 30; 
 
     public static void main(String[] args) {
         //parse arguments
-        Namespace params = parseArgs(args);
+        Namespace params = new ArgParser().parseArgs(args);
+        assert params.getBoolean("gen_tasks") != null || params.getString("task_info_path") != null:
+            "Please specify either --gen_tasks or --task_info_path";
 
         // if --gen_tasks is specified, generate tasks and exit
         if (params.getBoolean("gen_tasks")) {
-            generateTasksAndSaveIntoFiles(params);
+            JsonTaskCreator jsonTaskCreator = new JsonTaskCreator();
+            jsonTaskCreator.run(params);
+            return;
         }
 
-        // // filepath should be specified
-        // if (args.length == 0) {
-        //     System.out.println("Please specify the file path");
-        //     return;
-        // }
-    
-    
-        // JsonReader jsonReader = new JsonReader();
-        // List<Core> cores = jsonReader.readTasksFromFile(filePath);
-        // analyze_by_CFS_simulator(cores);
-    
-        // cores = jsonReader.readTasksFromFile("tasks.json");
-        // analyze_by_proposed(cores);
+        if (params.getString("task_info_path") != null){
+            assert params.getString("result_dir") != null:
+                "Please specify --resultDir to store result files";
 
-    }
+            // if --task_info_path is specified, read tasks from file
+            String taskInfoPath = params.getString("task_info_path");
+            String resultDir = params.getString("result_dir");
+            
+            JsonReader jsonReader = new JsonReader();
+            List<Core> cores = jsonReader.readTasksFromFile(taskInfoPath);
+            // analyze_by_CFS_simulator(cores);
+            // analyze_by_proposed(cores, targetLatency);
 
+            // for test
+            boolean simulator_schedulability = true;
+            int simulator_timeConsumption = 0;
+            boolean proposed_schedulability = true;
+            int proposed_timeConsumption = 0;
 
-    private static void generateTasksAndSaveIntoFiles(Namespace params) {
-        assert params.getInt("num_sets") != null
-                && params.getInt("num_tasks") != null 
-                && params.getInt("num_cores") != null
-                && params.getDouble("utilization") != null
-                && params.getString("generated_files_save_dir") != null:
-            "Please specify the #tasksets, #tasks, #cores, utilization and directory to store generated files";
-        System.out.println("Generating tasks...");
-        int numSets = params.getInt("num_sets");
-        int numTasks = params.getInt("num_tasks");
-        int numCores = params.getInt("num_cores");
-        double utilization = params.getDouble("utilization");
-        String generatedFilesSaveDir = params.getString("generated_files_save_dir");
-        JsonTaskCreator jsonTaskCreator = new JsonTaskCreator();
-        jsonTaskCreator.generateFile(numSets, numTasks, numCores, utilization, generatedFilesSaveDir);
-    }
+            // save analysis results into file
+            AnalysisResultSaver analysisResultSaver = new AnalysisResultSaver();
+            analysisResultSaver.saveResultSummary(resultDir, taskInfoPath, simulator_schedulability, simulator_timeConsumption,
+                    proposed_schedulability, proposed_timeConsumption);
+        }
+        
 
 
-    private static Namespace parseArgs(String[] args) {
-        ArgumentParser parser = ArgumentParsers.newFor("Main").build()
-                .defaultHelp(true)
-                .description("Simulate CFS and compute the proposed schedulability test");
-        parser.addArgument("--genTasks", "-gt")
-                .dest("gen_tasks")
-                .action(Arguments.storeTrue())
-                .help("generate tasks and exit");
-        parser.addArgument("--num_sets", "-ns")
-                .dest("num_sets")
-                .type(Integer.class)
-                .help("number of taskset to generate");
-        parser.addArgument("--num_tasks", "-nt")
-                .dest("num_tasks")
-                .type(Integer.class)
-                .help("number of tasks in a taskset");
-        parser.addArgument("--num_cores", "-nc")
-                .dest("num_cores")
-                .type(Integer.class)
-                .help("number of cores in a system");
-        parser.addArgument("--utilization", "-u")
-                .dest("utilization")
-                .type(Double.class)
-                .help("cpu utilization of tasks");
-        parser.addArgument("--generated_files_save_dir", "-gd")
-                .dest("generated_files_save_dir")
-                .type(String.class)
-                .help("directory to store generated files");
-        parser.addArgument("--task_info_path", "-t")
-                .dest("task_info_path")
-                .type(String.class)
-                .help("task info file path");
-        Namespace params = parser.parseArgsOrFail(args);
-        return params;
+        return;
     }
     
 
@@ -178,16 +141,16 @@ public class Main {
         System.out.println("Time consumption (CFS simulator): " + duration + " ms");
     }
 
-    private static void analyze_by_proposed(List<Core> cores) {
-        Analyzer analyzer = new Analyzer();
+    private static void analyze_by_proposed(List<Core> cores, int targetLatency) {
+        CFSAnalyzer analyzer = new CFSAnalyzer(cores, targetLatency);
 
         long startTime = System.nanoTime();
-        boolean schedulability = analyzer.analyze_parallel(cores, true, true);
-        // boolean schedulability = analyzer.analyze(cores, true, true);
+        // boolean schedulability = analyzer.analyze_parallel(cores, true, true);
+        analyzer.analyze();
         long duration = (System.nanoTime() - startTime)/1000;
         System.out.println("Time consumption (proposed): " + duration + " us");
 
-        if (schedulability) {
+        if (analyzer.checkSchedulability()) {
             System.out.println("All tasks are schedulable");
         } else {
             System.out.println("Not all tasks are schedulable");

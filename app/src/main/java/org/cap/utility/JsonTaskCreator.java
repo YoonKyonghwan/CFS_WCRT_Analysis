@@ -2,7 +2,11 @@ package org.cap.utility;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+
+import net.sourceforge.argparse4j.inf.Namespace;
+
 import org.cap.model.Core;
+import org.cap.model.NiceToWeight;
 import org.cap.model.Task;
 
 import java.io.IOException;
@@ -13,6 +17,22 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class JsonTaskCreator {
+
+    public void run(Namespace params){
+        assert params.getInt("num_sets") != null
+        && params.getInt("num_tasks") != null 
+        && params.getInt("num_cores") != null
+        && params.getDouble("utilization") != null
+        && params.getString("generated_files_save_dir") != null:
+            "Please specify the #tasksets, #tasks, #cores, utilization and directory to store generated files";
+        System.out.println("Generating tasks...");
+        int numSets = params.getInt("num_sets");
+        int numTasks = params.getInt("num_tasks");
+        int numCores = params.getInt("num_cores");
+        double utilization = params.getDouble("utilization");
+        String generatedFilesSaveDir = params.getString("generated_files_save_dir");
+        generateFile(numSets, numTasks, numCores, utilization, generatedFilesSaveDir);
+    }
 
     public void generateFile(int numTasksets, int numTasks, int numCores, double utilization, String generatedFilesSaveDir) {
         for (int tasksetIndex=0; tasksetIndex<numTasksets; tasksetIndex++){
@@ -37,9 +57,9 @@ public class JsonTaskCreator {
             task.id = i;
             task.startTime = 0; // task.readTime = generateBlockingTime();
             task.readTime = 0;
-            task.bodyTime = Math.round(Math.random() * 100);
+            task.bodyTime = Math.round(Math.random() * 100);    //randomly sampled from [0, 100]
             task.writeTime = 0;  // task.writeTime = generateBlockingTime();
-            task.nice = 0;
+            task.nice = (int) Math.round(Math.random() * 19);   //randomly sampled from [0, 19]
             task.index = cores.get(coreIndex).tasks.size();
             remainingUtilization = setPeriod(numTasks, remainingUtilization, i, task);
             

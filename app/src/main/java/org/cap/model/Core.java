@@ -12,6 +12,8 @@ public class Core {
     @Expose
     public List<Task> tasks;
 
+    public double minWeight;
+
     public Core copy() {
         Core newCore = new Core();
         newCore.coreID = this.coreID;
