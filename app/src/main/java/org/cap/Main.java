@@ -21,9 +21,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.logging.Logger;
 
-import net.sourceforge.argparse4j.ArgumentParsers;
-import net.sourceforge.argparse4j.impl.Arguments;
-import net.sourceforge.argparse4j.inf.ArgumentParser;
 import net.sourceforge.argparse4j.inf.Namespace;
 
 public class Main {
@@ -46,22 +43,26 @@ public class Main {
         if (params.getString("task_info_path") != null){
             assert params.getString("result_dir") != null:
                 "Please specify --resultDir to store result files";
-
-            // if --task_info_path is specified, read tasks from file
             String taskInfoPath = params.getString("task_info_path");
             String resultDir = params.getString("result_dir");
             
+            // read task info from file
             JsonReader jsonReader = new JsonReader();
             TestConfiguration testConf = jsonReader.readTasksFromFile(taskInfoPath);
+
+            // analyze by simulator
             analyze_by_CFS_simulator(testConf, ScheduleSimulationMethod.fromValue(params.getString("schedule_simulation_method")));
-    
-            // analyze_by_proposed(cores, targetLatency);
+
+            // analyze by proposed
+            CFSAnalyzer analyzer = new CFSAnalyzer(testConf.mappingInfo, targetLatency);
+            long startTime = System.nanoTime();
+            analyzer.analyze(); //without parallel
+            boolean proposed_schedulability = analyzer.checkSchedulability();
+            int proposed_timeConsumption = (int)((System.nanoTime() - startTime)/1000);
 
             // for test
             boolean simulator_schedulability = true;
             int simulator_timeConsumption = 0;
-            boolean proposed_schedulability = true;
-            int proposed_timeConsumption = 0;
 
             // save analysis results into file
             AnalysisResultSaver analysisResultSaver = new AnalysisResultSaver();
@@ -70,8 +71,6 @@ public class Main {
         }
     }
 
-
-    
 
     private static void analyze_by_PFS_simulator(List<Core> cores) {
         PFSSimulator PFSSimulator = new PFSSimulator();
@@ -163,21 +162,5 @@ public class Main {
 
         long duration = (System.nanoTime() - startTime)/1000;
         System.out.println("Time consumption (CFS simulator): " + duration + " ms");
-    }
-
-    private static void analyze_by_proposed(List<Core> cores, int targetLatency) {
-        CFSAnalyzer analyzer = new CFSAnalyzer(cores, targetLatency);
-
-        long startTime = System.nanoTime();
-        // boolean schedulability = analyzer.analyze_parallel(cores, true, true);
-        analyzer.analyze();
-        long duration = (System.nanoTime() - startTime)/1000;
-        System.out.println("Time consumption (proposed): " + duration + " us");
-
-        if (analyzer.checkSchedulability()) {
-            System.out.println("All tasks are schedulable");
-        } else {
-            System.out.println("Not all tasks are schedulable");
-        }
     }
 }

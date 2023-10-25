@@ -6,15 +6,17 @@ import com.google.gson.GsonBuilder;
 import net.sourceforge.argparse4j.inf.Namespace;
 
 import org.cap.model.Core;
-import org.cap.model.NiceToWeight;
 import org.cap.model.Task;
+import org.cap.model.TestConfiguration;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 public class JsonTaskCreator {
 
@@ -37,18 +39,18 @@ public class JsonTaskCreator {
     public void generateFile(int numTasksets, int numTasks, int numCores, double utilization, String generatedFilesSaveDir) {
         for (int tasksetIndex=0; tasksetIndex<numTasksets; tasksetIndex++){
             List<Core> cores = new ArrayList<>();
-            for (int i = 0; i < numCores; i++) {
+            for (int i = 1; i <= numCores; i++) {
                 Core core = new Core(i, new ArrayList<>());
                 cores.add(core);
             }
 
-            generateTasks(numTasks, utilization, cores); //set tasks_info into Core
-            saveToFile(cores, numTasks, utilization, tasksetIndex, generatedFilesSaveDir);
+            TestConfiguration testConf = generateTasks(numTasks, utilization, cores); //set tasks_info into Core
+            saveToFile(testConf, numCores, numTasks, utilization, tasksetIndex, generatedFilesSaveDir);
         }
         return;
     }
 
-    private void generateTasks(int numTasks, double utilization, List<Core> cores) {
+    private TestConfiguration generateTasks(int numTasks, double utilization, List<Core> cores) {
         int coreIndex = 0;
         double remainingUtilization = utilization;
 
@@ -65,10 +67,18 @@ public class JsonTaskCreator {
             
             cores.get(coreIndex).tasks.add(task);
             coreIndex = (coreIndex + 1) % cores.size();
-
         }
 
-        return;
+        TestConfiguration testConf = new TestConfiguration();
+        testConf.mappingInfo = cores;
+        HashMap<Integer, String> idNameMap = new HashMap<Integer, String>();
+        for (int i = 1; i <= numTasks; i++){
+            String task_name = "task" + i;
+            idNameMap.put(i, task_name);
+        }
+        testConf.idNameMap = idNameMap;
+
+        return testConf;
     }
 
     private double setPeriod(int numTasks, double remainingUtilization, int i, Task task) {
@@ -100,11 +110,12 @@ public class JsonTaskCreator {
         }
     }
 
-    private void saveToFile(List<Core> cores, int numTasks, double utilization, int tasksetIndex, String generatedFilesSaveDir) {
-        Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().setPrettyPrinting().create();
-        String tasks_info = gson.toJson(cores);
+    private void saveToFile(TestConfiguration testConf, int numCores, int numTasks, double utilization, int tasksetIndex, String generatedFilesSaveDir) {
 
-        int numCores = cores.size();
+
+
+        Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().setPrettyPrinting().create();
+        String tasks_info = gson.toJson(testConf);
         
         // get project base directory
         Path saveDir = Paths.get(generatedFilesSaveDir).toAbsolutePath();

@@ -1,7 +1,8 @@
 #bin/bash
 
 # set arguments
-task_info_path="app/src/main/resources/generated_taskset/1cores_3tasks_0.5utilization_0.json"
+# task_info_path="app/src/main/resources/generated_taskset/1cores_3tasks_0.5utilization_0.json"
+task_info_path="tasks.json"
 result_dir="exp_results"
 
 # check jar file exists
