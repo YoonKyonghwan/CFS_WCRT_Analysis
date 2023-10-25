@@ -23,14 +23,10 @@ import net.sourceforge.argparse4j.inf.Namespace;
 
 public class Main {
     private static final int maxNumThreads = 8;
-    // private static final int numberOfTasks = 2;
-    // private static final double cpuUtilization = 0.90;
 
     public static void main(String[] args) {
         //parse arguments
         Namespace params = parseArgs(args);
-
-        System.out.println(params.getInt("num_sets"));
 
         // if --gen_tasks is specified, generate tasks and exit
         if (params.getBoolean("gen_tasks")) {
