@@ -1,9 +1,13 @@
 package org.cap.simulation;
 
 import org.cap.model.*;
+import org.cap.simulation.comparator.BasicTaskComparator;
+import org.cap.simulation.comparator.ComparatorCase;
 import org.cap.utility.LoggerUtility;
 import org.cap.utility.MathUtility;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.logging.Logger;
 import java.util.stream.Collectors;
@@ -11,12 +15,14 @@ import java.util.stream.Collectors;
 public class CFSSimulator {
     private static final Logger logger = LoggerUtility.getLogger();
     ScheduleSimulationMethod method;
+    ComparatorCase comparatorCase;
 
-    public CFSSimulator(ScheduleSimulationMethod method) {
+    public CFSSimulator(ScheduleSimulationMethod method, ComparatorCase comparatorCase) {
         this.method = method;
+        this.comparatorCase = comparatorCase;
     }
 
-    public SimulationResult simulateCFS(List<Core> cores, int targetTaskID) {
+    public SimulationResult simulateCFS(List<Core> cores, int targetTaskID) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         logger.info("\n------------------------------");
         logger.info("*** CFS Simulation Started ***");
         logger.info("------------------------------");
@@ -35,7 +41,7 @@ public class CFSSimulator {
         return checkSchedulability(cores, queues, WCRTs);
     }
 
-    private void performSimulation(List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time, int hyperperiod) {
+    private void performSimulation(List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time, int hyperperiod) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         boolean diverged = false;
         int i = 0;
         outerLoop:
@@ -181,10 +187,15 @@ public class CFSSimulator {
     }
 
 
-    private List<Queue<Task>> initializeQueues(List<Core> cores, int targetTaskID) {
+    private List<Queue<Task>> initializeQueues(List<Core> cores, int targetTaskID) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         List<Queue<Task>> queues = new ArrayList<>();
         for (Core core : cores) {
-            Queue<Task> queueInCore = new PriorityQueue<Task>();
+            Class<?> clazz = Class
+                .forName(this.getClass().getPackage().getName() + ".comparator." + comparatorCase.getClassName());
+            Constructor<?> ctor = clazz.getConstructor();
+            BasicTaskComparator taskComparator = (BasicTaskComparator) ctor.newInstance(new Object[] {});
+
+            Queue<Task> queueInCore = new PriorityQueue<>(taskComparator);
             for (Task task : core.tasks) {
                 task.weight = NiceToWeight.getWeight(task.nice);
                 task.originalReadTime = task.readTime;
@@ -245,7 +256,7 @@ public class CFSSimulator {
         }
     }
 
-    private void pathDivergesBlocking(List<Task> blockingTasks, List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time, int hyperperiod) {
+    private void pathDivergesBlocking(List<Task> blockingTasks, List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time, int hyperperiod) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         List<List<List<Double>>> possibleWCRTs = new ArrayList<>();
         for (int i = 0; i < blockingTasks.size(); i++) {
             if (blockingTasks.get(i).stage == Stage.READ)
@@ -269,7 +280,7 @@ public class CFSSimulator {
         }
     }
 
-    private void pathDivergesEqualMinRuntime(int coreIndex, List<Task> minRuntimeTasks, List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time, int hyperperiod) {
+    private void pathDivergesEqualMinRuntime(int coreIndex, List<Task> minRuntimeTasks, List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time, int hyperperiod) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         List<List<List<Double>>> possibleWCRTs = new ArrayList<>();
         for (int i = 0; i < minRuntimeTasks.size(); i++)
             possibleWCRTs.add(simulatePathEqualMinRuntime(cores, queues, WCRTs, simulationState, time, hyperperiod, minRuntimeTasks, i, coreIndex));
@@ -375,7 +386,7 @@ public class CFSSimulator {
         return minRuntimeTasks;
     }
 
-    private List<List<Double>> simulatePathBlocking(List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time, int hyperperiod) {
+    private List<List<Double>> simulatePathBlocking(List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time, int hyperperiod) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         logger.info("\n*** Path diverged due to blocking ***");
 
         CFSSimulationState cloneSimulationState = simulationState.copy();
@@ -427,8 +438,15 @@ public class CFSSimulator {
      * 주어진 minRuntimeTask에 대해 runtime을 계산한다.
      * 나머지 코어에 대해서 task를 고르고 coreState에 저장하고 runtime을 계산한다.
      * 나머지 시뮬레이션을 동일하게 진행하고, WCRTs를 업데이트한다.
+     * @throws InvocationTargetException
+     * @throws IllegalArgumentException
+     * @throws IllegalAccessException
+     * @throws InstantiationException
+     * @throws SecurityException
+     * @throws NoSuchMethodException
+     * @throws ClassNotFoundException
      */
-    private List<List<Double>> simulatePathEqualMinRuntime(List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time, int hyperperiod, List<Task> minRuntimeTasks, int taskIndex, int coreIndex) {
+    private List<List<Double>> simulatePathEqualMinRuntime(List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time, int hyperperiod, List<Task> minRuntimeTasks, int taskIndex, int coreIndex) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         logger.info("\n*** Path diverged due to equal minimum runtime ***");
 
         List<Task> cloneMinRuntimeTasks = new ArrayList<>();
@@ -486,11 +504,15 @@ public class CFSSimulator {
         return cloneWCRTs;
     }
 
-    private List<Queue<Task>> copyQueues(List<Queue<Task>> originalQueues) {
+    private List<Queue<Task>> copyQueues(List<Queue<Task>> originalQueues) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         List<Queue<Task>> newQueues = new ArrayList<>();
 
         for (Queue<Task> originalQueueInCore : originalQueues) {
-            Queue<Task> newQueueInCore = new PriorityQueue<>(Comparator.comparingDouble(task -> task.virtualRuntime));
+            Class<?> clazz = Class
+                .forName(this.getClass().getPackage().getName() + ".comparator." + comparatorCase.getClassName());
+            Constructor<?> ctor = clazz.getConstructor();
+            BasicTaskComparator taskComparator = (BasicTaskComparator) ctor.newInstance(new Object[] {});
+            Queue<Task> newQueueInCore = new PriorityQueue<>(taskComparator);
             for (Task task : originalQueueInCore) {
                 newQueueInCore.add(task.copy());
             }

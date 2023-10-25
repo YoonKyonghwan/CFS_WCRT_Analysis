@@ -1,6 +1,7 @@
 package org.cap.utility;
 
 import org.cap.model.ScheduleSimulationMethod;
+import org.cap.simulation.comparator.ComparatorCase;
 
 import net.sourceforge.argparse4j.ArgumentParsers;
 import net.sourceforge.argparse4j.impl.Arguments;
@@ -52,6 +53,12 @@ public class ArgParser {
                 .setDefault(ScheduleSimulationMethod.BRUTE_FORCE.toString())
                 .nargs("?")
                 .help("search method (either brute-force or priority-queue) ");
+        parser.addArgument("--tie_comparator", "-tc")
+                .dest("tie_comparator")
+                .type(Arguments.enumStringType(ComparatorCase.class))
+                .setDefault(ComparatorCase.WEIGHT.getClassName())
+                .nargs("?")
+                .help("tie comparator when the virtual runtime is same (BodyWCETComparator, PeriodComparator, or WeightComparator, UnorderedComparator). If schedule simulation method is brute-force, tie comparator is fixed to UnorderedComparator.");
         Namespace params = parser.parseArgsOrFail(args);
         return params;
     }
