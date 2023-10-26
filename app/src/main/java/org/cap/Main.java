@@ -25,7 +25,7 @@ import net.sourceforge.argparse4j.inf.Namespace;
 
 public class Main {
     private static final int maxNumThreads = 8;
-    private static final int targetLatency = 30;
+    private static final int targetLatency = 30000;  //us (30ms)
 
     public static void main(String[] args) throws ClassNotFoundException, NoSuchMethodException, SecurityException,
             InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {

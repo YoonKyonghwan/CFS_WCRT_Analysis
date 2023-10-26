@@ -52,17 +52,18 @@ public class JsonTaskCreator {
     private TestConfiguration generateTasks(int numTasks, double utilization, List<Core> cores) {
         int coreIndex = 0;
         double remainingUtilization = utilization;
+        double taskMaxUtilization = ((2*utilization) / numTasks);
 
         for (int i = 1; i <= numTasks; i++) {
             Task task = new Task();
             task.id = i;
             task.startTime = 0; // task.readTime = generateBlockingTime();
             task.readTime = 0;
-            task.bodyTime = Math.round(Math.random() * 100);    //randomly sampled from [0, 100]
+            task.bodyTime = Math.round(Math.random() * 5000);    //randomly sampled from [0, 100]
             task.writeTime = 0;  // task.writeTime = generateBlockingTime();
             task.nice = (int) Math.round(Math.random() * 19);   //randomly sampled from [0, 19]
             task.index = cores.get(coreIndex).tasks.size();
-            remainingUtilization = setPeriod(numTasks, remainingUtilization, i, task);
+            remainingUtilization = setPeriod(numTasks, taskMaxUtilization, remainingUtilization, i, task);
             
             cores.get(coreIndex).tasks.add(task);
             coreIndex = (coreIndex + 1) % cores.size();
@@ -80,21 +81,22 @@ public class JsonTaskCreator {
         return testConf;
     }
 
-    private double setPeriod(int numTasks, double remainingUtilization, int i, Task task) {
+    private double setPeriod(int numTasks, double taskMaxUtilization, double remainingUtilization, int i, Task task) {
         double totalExecution = task.readTime + task.bodyTime + task.writeTime;
         double taskUtilization = 0;
+        double minUtilization = 0.01;
         if (i == numTasks) {
             taskUtilization = remainingUtilization;
         } else {
-            //taskUtilization is randomly sampled from [0.1, 2/3*remainingUtilization]
-            taskUtilization = Math.random() * ((2.0 * remainingUtilization) / 3.0);
-            if (taskUtilization < 0.1) taskUtilization = 0.1;
+            //taskUtilization is randomly sampled from [0.01, 2*utilization/numTasks]
+            taskUtilization = Math.random() * (taskMaxUtilization);
+            if (taskUtilization < minUtilization) taskUtilization = minUtilization;
         }
         int period = (int) Math.ceil(totalExecution / taskUtilization);
-        // period = (int) Math.ceil(period / 10.0) * 10; // round up to nearest 10
-        
+        period = (int) Math.ceil(period / 10.0) * 10; // round up to nearest 10
         task.period = period;
-        remainingUtilization -= taskUtilization;
+
+        remainingUtilization -= (totalExecution/period);
         return remainingUtilization;
     }
     
