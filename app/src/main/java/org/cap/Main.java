@@ -20,6 +20,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.logging.Logger;
+import java.util.Map.Entry;
 
 import net.sourceforge.argparse4j.inf.Namespace;
 
@@ -97,18 +98,23 @@ public class Main {
         boolean system_schedulability = true;
         if (scheduleMethod == ScheduleSimulationMethod.PRIORITY_QUEUE) {
             for (Integer taskID : testConf.idNameMap.keySet()) {
-                logger.info("Start simulation with target task " + taskID);
-                boolean schedulability = CFSSimulator.simulateCFS(testConf.mappingInfo,
-                        taskID.intValue()).schedulability;
+                logger.fine("Start simulation with target task " + taskID);
+                SimulationResult simulResult = CFSSimulator.simulateCFS(testConf.mappingInfo,
+                        taskID.intValue());
+                boolean schedulability = simulResult.schedulability;
                 if (schedulability) {
-                    logger.info("Task ID with " + taskID + " is schedulable");
+                    logger.info("Task ID with " + taskID + " (WCRT: " + simulResult.wcrtMap.get(taskID) + ") is schedulable");
                 } else {
-                    logger.info("Task ID with " + taskID + " is not schedulable");
+                    logger.info("Task ID with " + taskID + " (WCRT: " + simulResult.wcrtMap.get(taskID) + ") is not schedulable");
                     system_schedulability = false;
                 }
             }
         } else {
-            system_schedulability = CFSSimulator.simulateCFS(testConf.mappingInfo, -1).schedulability;
+            SimulationResult simulResult = CFSSimulator.simulateCFS(testConf.mappingInfo, -1);
+            system_schedulability = simulResult.schedulability;
+            for(Entry<Integer, Double> wcrt : simulResult.wcrtMap.entrySet()) {
+                 logger.info("Task ID with " + wcrt.getKey() + " (WCRT: " + wcrt.getValue() + ")");
+            }
             if (system_schedulability) {
                 System.out.println("All tasks are schedulable");
             } else {
