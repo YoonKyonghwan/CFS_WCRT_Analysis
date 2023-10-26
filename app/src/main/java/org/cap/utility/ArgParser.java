@@ -46,6 +46,7 @@ public class ArgParser {
         parser.addArgument("--resultDir", "-rd")
                 .dest("result_dir")
                 .type(String.class)
+                .setDefault(".")
                 .help("directory to store result files");
         parser.addArgument("--schedule_simulation_method", "-ssm")
                 .dest("schedule_simulation_method")
