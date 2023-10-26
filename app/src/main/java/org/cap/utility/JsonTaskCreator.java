@@ -59,7 +59,7 @@ public class JsonTaskCreator {
             task.id = i;
             task.startTime = 0; // task.readTime = generateBlockingTime();
             task.readTime = 0;
-            task.bodyTime = Math.round(Math.random() * 5000);    //randomly sampled from [0, 100]
+            task.bodyTime = Math.round(Math.random() * 4900) + 100;    //randomly sampled from [100, 5000]
             task.writeTime = 0;  // task.writeTime = generateBlockingTime();
             task.nice = (int) Math.round(Math.random() * 19);   //randomly sampled from [0, 19]
             task.index = cores.get(coreIndex).tasks.size();
@@ -90,7 +90,11 @@ public class JsonTaskCreator {
         } else {
             //taskUtilization is randomly sampled from [0.01, 2*utilization/numTasks]
             taskUtilization = Math.random() * (taskMaxUtilization);
-            if (taskUtilization < minUtilization) taskUtilization = minUtilization;
+            if (taskUtilization < minUtilization){
+                taskUtilization = minUtilization;
+            } else if (taskUtilization > remainingUtilization){
+                taskUtilization = minUtilization;
+            }
         }
         int period = (int) Math.ceil(totalExecution / taskUtilization);
         period = (int) Math.ceil(period / 10.0) * 10; // round up to nearest 10

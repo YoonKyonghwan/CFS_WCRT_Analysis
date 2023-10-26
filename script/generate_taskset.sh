@@ -3,9 +3,9 @@
 # set arguments
 generated_files_save_dir="app/src/main/resources/generated_taskset"
 num_cores=1
-num_tasks=(3 5 7 9 11)
-utilizations=(0.3 0.4 0.5 0.6 0.7 0.8)
-num_sets=10
+num_tasks=(3 6 9 12 15)
+utilizations=(0.3 0.4 0.5 0.6 0.7 0.8 0.9)
+num_sets=30
 
 ./gradlew build
 mv ./app/build/libs/run.jar ./run.jar
