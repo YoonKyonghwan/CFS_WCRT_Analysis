@@ -88,7 +88,7 @@ public class CFSAnalyzer {
             R_cur = C_i;
             for (Task task_j : core.tasks) {
                 if (task_i.id != task_j.id) {
-                    int interference = getInterference(task_j, R_prev, core, task_i);
+                    long interference = getInterference(task_j, R_prev, core, task_i);
                     R_cur += interference;
                 }
             }
@@ -110,17 +110,17 @@ public class CFSAnalyzer {
     /*
      * Lemma4 in the paper.
      */
-    private int getInterference(Task task_j, int R_prev, Core core, Task task_i) {
+    private long getInterference(Task task_j, int R_prev, Core core, Task task_i) {
         int C_i = (int) task_i.bodyTime;
-        int T_j = task_j.period;
+        long T_j = task_j.period;
         int C_j = (int) task_j.bodyTime;
-        int T_i = task_i.period;
+        long T_i = task_i.period;
         double w_i = task_i.weight;
-        int lastRequestTime = R_prev - (R_prev % T_j); // (R_prev / T_j) * T_j
+        long lastRequestTime = R_prev - (R_prev % T_j); // (R_prev / T_j) * T_j
         int remainWorkload = getRemainWorkload(lastRequestTime, C_i, task_i.id, core);
-        int S_j = getS_j(task_j, C_j, remainWorkload, w_i, T_i, core.minWeight);
+        long S_j = getS_j(task_j, C_j, remainWorkload, w_i, T_i, core.minWeight);
 
-        return (((int)(R_prev / T_j)) * C_j) + S_j;
+        return (((long)(R_prev / T_j)) * C_j) + S_j;
     }
 
     /*
@@ -129,9 +129,9 @@ public class CFSAnalyzer {
      * \beta =  \Delta_{i}^{t_{s(j,q)}} \cdot \frac{w_j}{w_i},  \quad
      * \gamma = L \cdot \frac{w_j}{w_i + w_j} 
      */
-    private int getS_j(Task task_j, int C_j, int remainWorkload, double w_i, int T_i, double minWeight) {
+    private long getS_j(Task task_j, int C_j, int remainWorkload, double w_i, long T_i, double minWeight) {
         double w_j = task_j.weight;
-        int T_j = task_j.period;
+        long T_j = task_j.period;
         int alpha = (int) (this.targetLatency * (w_j / w_i + minWeight));
         int beta = (int) (remainWorkload * (w_j / w_i));
         int gamma = (int) (this.targetLatency * (w_j / (w_i + w_j)));
@@ -145,11 +145,11 @@ public class CFSAnalyzer {
     /*
      * Lemma6 in the paper.
      */
-    private int getRemainWorkload(int lastRequestTime, double C_i, int task_i_id, Core core) {
+    private int getRemainWorkload(long lastRequestTime, double C_i, int task_i_id, Core core) {
         int maxInterferenceUntilLastRequestTime = 0;
         for (Task task_k : core.tasks) {
             if (task_i_id != task_k.id) {
-                int T_k = task_k.period;
+                long T_k = task_k.period;
                 int C_k = (int) task_k.bodyTime;
                 int interference_k = (((int)(lastRequestTime / T_k)) * C_k);
                 interference_k += Math.min(C_k, lastRequestTime % T_k);

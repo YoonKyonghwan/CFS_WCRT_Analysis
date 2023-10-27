@@ -38,7 +38,7 @@ public class PFSSimulator {
      * It calculates the allocation for each task and executes it accordingly.
      */
     private void performSimulation(List<Core> cores, List<Queue<Task>> queues, HashMap<Integer, Double> WCRTs, PFSSimulationState simulationState, int time) {
-        int hyperperiod = MathUtility.getLCM(cores);
+        long hyperperiod = MathUtility.getLCM(cores);
         while (time < hyperperiod) {
             logger.info(String.format("\n>>> CURRENT TIME: %d <<<\n", time));
             List<List<Task>> runningTasks = initializeRunningTasks(queues, simulationState, time);

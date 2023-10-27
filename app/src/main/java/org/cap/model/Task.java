@@ -29,7 +29,7 @@ public class Task {
 
     // Period of the task
     @Expose
-    public int period;
+    public long period;
 
     @Expose
     public int index;

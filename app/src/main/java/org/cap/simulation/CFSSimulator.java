@@ -35,7 +35,7 @@ public class CFSSimulator {
         List<Queue<Task>> queues = initializeQueues(cores, targetTaskID);
         CFSSimulationState simulationState = new CFSSimulationState(this.targetLatency, this.minimumGranularity, cores.size(), this.method);
         int time = 0;
-        int hyperperiod = MathUtility.getLCM(cores);
+        long hyperperiod = MathUtility.getLCM(cores);
 
         performSimulation(cores, queues, wcrtMap, simulationState, time, hyperperiod);
 
@@ -45,11 +45,11 @@ public class CFSSimulator {
         return checkSchedulability(cores, queues, wcrtMap);
     }
 
-    private void performSimulation(List<Core> cores, List<Queue<Task>> queues, HashMap<Integer, Double> wcrtMap, CFSSimulationState simulationState, int time, int hyperperiod) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+    private void performSimulation(List<Core> cores, List<Queue<Task>> queues, HashMap<Integer, Double> wcrtMap, CFSSimulationState simulationState, int time, long hyperperiod) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         boolean diverged = false;
         int i = 0;
 
-        int max_period=0;
+        long max_period=0;
         for(Core core : cores) {
             for(Task task : core.tasks) {
                 if(task.period > max_period)
@@ -267,7 +267,7 @@ public class CFSSimulator {
         }
     }
 
-    private void pathDivergesBlocking(List<Task> blockingTasks, List<Core> cores, List<Queue<Task>> queues, HashMap<Integer, Double> wcrtMap, CFSSimulationState simulationState, int time, int hyperperiod) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+    private void pathDivergesBlocking(List<Task> blockingTasks, List<Core> cores, List<Queue<Task>> queues, HashMap<Integer, Double> wcrtMap, CFSSimulationState simulationState, int time, long hyperperiod) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         List<HashMap<Integer, Double>> possibleWCRTs = new ArrayList<>();
         for (int i = 0; i < blockingTasks.size(); i++) {
             if (blockingTasks.get(i).stage == Stage.READ)
@@ -288,7 +288,7 @@ public class CFSSimulator {
         }
     }
 
-    private void pathDivergesEqualMinRuntime(int coreIndex, List<Task> minRuntimeTasks, List<Core> cores, List<Queue<Task>> queues, HashMap<Integer, Double> wcrtMap, CFSSimulationState simulationState, int time, int hyperperiod) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+    private void pathDivergesEqualMinRuntime(int coreIndex, List<Task> minRuntimeTasks, List<Core> cores, List<Queue<Task>> queues, HashMap<Integer, Double> wcrtMap, CFSSimulationState simulationState, int time, long hyperperiod) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         List<HashMap<Integer, Double>> possibleWCRTs = new ArrayList<>();
         for (int i = 0; i < minRuntimeTasks.size(); i++)
             possibleWCRTs.add(simulatePathEqualMinRuntime(cores, queues, wcrtMap, simulationState, time, hyperperiod, minRuntimeTasks, i, coreIndex));
@@ -401,7 +401,7 @@ public class CFSSimulator {
         return clonedMap;
     }
 
-    private HashMap<Integer, Double> simulatePathBlocking(List<Core> cores, List<Queue<Task>> queues, HashMap<Integer, Double> wcrtMap, CFSSimulationState simulationState, int time, int hyperperiod) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+    private HashMap<Integer, Double> simulatePathBlocking(List<Core> cores, List<Queue<Task>> queues, HashMap<Integer, Double> wcrtMap, CFSSimulationState simulationState, int time, long hyperperiod) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         logger.info("\n*** Path diverged due to blocking ***");
 
         CFSSimulationState cloneSimulationState = simulationState.copy();
@@ -458,7 +458,7 @@ public class CFSSimulator {
      * @throws NoSuchMethodException
      * @throws ClassNotFoundException
      */
-    private HashMap<Integer, Double> simulatePathEqualMinRuntime(List<Core> cores, List<Queue<Task>> queues, HashMap<Integer, Double> wcrtMap, CFSSimulationState simulationState, int time, int hyperperiod, List<Task> minRuntimeTasks, int taskIndex, int coreIndex) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+    private HashMap<Integer, Double> simulatePathEqualMinRuntime(List<Core> cores, List<Queue<Task>> queues, HashMap<Integer, Double> wcrtMap, CFSSimulationState simulationState, int time, long hyperperiod, List<Task> minRuntimeTasks, int taskIndex, int coreIndex) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         logger.fine("\n*** Path diverged due to equal minimum runtime ***");
 
         List<Task> cloneMinRuntimeTasks = new ArrayList<>();

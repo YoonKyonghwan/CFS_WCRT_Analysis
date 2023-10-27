@@ -4,6 +4,7 @@ public enum ComparatorCase {
     BODY_WCET("BodyWCETComparator"), 
 	PERIOD("PeriodComparator"), 
 	WEIGHT("WeightComparator"),
+    TARGET_TASK("TargetTaskBasedComparator"),
     UNORDERED("UnorderedComparator");
 	
 	private final String value;

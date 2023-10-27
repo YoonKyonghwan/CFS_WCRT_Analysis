@@ -11,14 +11,14 @@ public class MathUtility {
         return (a - b) < tolerance;
     }
 
-    public static int getLCM(List<Core> cores) {
+    public static long getLCM(List<Core> cores) {
         return cores.stream()
                 .flatMap(core -> core.tasks.stream())
                 .map(task -> task.period)
-                .reduce(1, (a, b) -> a * (b / getGCD(a, b)));
+                .reduce(1L, (a, b) -> a * (b / getGCD(a, b)));
     }
 
-    public static int getGCD(int a, int b) {
+    public static long getGCD(long a, long b) {
         if (b == 0) {
             return a;
         } else {
