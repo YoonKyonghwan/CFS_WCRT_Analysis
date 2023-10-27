@@ -16,10 +16,13 @@ public class CFSSimulator {
     private static final Logger logger = LoggerUtility.getLogger();
     ScheduleSimulationMethod method;
     ComparatorCase comparatorCase;
+    private int targetLatency;
+    private int minimumGranularity = 1;
 
-    public CFSSimulator(ScheduleSimulationMethod method, ComparatorCase comparatorCase) {
+    public CFSSimulator(ScheduleSimulationMethod method, ComparatorCase comparatorCase, int targetLatency) {
         this.method = method;
         this.comparatorCase = comparatorCase;
+        this.targetLatency = targetLatency;
     }
 
     public SimulationResult simulateCFS(List<Core> cores, int targetTaskID) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
@@ -29,7 +32,7 @@ public class CFSSimulator {
 
         List<List<Double>> WCRTs = initializeWCRTs(cores);
         List<Queue<Task>> queues = initializeQueues(cores, targetTaskID);
-        CFSSimulationState simulationState = new CFSSimulationState(20, 4, cores.size(), this.method);
+        CFSSimulationState simulationState = new CFSSimulationState(this.targetLatency, this.minimumGranularity, cores.size(), this.method);
         int time = 0;
         int hyperperiod = MathUtility.getLCM(cores);
 
@@ -44,8 +47,17 @@ public class CFSSimulator {
     private void performSimulation(List<Core> cores, List<Queue<Task>> queues, List<List<Double>> WCRTs, CFSSimulationState simulationState, int time, int hyperperiod) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         boolean diverged = false;
         int i = 0;
+
+        int max_period=0;
+        for(Core core : cores) {
+            for(Task task : core.tasks) {
+                if(task.period > max_period)
+                    max_period = task.period;
+            }
+        }
+
         outerLoop:
-        while (time < 2 * hyperperiod) {
+        while (time < max_period) {
             logger.info("\nTime " + time + ":");
             addJobs(cores, queues, simulationState.coreStates, time);
 

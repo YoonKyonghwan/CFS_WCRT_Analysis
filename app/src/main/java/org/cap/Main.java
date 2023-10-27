@@ -50,14 +50,15 @@ public class Main {
             JsonReader jsonReader = new JsonReader();
             TestConfiguration testConf = jsonReader.readTasksFromFile(taskInfoPath);
 
-            // analyze by simulator
             long startTime = System.nanoTime();
+            
+            // analyze by simulator
             boolean simulator_schedulability = analyze_by_CFS_simulator(testConf,
                     ScheduleSimulationMethod.fromValue(params.getString("schedule_simulation_method")),
                     ComparatorCase.fromValue(params.getString("tie_comparator")));
             int simulator_timeConsumption = (int)((System.nanoTime() - startTime)/1000); //us
             
-            //(only for testing)
+            // (only for testing)
             // boolean simulator_schedulability = true;
             // int simulator_timeConsumption = 0;
 
@@ -91,7 +92,7 @@ public class Main {
             compareCase = ComparatorCase.UNORDERED;
         }
 
-        CFSSimulator CFSSimulator = new CFSSimulator(scheduleMethod, compareCase);
+        CFSSimulator CFSSimulator = new CFSSimulator(scheduleMethod, compareCase, targetLatency);
         Logger logger = LoggerUtility.getLogger();
 
         boolean system_schedulability = true;
@@ -120,45 +121,46 @@ public class Main {
         return system_schedulability;
     }
 
-    private static void analyze_all_combinations_by_CFS_simulator(TestConfiguration testConf,
-            ScheduleSimulationMethod scheduleMethod, ComparatorCase compareCase) {
-        LoggerUtility.initializeLogger();
-        LoggerUtility.addConsoleLogger();
+    // (future work)for shared contention
+    // private static void analyze_all_combinations_by_CFS_simulator(TestConfiguration testConf,
+    //         ScheduleSimulationMethod scheduleMethod, ComparatorCase compareCase) {
+    //     LoggerUtility.initializeLogger();
+    //     LoggerUtility.addConsoleLogger();
 
-        CFSSimulator CFSSimulator = new CFSSimulator(scheduleMethod, compareCase);
+    //     CFSSimulator CFSSimulator = new CFSSimulator(scheduleMethod, compareCase);
 
-        long startTime = System.nanoTime();
-        boolean schedulability = true;
-        List<List<Core>> possibleCores = CombinationUtility.generatePossibleCores(testConf.mappingInfo);
-        ExecutorService threadsForSimulation = Executors.newFixedThreadPool(maxNumThreads);
-        List<Future<SimulationResult>> results = new ArrayList<>();
+    //     long startTime = System.nanoTime();
+    //     boolean schedulability = true;
+    //     List<List<Core>> possibleCores = CombinationUtility.generatePossibleCores(testConf.mappingInfo);
+    //     ExecutorService threadsForSimulation = Executors.newFixedThreadPool(maxNumThreads);
+    //     List<Future<SimulationResult>> results = new ArrayList<>();
 
-        for (List<Core> possibleCore : possibleCores) {
-            for (Integer taskID : testConf.idNameMap.keySet()) {
-                Future<SimulationResult> futureResult = threadsForSimulation
-                        .submit(() -> CFSSimulator.simulateCFS(possibleCore, taskID.intValue()));
-                results.add(futureResult);
-            }
+    //     for (List<Core> possibleCore : possibleCores) {
+    //         for (Integer taskID : testConf.idNameMap.keySet()) {
+    //             Future<SimulationResult> futureResult = threadsForSimulation
+    //                     .submit(() -> CFSSimulator.simulateCFS(possibleCore, taskID.intValue()));
+    //             results.add(futureResult);
+    //         }
 
-        }
-        for (Future<SimulationResult> future : results) {
-            try {
-                SimulationResult simulationResult = future.get();
-                if (!simulationResult.schedulability) {
-                    System.out.println("Not all tasks are schedulable");
-                    schedulability = false;
-                    break;
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
-        if (schedulability)
-            System.out.println("All tasks are schedulable");
+    //     }
+    //     for (Future<SimulationResult> future : results) {
+    //         try {
+    //             SimulationResult simulationResult = future.get();
+    //             if (!simulationResult.schedulability) {
+    //                 System.out.println("Not all tasks are schedulable");
+    //                 schedulability = false;
+    //                 break;
+    //             }
+    //         } catch (Exception e) {
+    //             e.printStackTrace();
+    //         }
+    //     }
+    //     if (schedulability)
+    //         System.out.println("All tasks are schedulable");
 
-        threadsForSimulation.shutdown();
+    //     threadsForSimulation.shutdown();
 
-        long duration = (System.nanoTime() - startTime) / 1000;
-        System.out.println("Time consumption (CFS simulator): " + duration + " ms");
-    }
+    //     long duration = (System.nanoTime() - startTime) / 1000;
+    //     System.out.println("Time consumption (CFS simulator): " + duration + " ms");
+    // }
 }

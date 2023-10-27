@@ -10,6 +10,8 @@ num_sets=30
 ./gradlew build
 mv ./app/build/libs/run.jar ./run.jar
 
+rm -rf "$generated_files_save_dir"
+
 # Loop through the combinations of num_tasks and utilization
 for num_task in "${num_tasks[@]}"; do
     for utilization in "${utilizations[@]}"; do
