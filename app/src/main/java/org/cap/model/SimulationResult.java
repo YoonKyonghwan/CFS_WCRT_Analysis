@@ -1,13 +1,13 @@
 package org.cap.model;
 
-import java.util.List;
+import java.util.HashMap;
 
 public class SimulationResult {
     public boolean schedulability;
-    public List<List<Double>> WCRTs;
+    public HashMap<Integer, Double> wcrtMap;
 
-    public SimulationResult(boolean schedulability, List<List<Double>> WCRTs) {
+    public SimulationResult(boolean schedulability, HashMap<Integer, Double> wcrtMap) {
         this.schedulability = schedulability;
-        this.WCRTs = WCRTs;
+        this.wcrtMap = wcrtMap;
     }
 }
