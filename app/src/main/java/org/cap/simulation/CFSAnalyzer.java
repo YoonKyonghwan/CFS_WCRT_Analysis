@@ -36,7 +36,7 @@ public class CFSAnalyzer {
         }
     }
 
-    public boolean checkSchedulability() {
+    public boolean checkSystemSchedulability() {
         for (Core core : this.cores) {
             for (Task task : core.tasks) {
                 if (!task.isSchedulable_by_proposed) {
@@ -114,9 +114,11 @@ public class CFSAnalyzer {
         int C_i = (int) task_i.bodyTime;
         int T_j = task_j.period;
         int C_j = (int) task_j.bodyTime;
+        int T_i = task_i.period;
+        double w_i = task_i.weight;
         int lastRequestTime = R_prev - (R_prev % T_j); // (R_prev / T_j) * T_j
         int remainWorkload = getRemainWorkload(lastRequestTime, C_i, task_i.id, core);
-        int S_j = getS_j(task_j, C_j, remainWorkload, task_i.weight, core.minWeight);
+        int S_j = getS_j(task_j, C_j, remainWorkload, w_i, T_i, core.minWeight);
 
         return (((int)(R_prev / T_j)) * C_j) + S_j;
     }
@@ -127,12 +129,17 @@ public class CFSAnalyzer {
      * \beta =  \Delta_{i}^{t_{s(j,q)}} \cdot \frac{w_j}{w_i},  \quad
      * \gamma = L \cdot \frac{w_j}{w_i + w_j} 
      */
-    private int getS_j(Task task_j, int C_j, int remainWorkload, double task_i_weight, double minWeight) {
-        int alpha = (int) (this.targetLatency * (task_j.weight / task_i_weight + minWeight));
-        int beta = (int) (remainWorkload * (task_j.weight / task_i_weight));
-        int gamma = (int) (this.targetLatency * (task_j.weight / (task_i_weight + task_j.weight)));
-        int S_j = (int) Math.min(alpha + beta + gamma, C_j);
-        return S_j;
+    private int getS_j(Task task_j, int C_j, int remainWorkload, double w_i, int T_i, double minWeight) {
+        double w_j = task_j.weight;
+        int T_j = task_j.period;
+        int alpha = (int) (this.targetLatency * (w_j / w_i + minWeight));
+        int beta = (int) (remainWorkload * (w_j / w_i));
+        int gamma = (int) (this.targetLatency * (w_j / (w_i + w_j)));
+        if (T_j > T_i || T_j == T_i) {
+            return (int) Math.min(alpha + beta + gamma, C_j);
+        }else{
+            return (int) Math.min(beta + gamma, C_j);
+        }
     }
 
     /*

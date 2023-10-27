@@ -1,6 +1,5 @@
 package org.cap;
 
-import org.cap.model.Core;
 import org.cap.model.ScheduleSimulationMethod;
 import org.cap.model.SimulationResult;
 import org.cap.model.TestConfiguration;
@@ -9,23 +8,17 @@ import org.cap.simulation.CFSSimulator;
 import org.cap.simulation.comparator.ComparatorCase;
 import org.cap.utility.AnalysisResultSaver;
 import org.cap.utility.ArgParser;
-import org.cap.utility.CombinationUtility;
 import org.cap.utility.JsonReader;
 import org.cap.utility.JsonTaskCreator;
 import org.cap.utility.LoggerUtility;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 import java.util.logging.Logger;
 import java.util.Map.Entry;
 
 import net.sourceforge.argparse4j.inf.Namespace;
 
 public class Main {
-    private static final int maxNumThreads = 8;
     private static final int targetLatency = 30000;  //us (30ms)
 
     public static void main(String[] args) throws ClassNotFoundException, NoSuchMethodException, SecurityException,
@@ -67,7 +60,7 @@ public class Main {
             startTime = System.nanoTime();
             CFSAnalyzer analyzer = new CFSAnalyzer(testConf.mappingInfo, targetLatency);
             analyzer.analyze(); // without parallel
-            boolean proposed_schedulability = analyzer.checkSchedulability();
+            boolean proposed_schedulability = analyzer.checkSystemSchedulability();
             int proposed_timeConsumption = (int) ((System.nanoTime() - startTime) / 1000);
 
             // save analysis results into file
@@ -114,7 +107,7 @@ public class Main {
             SimulationResult simulResult = CFSSimulator.simulateCFS(testConf.mappingInfo, -1);
             system_schedulability = simulResult.schedulability;
             for(Entry<Integer, Double> wcrt : simulResult.wcrtMap.entrySet()) {
-                 logger.info("Task ID with " + wcrt.getKey() + " (WCRT: " + wcrt.getValue() + ")");
+                logger.info("Task ID with " + wcrt.getKey() + " (WCRT: " + wcrt.getValue() + ")");
             }
             if (system_schedulability) {
                 System.out.println("All tasks are schedulable");

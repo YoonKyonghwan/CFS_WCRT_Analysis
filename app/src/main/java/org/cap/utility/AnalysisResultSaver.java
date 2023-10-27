@@ -4,7 +4,6 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -14,8 +13,7 @@ import org.cap.model.TestConfiguration;
 
 public class AnalysisResultSaver {
     public void saveResultSummary(String resultDir, String taskInfoPath, boolean simulator_schedulability,
-            int simulator_timeConsumption,
-            boolean proposed_schedulability, int proposed_timeConsumption) {
+            int simulator_timeConsumption, boolean proposed_schedulability, int proposed_timeConsumption) {
 
         // Parse information from the filename
         String inputFileName = new File(taskInfoPath).getName();
@@ -79,7 +77,7 @@ public class AnalysisResultSaver {
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(resultFileName, true))) {
             // write the header first
-            String header = "id,name,WCRT_by_proposed,isSchedulable_by_proposed,WCRT_by_simulator,isSchedulable_by_simulator\n";
+            String header = "id,name,WCRT_by_simulator,isSchedulable_by_simulator,WCRT_by_proposed,isSchedulable_by_proposed\n";
             writer.write(header);
 
             // write the result for each task
@@ -88,14 +86,14 @@ public class AnalysisResultSaver {
                 for (Task task : core.tasks){
                     int id = task.id;
                     String name = testConf.idNameMap.get(task.id);
-                    int WCRT_by_proposed = task.WCRT_by_proposed;
-                    boolean isSchedulable_by_proposed = task.isSchedulable_by_proposed;
                     int WCRT_by_simulator = task.WCRT_by_simulator;
                     boolean isSchedulable_by_simulator = task.isSchedulable_by_simulator;
+                    int WCRT_by_proposed = task.WCRT_by_proposed;
+                    boolean isSchedulable_by_proposed = task.isSchedulable_by_proposed;
 
                     // Prepare data to be written to the CSV file
                     dataToWrite = String.format("%d,%s,%d,%b,%d,%b\n",
-                            id, name, WCRT_by_proposed, isSchedulable_by_proposed, WCRT_by_simulator, isSchedulable_by_simulator);
+                            id, name, WCRT_by_simulator, isSchedulable_by_simulator, WCRT_by_proposed, isSchedulable_by_proposed);
                     
                     writer.write(dataToWrite);
                 }
