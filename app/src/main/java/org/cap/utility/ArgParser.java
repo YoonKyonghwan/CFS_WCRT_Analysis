@@ -59,7 +59,7 @@ public class ArgParser {
                 .type(Arguments.enumStringType(ComparatorCase.class))
                 .setDefault(ComparatorCase.WEIGHT.getClassName())
                 .nargs("?")
-                .help("tie comparator when the virtual runtime is same (BodyWCETComparator, PeriodComparator, or WeightComparator, UnorderedComparator). If schedule simulation method is brute-force, tie comparator is fixed to UnorderedComparator.");
+                .help("tie comparator when the virtual runtime is same (BodyWCETComparator, PeriodComparator, WeightComparator, or UnorderedComparator). If schedule simulation method is brute-force, tie comparator is fixed to UnorderedComparator.");
         Namespace params = parser.parseArgsOrFail(args);
         return params;
     }

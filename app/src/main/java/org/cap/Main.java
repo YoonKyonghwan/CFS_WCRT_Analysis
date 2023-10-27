@@ -58,6 +58,7 @@ public class Main {
                     ScheduleSimulationMethod.fromValue(params.getString("schedule_simulation_method")),
                     ComparatorCase.fromValue(params.getString("tie_comparator")));
             int simulator_timeConsumption = (int)((System.nanoTime() - startTime)/1000); //us
+            System.out.println("Time consumption (CFS simulator): " + simulator_timeConsumption + " us");
             
             // (only for testing)
             // boolean simulator_schedulability = true;
@@ -69,6 +70,7 @@ public class Main {
             analyzer.analyze(); // without parallel
             boolean proposed_schedulability = analyzer.checkSchedulability();
             int proposed_timeConsumption = (int) ((System.nanoTime() - startTime) / 1000);
+            System.out.println("Time consumption (Analysis): " + proposed_timeConsumption + " us");
 
             // save analysis results into file
             AnalysisResultSaver analysisResultSaver = new AnalysisResultSaver();

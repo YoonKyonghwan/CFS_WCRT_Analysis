@@ -10,7 +10,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.logging.Logger;
-import java.util.logging.Level;
 import java.util.stream.Collectors;
 import java.util.Map.Entry;
 
@@ -161,7 +160,7 @@ public class CFSSimulator {
                     simulationState.blockingPolicy = BlockingPolicy.WRITE;
                 break;
             case COMPLETED:
-                logger.info("Task " + task.id + " entered with completed stage." );
+                logger.severe("Task " + task.id + " entered with completed stage." );
                 break;
             default:
                 break;
@@ -249,8 +248,8 @@ public class CFSSimulator {
                 }
             }
         }
-        if (isAdded)
-            logger.info("");
+        //if (isAdded)
+        //    logger.info("");
     }
 
     private boolean initialJobs(int time, Task task) {
@@ -460,7 +459,7 @@ public class CFSSimulator {
      * @throws ClassNotFoundException
      */
     private HashMap<Integer, Double> simulatePathEqualMinRuntime(List<Core> cores, List<Queue<Task>> queues, HashMap<Integer, Double> wcrtMap, CFSSimulationState simulationState, int time, int hyperperiod, List<Task> minRuntimeTasks, int taskIndex, int coreIndex) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-        logger.info("\n*** Path diverged due to equal minimum runtime ***");
+        logger.fine("\n*** Path diverged due to equal minimum runtime ***");
 
         List<Task> cloneMinRuntimeTasks = new ArrayList<>();
         for (Task task : minRuntimeTasks)
