@@ -49,7 +49,7 @@ public class Main {
             // analyze by simulator
             boolean simulator_schedulability = analyze_by_CFS_simulator(testConf,
                     ScheduleSimulationMethod.fromValue(params.getString("schedule_simulation_method")),
-                    ComparatorCase.fromValue(params.getString("tie_comparator")));
+                    ComparatorCase.fromValue(params.getString("tie_comparator")), params.getLong("simulation_time"));
             int simulator_timeConsumption = (int)((System.nanoTime() - startTime)/1000); //us
             System.out.println("Time consumption (CFS simulator): " + simulator_timeConsumption + " us");
             
@@ -78,7 +78,7 @@ public class Main {
     }
 
     private static boolean analyze_by_CFS_simulator(TestConfiguration testConf, ScheduleSimulationMethod scheduleMethod,
-            ComparatorCase compareCase) throws ClassNotFoundException, NoSuchMethodException, SecurityException,
+            ComparatorCase compareCase, long simulationTime) throws ClassNotFoundException, NoSuchMethodException, SecurityException,
             InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         LoggerUtility.initializeLogger();
         LoggerUtility.addConsoleLogger();
@@ -96,7 +96,7 @@ public class Main {
             for (Integer taskID : testConf.idNameMap.keySet()) {
                 logger.fine("Start simulation with target task " + taskID);
                 SimulationResult simulResult = CFSSimulator.simulateCFS(testConf.mappingInfo,
-                        taskID.intValue());
+                        taskID.intValue(), simulationTime);
                 boolean schedulability = simulResult.schedulability;
                 if (schedulability) {
                     logger.info("Task ID with " + taskID + " (WCRT: " + simulResult.wcrtMap.get(taskID) + ") is schedulable");
@@ -106,7 +106,7 @@ public class Main {
                 }
             }
         } else {
-            SimulationResult simulResult = CFSSimulator.simulateCFS(testConf.mappingInfo, -1);
+            SimulationResult simulResult = CFSSimulator.simulateCFS(testConf.mappingInfo, -1, simulationTime);
             system_schedulability = simulResult.schedulability;
             for(Entry<Integer, Double> wcrt : simulResult.wcrtMap.entrySet()) {
                 logger.info("Task ID with " + wcrt.getKey() + " (WCRT: " + wcrt.getValue() + ")");

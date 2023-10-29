@@ -26,7 +26,19 @@ public class CFSSimulator {
         this.targetLatency = targetLatency;
     }
 
-    public SimulationResult simulateCFS(List<Core> cores, int targetTaskID)
+    private long getMaximumPeriod(List<Core> cores) {
+        long maxPeriod = -1;
+        for (Core core : cores) {
+            for (Task task : core.tasks) {
+                if (task.period > maxPeriod)
+                    maxPeriod = task.period;
+            }
+        }
+
+        return maxPeriod;
+    }
+
+    public SimulationResult simulateCFS(List<Core> cores, int targetTaskID, long simulationTime)
             throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException,
             IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         logger.fine("\n------------------------------");
@@ -38,9 +50,19 @@ public class CFSSimulator {
         CFSSimulationState simulationState = new CFSSimulationState(this.targetLatency, this.minimumGranularity,
                 cores.size(), this.method);
         int time = 0;
-        long hyperperiod = MathUtility.getLCM(cores);
 
-        performSimulation(cores, queues, wcrtMap, simulationState, time, hyperperiod);
+        if(simulationTime == 0) { // hyper period
+            simulationTime = MathUtility.getLCM(cores);
+        }
+        else if (simulationTime == -1) {
+            simulationTime = getMaximumPeriod(cores);
+        }
+
+        simulationState.insertPeriodsIntoEventQueue(simulationTime, cores);
+        simulationState.setPreviousEventTime(time);
+        time = simulationState.getNextEventTime();
+
+        performSimulation(cores, queues, wcrtMap, simulationState, time, simulationTime);
 
         logger.fine("\n------------------------------");
         logger.fine("******** Final Result ********");
@@ -49,7 +71,7 @@ public class CFSSimulator {
     }
 
     private void performSimulation(List<Core> cores, List<Queue<Task>> queues, HashMap<Integer, Double> wcrtMap,
-            CFSSimulationState simulationState, int time, long hyperperiod)
+            CFSSimulationState simulationState, int time, long simulationTime)
             throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException,
             IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         boolean diverged = false;
@@ -64,13 +86,13 @@ public class CFSSimulator {
         }
 
         outerLoop:
-        while (time < max_period) {
+        while (time < simulationTime && time >= 0) {
             logger.finer("\nTime " + time + ":");
             addJobs(cores, queues, simulationState.coreStates, time);
 
             List<Task> blockingTasks = getBlockingTasks(queues, simulationState);
             if (blockingTasks.size() > 1) {
-                pathDivergesBlocking(blockingTasks, cores, queues, wcrtMap, simulationState, time, hyperperiod);
+                pathDivergesBlocking(blockingTasks, cores, queues, wcrtMap, simulationState, time, simulationTime);
                 break outerLoop;
             }
 
@@ -80,16 +102,20 @@ public class CFSSimulator {
                 CoreState coreState = simulationState.coreStates.get(i);
 
                 Task task = null;
-                if (coreState.isRunning)
+                if (coreState.isRunning) {
                     task = coreState.currentTask;
-                else {
+                    executeTask(task, queue, wcrtMap, simulationState, coreState, time, i);
+                    updateMinimumVirtualRuntime(coreState, queue);
+                }
+                if(coreState.isRunning == false) {
+                    task = null;
                     List<Task> minRuntimeTasks = getMinRuntimeTasks(queue, simulationState);
                     if (simulationState.getMethod() == ScheduleSimulationMethod.PRIORITY_QUEUE) {
                         if (minRuntimeTasks.size() > 0)
                             task = minRuntimeTasks.get(0);
                     } else { // BRUTE_FORCE
                         if (minRuntimeTasks.size() > 1) {
-                            pathDivergesEqualMinRuntime(i, minRuntimeTasks, cores, queues, wcrtMap, simulationState, time, hyperperiod);
+                            pathDivergesEqualMinRuntime(i, minRuntimeTasks, cores, queues, wcrtMap, simulationState, time, simulationTime);
                             diverged = true;
                             break outerLoop;
                         }
@@ -101,14 +127,17 @@ public class CFSSimulator {
                     else
                          logger.fine("Task " + task.id + " started to run at time " + time + ", minimum_vruntime: " + task.virtualRuntime);
                     setRuntime(i, task, queue, simulationState);
+                    simulationState.putEventTime((time + coreState.remainingRuntime));
+                    coreState.currentTask = task;
                 }
-                executeTask(task, queue, wcrtMap, simulationState, coreState, time, i);
-                updateMinimumVirtualRuntime(coreState, queue);
+                
             }
             if (simulationState.blockingPolicyReset)
                 simulationState.blockingPolicy = BlockingPolicy.NONE;
 
-            time++;
+            simulationState.setPreviousEventTime(time);
+            time = simulationState.getNextEventTime();
+            //logger.info("time popped up: " + time);
         }
 
         if (diverged == true) {
@@ -122,61 +151,89 @@ public class CFSSimulator {
     private void executeTask(Task task, Queue<Task> queueInCore, HashMap<Integer, Double> wcrtMap,
             CFSSimulationState simulationState, CoreState coreState, int time, int coreIndex) {
         logger.finer("-Core: " + coreIndex + ", Task " + task.id + " executed in stage: " + task.stage);
-
+        int timeUpdated = time - simulationState.getPreviousEventTime();
         // Decrease runtime
-        coreState.remainingRuntime--;
+        
+        coreState.remainingRuntime -= timeUpdated;
         if (coreState.remainingRuntime <= 0)
             coreState.isRunning = false;
 
         // Update virtual runtime
-        task.virtualRuntime += 1024 / task.weight;
+        task.virtualRuntime += (1024 * timeUpdated) / task.weight;
 
         // Decrease execution time for each stage
-        switch (task.stage) {
-            case READ:
-                task.readTime--;
-                if (task.readTime <= 0) {
-                    task.stage = Stage.BODY;
-                    task.bodyReleaseTime = time + 1;
-                    simulationState.blockingPolicyReset = true;
-                }
-                else {
-                    if (coreState.isRunning)
-                        simulationState.blockingPolicy = BlockingPolicy.READ;
-                }
-                break;
-            case BODY:
-                task.bodyTime--;
-                if (task.bodyTime <= 0) {
-                    if (task.writeTime > 0) {
-                        task.stage = Stage.WRITE;
-                        task.writeReleaseTime = time + 1;
+        while(timeUpdated > 0 && task.stage != Stage.COMPLETED) {
+            switch (task.stage) {
+                case READ:
+                    if(task.readTime > timeUpdated) {
+                        task.readTime -= timeUpdated;
+                        timeUpdated = 0;
+                    } else {
+                        task.readTime = 0;
+                        timeUpdated -= task.readTime;
+                    }
+                    if (task.readTime <= 0) {
+                        task.stage = Stage.BODY;
+                        task.bodyReleaseTime = time + 1;
+                        simulationState.blockingPolicyReset = true;
                     }
                     else {
+                        if (coreState.isRunning)
+                            simulationState.blockingPolicy = BlockingPolicy.READ;
+                    }
+                    break;
+                case BODY:
+                    if(task.bodyTime > timeUpdated) {
+                        task.bodyTime -= timeUpdated;
+                        timeUpdated = 0;
+                    } else {
+                        task.bodyTime = 0;
+                        timeUpdated -= task.bodyTime;
+                    }
+                    if (task.bodyTime <= 0) {
+                        if (task.writeTime > 0) {
+                            task.stage = Stage.WRITE;
+                            task.writeReleaseTime = time + 1;
+                        }
+                        else {
+                            task.stage = Stage.COMPLETED;
+                            coreState.isRunning = false;
+                        }
+                    }
+                    break;
+                case WRITE:
+                    if(task.writeTime > timeUpdated) {
+                        task.writeTime -= timeUpdated;
+                        timeUpdated = 0;
+                    } else {
+                        task.writeTime = 0;
+                        timeUpdated -= task.writeTime;
+                    }
+                    if (task.writeTime <= 0) {
                         task.stage = Stage.COMPLETED;
                         coreState.isRunning = false;
+                        simulationState.blockingPolicyReset = true;
                     }
-                }
-                break;
-            case WRITE:
-                task.writeTime--;
-                if (task.writeTime <= 0) {
-                    task.stage = Stage.COMPLETED;
-                    coreState.isRunning = false;
-                    simulationState.blockingPolicyReset = true;
-                }
-                else
-                    simulationState.blockingPolicy = BlockingPolicy.WRITE;
-                break;
-            case COMPLETED:
-                logger.severe("Task " + task.id + " entered with completed stage.");
-                break;
-            default:
-                break;
+                    else
+                        simulationState.blockingPolicy = BlockingPolicy.WRITE;
+                    break;
+                case COMPLETED:
+                    //logger.severe("Task " + task.id + " entered with completed stage.");
+                    break;
+                default:
+                    break;
+            }
         }
 
         // Add task back to queue if task is not finished but runtime is over
         if (task.stage != Stage.COMPLETED) {
+            // handling the preemption from other tasks becuase of new task invocation
+            // if time is still remained (which means the task cannot be executed until the time slice), clear the next end event of this task
+            if(timeUpdated > 0) { 
+                coreState.isRunning = false; 
+                simulationState.clearEventTime(time + coreState.remainingRuntime);
+            }
+            
             if (coreState.isRunning)
                 coreState.currentTask = task;
             else {
@@ -185,10 +242,10 @@ public class CFSSimulator {
                     simulationState.blockingPolicyReset = true;
             }
         } else {
-            logger.fine("Task " + task.id + " completed at time " + (time + 1) + " with RT "
-                    + (time - task.readReleaseTime + 1));
+            logger.fine("Task " + task.id + " completed at time " + time + " with RT "
+                    + (time - task.readReleaseTime));
             wcrtMap.put(Integer.valueOf(task.getId()),
-                    Math.max(wcrtMap.get(Integer.valueOf(task.getId())), time - task.readReleaseTime + 1));
+                    Math.max(wcrtMap.get(Integer.valueOf(task.getId())), time - task.readReleaseTime));
         }
     }
 
@@ -327,6 +384,7 @@ public class CFSSimulator {
         double totalWeight = queueInCore.stream().mapToDouble(t -> t.weight).sum() + task.weight;
         coreState.remainingRuntime = (int) Math.max(simulationState.targetedLatency * task.weight / totalWeight,
                 simulationState.minimumGranularity);
+        coreState.remainingRuntime = Math.min(coreState.remainingRuntime, (int) (task.readTime + task.bodyTime + task.writeTime));
         coreState.isRunning = true;
     }
 
@@ -457,6 +515,7 @@ public class CFSSimulator {
                 if (cloneTask == null)
                     continue;
                 setRuntime(i, cloneTask, cloneQueue, cloneSimulationState);
+                simulationState.putEventTime((time + cloneCoreState.remainingRuntime));
             }
             executeTask(cloneTask, cloneQueue, cloneWcrtMap, cloneSimulationState, cloneCoreState, time, i);
             updateMinimumVirtualRuntime(cloneCoreState, cloneQueue);
@@ -464,7 +523,9 @@ public class CFSSimulator {
         if (cloneSimulationState.blockingPolicyReset)
             cloneSimulationState.blockingPolicy = BlockingPolicy.NONE;
 
-        time++;
+        simulationState.setPreviousEventTime(time);
+        time = simulationState.getNextEventTime();
+        logger.fine("Time popped out: " + time);
 
         performSimulation(cores, cloneQueues, cloneWcrtMap, cloneSimulationState, time, hyperperiod);
         checkSchedulability(cores, cloneQueues, cloneWcrtMap);
@@ -504,16 +565,22 @@ public class CFSSimulator {
         CoreState cloneCoreState = cloneSimulationState.coreStates.get(coreIndex);
 
         setRuntime(coreIndex, minRuntimeTask, cloneQueue, cloneSimulationState);
-        executeTask(minRuntimeTask, cloneQueue, cloneWcrtMap, cloneSimulationState, cloneCoreState, time, coreIndex);
+        cloneSimulationState.putEventTime((time + cloneCoreState.remainingRuntime));
+        cloneCoreState.currentTask = minRuntimeTask;
+
         for (int i = coreIndex + 1; i < cores.size(); i++) {
             cloneQueue = cloneQueues.get(i);
             cloneCoreState = cloneSimulationState.coreStates.get(i);
             Task cloneTask = null;
-            if (cloneCoreState.isRunning)
+            if (cloneCoreState.isRunning) {
                 cloneTask = cloneCoreState.currentTask;
-            else {
-                cloneMinRuntimeTasks = getMinRuntimeTasks(cloneQueue, simulationState);
-                if (simulationState.getMethod() == ScheduleSimulationMethod.PRIORITY_QUEUE) {
+                executeTask(cloneTask, cloneQueue, cloneWcrtMap, cloneSimulationState, cloneCoreState, time, i);
+                updateMinimumVirtualRuntime(cloneCoreState, cloneQueue);
+            }
+            if(cloneCoreState.isRunning == false) {
+                cloneTask = null;
+                cloneMinRuntimeTasks = getMinRuntimeTasks(cloneQueue, cloneSimulationState);
+                if (cloneSimulationState.getMethod() == ScheduleSimulationMethod.PRIORITY_QUEUE) {
                     if (cloneMinRuntimeTasks.size() > 0)
                         cloneTask = cloneMinRuntimeTasks.get(0);
                 } else { // BRUTE_FORCE
@@ -527,15 +594,20 @@ public class CFSSimulator {
                 }
                 if (cloneTask == null)
                     continue;
+                else
+                    logger.fine("Task " + cloneTask.id + " started to run at time " + time + ", minimum_vruntime: " + cloneTask.virtualRuntime);
                 setRuntime(i, cloneTask, cloneQueue, cloneSimulationState);
+                cloneSimulationState.putEventTime((time + cloneCoreState.remainingRuntime));
+                cloneCoreState.currentTask = cloneTask;
             }
-            executeTask(cloneTask, cloneQueue, cloneWcrtMap, cloneSimulationState, cloneCoreState, time, i);
-            updateMinimumVirtualRuntime(cloneCoreState, cloneQueue);
+            
         }
-        if (simulationState.blockingPolicyReset)
-            simulationState.blockingPolicy = BlockingPolicy.NONE;
+        if (cloneSimulationState.blockingPolicyReset)
+            cloneSimulationState.blockingPolicy = BlockingPolicy.NONE;
 
-        time++;
+        cloneSimulationState.setPreviousEventTime(time);
+        time = cloneSimulationState.getNextEventTime();
+        //logger.info("time popped up2: " + time);
 
         performSimulation(cores, cloneQueues, cloneWcrtMap, cloneSimulationState, time, hyperperiod);
         checkSchedulability(cores, cloneQueues, cloneWcrtMap);

@@ -54,6 +54,12 @@ public class ArgParser {
                 .setDefault(ScheduleSimulationMethod.BRUTE_FORCE.toString())
                 .nargs("?")
                 .help("search method (either brute-force or priority-queue) ");
+        parser.addArgument("--simulation_time", "-st")
+                .dest("simulation_time")
+                .type(Long.class)
+                .setDefault(0)
+                .nargs("?")
+                .help("simulation time (0 for hyper period, -1 for max period, other positive integer values are used as an exact value) ");
         parser.addArgument("--tie_comparator", "-tc")
                 .dest("tie_comparator")
                 .type(Arguments.enumStringType(ComparatorCase.class))
