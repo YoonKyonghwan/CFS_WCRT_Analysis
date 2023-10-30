@@ -43,7 +43,7 @@ public class JsonTaskCreator {
                 cores.add(core);
             }
 
-            TestConfiguration testConf = generateTasks(numTasks, utilization, cores); //set tasks_info into Core
+            TestConfiguration testConf = generateTasks_v2(numTasks, utilization, cores); //set tasks_info into Core
             saveToFile(testConf, numCores, numTasks, utilization, tasksetIndex, generatedFilesSaveDir);
         }
         return;
@@ -113,17 +113,76 @@ public class JsonTaskCreator {
         remainingUtilization -= (totalExecution/period);
         return remainingUtilization;
     }
+
+    private TestConfiguration generateTasks_v2(int numTasks, double utilization, List<Core> cores) {
+        int coreIndex = 0;
+        double remainingUtilization = utilization;
+        double taskMaxUtilization = ((2*utilization) / numTasks);
+
+        for (int task_index = 1; task_index <= numTasks; task_index++) {
+            Task task = new Task();
+            task.id = task_index;
+            task.startTime = 0; // task.readTime = generateBlockingTime();
+            task.readTime = 0;
+            task.writeTime = 0;  // task.writeTime = generateBlockingTime();
+
+            task.period = setPeriod_v2(task);
+            remainingUtilization = setWCET(task_index, taskMaxUtilization, remainingUtilization, numTasks, task);
+
+            task.nice = (int) Math.round(Math.random() * 19);   //randomly sampled from [0, 19]
+            task.index = cores.get(coreIndex).tasks.size();
+
+            cores.get(coreIndex).tasks.add(task);
+            coreIndex = (coreIndex + 1) % cores.size();
+        }
+
+        TestConfiguration testConf = new TestConfiguration();
+        testConf.mappingInfo = cores;
+        HashMap<Integer, String> idNameMap = new HashMap<Integer, String>();
+        for (int i = 1; i <= numTasks; i++){
+            String task_name = "task" + i;
+            idNameMap.put(i, task_name);
+        }
+        testConf.idNameMap = idNameMap;
+
+        return testConf;
+    }
+
+    private double setWCET(int task_index, double taskMaxUtilization, double remainingUtilization, int numTasks,  Task task){
+        double minUtilization = 0.01;
+        double taskUtilization = 0;
+        if (task_index == numTasks) {
+            taskUtilization = remainingUtilization;
+        } else {
+            //taskUtilization is randomly sampled from [0.01, 2*utilization/numTasks]
+            taskUtilization = Math.random() * (taskMaxUtilization);
+            if (taskUtilization < minUtilization){
+                taskUtilization = minUtilization;
+            } else if (taskUtilization > remainingUtilization){
+                taskUtilization = minUtilization;
+            }
+        }
+        task.bodyTime = (int) Math.ceil(task.period * taskUtilization);
+
+        remainingUtilization -= taskUtilization;
+        return remainingUtilization;
+    }
+
+
+    private int setPeriod_v2(Task task){
+        int period = (int) (Math.round(Math.random() * 1000)); //ms
+        if (period < 100){
+            if (period < 10){
+                period = 10; // min period is 10ms
+            }else{
+                period = (int) Math.ceil(period / 10.0) * 10;
+            }
+        }else{
+            period = (int) Math.ceil(period / 100.0) * 100;
+        }
+        return period*1000; //us
+    }
     
-
-    // private double generateSharedResourceAccessTime() {
-    //     double chance = Math.random();
-
-    //     if (chance < 0.2) {
-    //         return 0;
-    //     } else {
-    //         return 50.0 + Math.round(Math.random() * 10) * 5.0;
-    //     }
-    // }
 
     private void saveToFile(TestConfiguration testConf, int numCores, int numTasks, double utilization, int tasksetIndex, String generatedFilesSaveDir) {
         Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().setPrettyPrinting().create();
