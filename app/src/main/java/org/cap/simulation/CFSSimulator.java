@@ -660,16 +660,24 @@ public class CFSSimulator {
                 Task task = cores.get(i).tasks.get(j);
                 logger.fine("- Task " + task.id + " (WCRT: " + wcrtMap.get(Integer.valueOf(task.getId())) + ", Period: "
                         + task.period + ")");
-                if (wcrtMap.get(Integer.valueOf(task.getId())) > task.period) {
+                if (wcrtMap.get(Integer.valueOf(task.getId())) > task.period) { // ns
                     schedulability = false;
-                    task.isSchedulable_by_simulator = false;
-                } else {
-                    task.isSchedulable_by_simulator = true;
+                }else{
+                    schedulability = true;
                 }
-                task.WCRT_by_simulator = (int) Math.floor(wcrtMap.get(Integer.valueOf(task.getId())));
             }
         }
         return new SimulationResult(schedulability, wcrtMap);
+    }
+
+    public Task findTaskbyID(TestConfiguration testConf, int targetTaskID){
+        for(Core core : testConf.mappingInfo){
+            for(Task task : core.tasks){
+                if(task.id == targetTaskID)
+                    return task;
+            }
+        }
+        return null;
     }
 
 }

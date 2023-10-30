@@ -51,6 +51,7 @@ public class Main {
                     ScheduleSimulationMethod.fromValue(params.getString("schedule_simulation_method")),
                     ComparatorCase.fromValue(params.getString("tie_comparator")), params.getLong("simulation_time"));
             int simulator_timeConsumption = (int)((System.nanoTime() - startTime)/1000); //us
+
             System.out.println("Time consumption (CFS simulator): " + simulator_timeConsumption + " us");
 
             // analyze by proposed
@@ -86,15 +87,20 @@ public class Main {
 
         CFSSimulator CFSSimulator = new CFSSimulator(scheduleMethod, compareCase, targetLatency);
         Logger logger = LoggerUtility.getLogger();
-
         boolean system_schedulability = true;
+
         if (scheduleMethod == ScheduleSimulationMethod.PRIORITY_QUEUE) {
             for (Integer taskID : testConf.idNameMap.keySet()) {
                 logger.fine("Start simulation with target task " + taskID);
                 SimulationResult simulResult = CFSSimulator.simulateCFS(testConf.mappingInfo,
                         taskID.intValue(), simulationTime);
-                boolean schedulability = simulResult.schedulability;
-                if (schedulability) {
+                int WCRT_by_simulator = (int) (simulResult.wcrtMap.get(taskID)/1000);
+                CFSSimulator.findTaskbyID(testConf, taskID.intValue()).WCRT_by_simulator = WCRT_by_simulator;
+                long task_period = CFSSimulator.findTaskbyID(testConf, taskID.intValue()).period/1000;
+                boolean task_schedulability = (WCRT_by_simulator <= task_period);
+                CFSSimulator.findTaskbyID(testConf, taskID.intValue()).isSchedulable_by_simulator = task_schedulability;
+                
+                if (task_schedulability) {
                     logger.info("Task ID with " + taskID + " (WCRT: " + simulResult.wcrtMap.get(taskID)/1000 + " us) is schedulable");
                 } else {
                     logger.info("Task ID with " + taskID + " (WCRT: " + simulResult.wcrtMap.get(taskID)/1000 + " us) is not schedulable");
@@ -103,18 +109,24 @@ public class Main {
             }
         } else {
             SimulationResult simulResult = CFSSimulator.simulateCFS(testConf.mappingInfo, -1, simulationTime);
-            system_schedulability = simulResult.schedulability;
             for(Entry<Integer, Long> wcrt : simulResult.wcrtMap.entrySet()) {
                 logger.info("Task ID with " + wcrt.getKey() + " (WCRT: " + wcrt.getValue()/1000 + " us)");
             }
+            system_schedulability = simulResult.schedulability;
             if (system_schedulability) {
                 System.out.println("All tasks are schedulable");
             } else {
                 System.out.println("Not all tasks are schedulable");
             }
+            for (Integer taskID : testConf.idNameMap.keySet()) {
+                long WCRT_by_simulator = (simulResult.wcrtMap.get(taskID)/1000);
+                long deadline = CFSSimulator.findTaskbyID(testConf, taskID.intValue()).period;
+                boolean task_schedulability = (WCRT_by_simulator <= deadline);
+                CFSSimulator.findTaskbyID(testConf, taskID.intValue()).isSchedulable_by_simulator = task_schedulability;
+                CFSSimulator.findTaskbyID(testConf, taskID.intValue()).WCRT_by_simulator = (int) WCRT_by_simulator;
+            }
         }
 
-        //boolean schedulability = CFSSimulator.simulateCFS(testConf.mappingInfo).schedulability;
         return system_schedulability;
     }
 

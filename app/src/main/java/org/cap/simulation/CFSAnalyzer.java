@@ -65,7 +65,7 @@ public class CFSAnalyzer {
                 }
             }
 
-            if (task_i.period < R_cur) {
+            if (task_i.period/1000 < R_cur) {
                 task_i.isSchedulable_by_proposed = false;
                 break;
             }else if (R_prev == R_cur){
@@ -108,9 +108,9 @@ public class CFSAnalyzer {
     private long getS_j(Task task_j, int C_j, int remainWorkload, double w_i, long T_i, double minWeight) {
         double w_j = task_j.weight;
         long T_j = task_j.period;
-        int alpha = (int) (this.targetLatency * (w_j / (w_i + minWeight)));
-        int beta = (int) (remainWorkload * (w_j / w_i));
-        int gamma = (int) (this.targetLatency * (w_j / (w_i + w_j)));
+        int alpha = (int) (this.targetLatency * w_j / (w_i + minWeight));
+        int beta = (int) (remainWorkload * w_j / w_i);
+        int gamma = (int) (this.targetLatency * w_j / (w_i + w_j));
         if (T_j > T_i || T_j == T_i) {
             return (int) Math.min(beta + gamma, C_j);
         }else{
@@ -148,7 +148,7 @@ public class CFSAnalyzer {
                 if (T_k > lastRequestTime){
                     continue;
                 }else{
-                    int min_task_i_processed = (int) (Math.floorDiv(lastRequestTime, T_k) * C_k * (w_i / w_k));
+                    int min_task_i_processed = (int) (Math.floorDiv(lastRequestTime, T_k) * C_k * w_i / w_k);
                     if (min_task_i_processed > max_min_task_i_processed){
                         max_min_task_i_processed = min_task_i_processed;
                     }
