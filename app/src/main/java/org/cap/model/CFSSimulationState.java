@@ -8,16 +8,16 @@ import java.util.Map.Entry;
 
 public class CFSSimulationState {
 
-    public int targetedLatency = 20;
-    public int minimumGranularity = 4;
+    public long targetedLatency = 20;
+    public long minimumGranularity = 4;
     public BlockingPolicy blockingPolicy = BlockingPolicy.NONE;
     public int blockingTaskId;
     public boolean blockingPolicyReset = false;
     public List<CoreState> coreStates;
     private ScheduleSimulationMethod method;
-    private HashMap<Integer, Integer> eventTimeMap;
-    private PriorityQueue<Integer> eventQueue;
-    private int previousEventTime;
+    private HashMap<Long, Integer> eventTimeMap;
+    private PriorityQueue<Long> eventQueue;
+    private Long previousEventTime;
 
     // TODO consider moving WCRTs and Queues to here after completion
 
@@ -33,30 +33,30 @@ public class CFSSimulationState {
         for (CoreState coreState : this.coreStates) {
             newState.coreStates.add(coreState.copy());
         }
-        newState.eventQueue = new PriorityQueue<Integer>();
-        for (Integer value : this.eventQueue) {
-            newState.eventQueue.add(Integer.valueOf(value.intValue()));
+        newState.eventQueue = new PriorityQueue<Long>();
+        for (Long value : this.eventQueue) {
+            newState.eventQueue.add(Long.valueOf(value.longValue()));
         }
-        newState.eventTimeMap = new HashMap<Integer, Integer>();
-        for (Entry<Integer, Integer> entry : this.eventTimeMap.entrySet()) {
-            newState.eventTimeMap.put(Integer.valueOf(entry.getKey().intValue()), Integer.valueOf(entry.getValue().intValue()));
+        newState.eventTimeMap = new HashMap<Long, Integer>();
+        for (Entry<Long, Integer> entry : this.eventTimeMap.entrySet()) {
+            newState.eventTimeMap.put(Long.valueOf(entry.getKey().longValue()), Integer.valueOf(entry.getValue().intValue()));
         }
 
         return newState;
     }
 
-    public int getPreviousEventTime() {
+    public long getPreviousEventTime() {
         return previousEventTime;
     }
 
-    public void setPreviousEventTime(int previousEventTime) {
+    public void setPreviousEventTime(long previousEventTime) {
         this.previousEventTime = previousEventTime;
     }
 
     public void insertPeriodsIntoEventQueue(long hyperperiod, List<Core> cores) {
         for(Core core : cores) {
             for (Task task : core.tasks) {
-                int time = 0;
+                long time = 0;
                 while(time < hyperperiod) {
                     putEventTime(time);
                     time += task.period;
@@ -65,32 +65,32 @@ public class CFSSimulationState {
         }
     }
 
-    public void putEventTime(int time) {
-        Integer timeInt = Integer.valueOf(time);
-        if (this.eventTimeMap.containsKey(timeInt) == false) {
-            this.eventTimeMap.put(timeInt, Integer.valueOf(1));
-            this.eventQueue.add(timeInt);
+    public void putEventTime(long time) {
+        Long timeLong = Long.valueOf(time);
+        if (this.eventTimeMap.containsKey(timeLong) == false) {
+            this.eventTimeMap.put(timeLong, Integer.valueOf(1));
+            this.eventQueue.add(timeLong);
             //System.out.println("time is added at " + time);
         }
         else { // this.eventTimeMap.containsKey(timeInt) == true
-            this.eventTimeMap.put(timeInt, Integer.valueOf(eventTimeMap.get(timeInt).intValue() + 1));
+            this.eventTimeMap.put(timeLong, Integer.valueOf(eventTimeMap.get(timeLong).intValue() + 1));
         }
     }
 
-    public void clearEventTime(int time) {
-        Integer timeInt = Integer.valueOf(time);
-        if (this.eventTimeMap.containsKey(timeInt) == true) {
-            this.eventTimeMap.put(timeInt, Integer.valueOf(eventTimeMap.get(timeInt).intValue() - 1));
+    public void clearEventTime(long time) {
+        Long timeLong = Long.valueOf(time);
+        if (this.eventTimeMap.containsKey(timeLong) == true) {
+            this.eventTimeMap.put(timeLong, Integer.valueOf(eventTimeMap.get(timeLong).intValue() - 1));
         }
     }
     
-    public int getNextEventTime() {
-        int nextTime = -1;
+    public long getNextEventTime() {
+        long nextTime = -1;
         while(this.eventQueue.size() > 0) {
-            Integer nextTimeObj = this.eventQueue.poll();
+            Long nextTimeObj = this.eventQueue.poll();
             if(this.eventTimeMap.get(nextTimeObj).intValue() > 0) {
                 this.eventTimeMap.remove(nextTimeObj);
-                nextTime = nextTimeObj.intValue();
+                nextTime = nextTimeObj.longValue();
                 break;
             }
         }
@@ -98,12 +98,12 @@ public class CFSSimulationState {
         return nextTime;
     }
 
-    public CFSSimulationState(int targetedLatency, int minimumGranularity, int numberOfCores, ScheduleSimulationMethod method) {
+    public CFSSimulationState(long targetedLatency, long minimumGranularity, int numberOfCores, ScheduleSimulationMethod method) {
         this.targetedLatency = targetedLatency;
         this.minimumGranularity = minimumGranularity;
         this.method = method;
-        this.eventQueue = new PriorityQueue<Integer>(); // default is ascending order
-        this.eventTimeMap = new HashMap<Integer, Integer>();
+        this.eventQueue = new PriorityQueue<Long>(); // default is ascending order
+        this.eventTimeMap = new HashMap<Long, Integer>();
 
         //this.coreStates = new ArrayList<>(Collections.nCopies(numberOfCores, new CoreState()));
 

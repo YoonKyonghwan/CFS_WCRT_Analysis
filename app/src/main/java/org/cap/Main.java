@@ -43,9 +43,9 @@ public class Main {
             // read task info from file
             JsonReader jsonReader = new JsonReader();
             TestConfiguration testConf = jsonReader.readTasksFromFile(taskInfoPath);
+            testConf.initializeTaskData();
 
             long startTime = System.nanoTime();
-            
             // analyze by simulator
             boolean simulator_schedulability = analyze_by_CFS_simulator(testConf,
                     ScheduleSimulationMethod.fromValue(params.getString("schedule_simulation_method")),
@@ -99,17 +99,17 @@ public class Main {
                         taskID.intValue(), simulationTime);
                 boolean schedulability = simulResult.schedulability;
                 if (schedulability) {
-                    logger.info("Task ID with " + taskID + " (WCRT: " + simulResult.wcrtMap.get(taskID) + ") is schedulable");
+                    logger.info("Task ID with " + taskID + " (WCRT: " + simulResult.wcrtMap.get(taskID)/1000 + " us) is schedulable");
                 } else {
-                    logger.info("Task ID with " + taskID + " (WCRT: " + simulResult.wcrtMap.get(taskID) + ") is not schedulable");
+                    logger.info("Task ID with " + taskID + " (WCRT: " + simulResult.wcrtMap.get(taskID)/1000 + " us) is not schedulable");
                     system_schedulability = false;
                 }
             }
         } else {
             SimulationResult simulResult = CFSSimulator.simulateCFS(testConf.mappingInfo, -1, simulationTime);
             system_schedulability = simulResult.schedulability;
-            for(Entry<Integer, Double> wcrt : simulResult.wcrtMap.entrySet()) {
-                logger.info("Task ID with " + wcrt.getKey() + " (WCRT: " + wcrt.getValue() + ")");
+            for(Entry<Integer, Long> wcrt : simulResult.wcrtMap.entrySet()) {
+                logger.info("Task ID with " + wcrt.getKey() + " (WCRT: " + wcrt.getValue()/1000 + " us)");
             }
             if (system_schedulability) {
                 System.out.println("All tasks are schedulable");

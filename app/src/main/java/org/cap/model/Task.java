@@ -9,7 +9,7 @@ public class Task {
 
     // Start time for the task
     @Expose
-    public int startTime;
+    public long startTime;
 
     // Remaining time required to read the task
     @Expose
@@ -38,28 +38,34 @@ public class Task {
     public Stage stage = Stage.READ;
 
     // Original time required to read the task
-    public double originalReadTime;
+    public long originalReadTime;
 
     // Original time required for the task body
-    public double originalBodyTime;
+    public long originalBodyTime;
 
     // Original time required to write the task
-    public double originalWriteTime;
+    public long originalWriteTime;
 
     // Release time for read stage of the task
-    public int readReleaseTime;
+    public long readReleaseTime;
 
     // Release time for body stage of the task
-    public int bodyReleaseTime;
+    public long bodyReleaseTime;
 
     // Release time for write stage of the task
-    public int writeReleaseTime;
+    public long writeReleaseTime;
+
+    public long readTimeInNanoSeconds;
+
+    public long bodyTimeInNanoSeconds;
+
+    public long writeTimeInNanoSeconds;
 
     // Weight of task
-    public double weight;
+    public long weight;
 
     // Virtual runtime
-    public double virtualRuntime;
+    public long virtualRuntime;
 
     // target task id
     public boolean isTargetTask;
@@ -69,6 +75,8 @@ public class Task {
     public boolean isSchedulable_by_proposed;
     public int WCRT_by_simulator;
     public boolean isSchedulable_by_simulator;
+
+    private boolean initialized = false;
 
     public Task copy() {
         Task newTask = new Task();
@@ -90,7 +98,22 @@ public class Task {
         newTask.weight = this.weight;
         newTask.virtualRuntime = this.virtualRuntime;
         newTask.isTargetTask = this.isTargetTask;
+
+        newTask.readTimeInNanoSeconds = this.readTimeInNanoSeconds;
+        newTask.bodyTimeInNanoSeconds = this.bodyTimeInNanoSeconds;
+        newTask.writeTimeInNanoSeconds = this.writeTimeInNanoSeconds;
         return newTask;
+    }
+
+    public void initializeMemberVariables() {
+        if(this.initialized == false) {
+            this.period = period * 1000L;
+            this.readTimeInNanoSeconds = ((long) this.readTime) * 1000L;
+            this.bodyTimeInNanoSeconds = ((long) this.bodyTime) * 1000L;
+            this.writeTimeInNanoSeconds = ((long) this.writeTime) * 1000L;            
+            this.virtualRuntime = 0L;
+            this.initialized = true;
+        }
     }
 
     public Task(int id, int startTime, double readTime, double bodyTime, double writeTime, int nice, int period, int index) {
@@ -100,8 +123,13 @@ public class Task {
         this.bodyTime = bodyTime;
         this.writeTime = writeTime;
         this.nice = nice;
-        this.period = period;
+        this.period = period * 1000L;
         this.index = index;
+        this.readTimeInNanoSeconds = ((long) this.readTime) * 1000L;
+        this.bodyTimeInNanoSeconds = ((long) this.bodyTime) * 1000L;
+        this.writeTimeInNanoSeconds = ((long) this.writeTime) * 1000L;
+        this.virtualRuntime = 0L;
+        this.initialized = true;
     }
 
     public Task() {

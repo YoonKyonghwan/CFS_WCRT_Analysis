@@ -15,4 +15,11 @@ public class TestConfiguration {
     public TestConfiguration() {
     }
     
+    public void initializeTaskData() {
+        for (Core core : mappingInfo) {
+            for (Task task : core.tasks) {
+                task.initializeMemberVariables();
+            }
+        }
+    }
 }

@@ -4,7 +4,7 @@ public class CoreState {
     public Task currentTask;
     public boolean isRunning;
     public int remainingRuntime;
-    public double minimumVirtualRuntime = 0;
+    public long minimumVirtualRuntime = 0L;
 
     public CoreState copy() {
         CoreState newState = new CoreState();

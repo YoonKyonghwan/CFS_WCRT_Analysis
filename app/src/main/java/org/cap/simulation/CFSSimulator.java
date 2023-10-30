@@ -17,13 +17,13 @@ public class CFSSimulator {
     private static final Logger logger = LoggerUtility.getLogger();
     ScheduleSimulationMethod method;
     ComparatorCase comparatorCase;
-    private int targetLatency;
-    private int minimumGranularity = 1;
+    private long targetLatency;
+    private long minimumGranularity = 3000 * 1000L;
 
     public CFSSimulator(ScheduleSimulationMethod method, ComparatorCase comparatorCase, int targetLatency) {
         this.method = method;
         this.comparatorCase = comparatorCase;
-        this.targetLatency = targetLatency;
+        this.targetLatency = targetLatency * 1000L; 
     }
 
     private long getMaximumPeriod(List<Core> cores) {
@@ -45,11 +45,11 @@ public class CFSSimulator {
         logger.fine("*** CFS Simulation Started ***");
         logger.fine("------------------------------");
 
-        HashMap<Integer, Double> wcrtMap = initializeWCRTs(cores);
+        HashMap<Integer, Long> wcrtMap = initializeWCRTs(cores);
         List<Queue<Task>> queues = initializeQueues(cores, targetTaskID);
         CFSSimulationState simulationState = new CFSSimulationState(this.targetLatency, this.minimumGranularity,
                 cores.size(), this.method);
-        int time = 0;
+        long time = 0;
 
         if(simulationTime == 0) { // hyper period
             simulationTime = MathUtility.getLCM(cores);
@@ -70,8 +70,8 @@ public class CFSSimulator {
         return checkSchedulability(cores, queues, wcrtMap);
     }
 
-    private void performSimulation(List<Core> cores, List<Queue<Task>> queues, HashMap<Integer, Double> wcrtMap,
-            CFSSimulationState simulationState, int time, long simulationTime)
+    private void performSimulation(List<Core> cores, List<Queue<Task>> queues, HashMap<Integer, Long> wcrtMap,
+            CFSSimulationState simulationState, long time, long simulationTime)
             throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException,
             IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         boolean diverged = false;
@@ -148,10 +148,10 @@ public class CFSSimulator {
         }
     }
 
-    private void executeTask(Task task, Queue<Task> queueInCore, HashMap<Integer, Double> wcrtMap,
-            CFSSimulationState simulationState, CoreState coreState, int time, int coreIndex) {
+    private void executeTask(Task task, Queue<Task> queueInCore, HashMap<Integer, Long> wcrtMap,
+            CFSSimulationState simulationState, CoreState coreState, long time, int coreIndex) {
         logger.finer("-Core: " + coreIndex + ", Task " + task.id + " executed in stage: " + task.stage);
-        int timeUpdated = time - simulationState.getPreviousEventTime();
+        long timeUpdated = time - simulationState.getPreviousEventTime();
         // Decrease runtime
         
         coreState.remainingRuntime -= timeUpdated;
@@ -159,20 +159,24 @@ public class CFSSimulator {
             coreState.isRunning = false;
 
         // Update virtual runtime
-        task.virtualRuntime += (1024 * timeUpdated) / task.weight;
+        //long temp = (long) (Math.ceil(((timeUpdated << 10L)  / task.weight) /100) *100);
+        //task.virtualRuntime += temp ;
+
+        //task.virtualRuntime += (timeUpdated << 10L)  / task.weight ;
+        task.virtualRuntime += (timeUpdated << 10L) * NiceToWeight.getWeightMul(task.nice) >> 32;
 
         // Decrease execution time for each stage
         while(timeUpdated > 0 && task.stage != Stage.COMPLETED) {
             switch (task.stage) {
                 case READ:
-                    if(task.readTime > timeUpdated) {
-                        task.readTime -= timeUpdated;
+                    if(task.readTimeInNanoSeconds > timeUpdated) {
+                        task.readTimeInNanoSeconds -= timeUpdated;
                         timeUpdated = 0;
                     } else {
-                        task.readTime = 0;
-                        timeUpdated -= task.readTime;
+                        task.readTimeInNanoSeconds = 0;
+                        timeUpdated -= task.readTimeInNanoSeconds;
                     }
-                    if (task.readTime <= 0) {
+                    if (task.readTimeInNanoSeconds <= 0) {
                         task.stage = Stage.BODY;
                         task.bodyReleaseTime = time + 1;
                         simulationState.blockingPolicyReset = true;
@@ -183,15 +187,15 @@ public class CFSSimulator {
                     }
                     break;
                 case BODY:
-                    if(task.bodyTime > timeUpdated) {
-                        task.bodyTime -= timeUpdated;
+                    if(task.bodyTimeInNanoSeconds > timeUpdated) {
+                        task.bodyTimeInNanoSeconds -= timeUpdated;
                         timeUpdated = 0;
                     } else {
-                        task.bodyTime = 0;
-                        timeUpdated -= task.bodyTime;
+                        task.bodyTimeInNanoSeconds = 0;
+                        timeUpdated -= task.bodyTimeInNanoSeconds;
                     }
-                    if (task.bodyTime <= 0) {
-                        if (task.writeTime > 0) {
+                    if (task.bodyTimeInNanoSeconds <= 0) {
+                        if (task.writeTimeInNanoSeconds > 0) {
                             task.stage = Stage.WRITE;
                             task.writeReleaseTime = time + 1;
                         }
@@ -202,14 +206,14 @@ public class CFSSimulator {
                     }
                     break;
                 case WRITE:
-                    if(task.writeTime > timeUpdated) {
-                        task.writeTime -= timeUpdated;
+                    if(task.writeTimeInNanoSeconds > timeUpdated) {
+                        task.writeTimeInNanoSeconds -= timeUpdated;
                         timeUpdated = 0;
                     } else {
-                        task.writeTime = 0;
-                        timeUpdated -= task.writeTime;
+                        task.writeTimeInNanoSeconds = 0;
+                        timeUpdated -= task.writeTimeInNanoSeconds;
                     }
-                    if (task.writeTime <= 0) {
+                    if (task.writeTimeInNanoSeconds <= 0) {
                         task.stage = Stage.COMPLETED;
                         coreState.isRunning = false;
                         simulationState.blockingPolicyReset = true;
@@ -254,12 +258,12 @@ public class CFSSimulator {
             coreState.minimumVirtualRuntime = queue.peek().virtualRuntime;
     }
 
-    private HashMap<Integer, Double> initializeWCRTs(List<Core> cores) {
-        HashMap<Integer, Double> wcrtMap = new HashMap<Integer, Double>();
+    private HashMap<Integer, Long> initializeWCRTs(List<Core> cores) {
+        HashMap<Integer, Long> wcrtMap = new HashMap<Integer, Long>();
 
         for (Core core : cores) {
             for (Task task : core.tasks) {
-                wcrtMap.put(Integer.valueOf(task.getId()), 0.0);
+                wcrtMap.put(Integer.valueOf(task.getId()), 0L);
             }
         }
         return wcrtMap;
@@ -278,17 +282,17 @@ public class CFSSimulator {
             Queue<Task> queueInCore = new PriorityQueue<>(taskComparator);
             for (Task task : core.tasks) {
                 task.weight = NiceToWeight.getWeight(task.nice);
-                task.originalReadTime = task.readTime;
-                task.originalBodyTime = task.bodyTime;
-                task.originalWriteTime = task.writeTime;
+                task.originalReadTime = task.readTimeInNanoSeconds;
+                task.originalBodyTime = task.bodyTimeInNanoSeconds;
+                task.originalWriteTime = task.writeTimeInNanoSeconds;
                 task.readReleaseTime = task.startTime;
-                task.virtualRuntime = 0;
+                task.virtualRuntime = 0L;
                 if (targetTaskID == task.id)
                     task.isTargetTask = true;
                 else
                     task.isTargetTask = false;
                 skipReadStageIfNoReadTime(task);
-                if (task.startTime == 0)
+                if (task.startTime == 0L)
                     queueInCore.add(task.copy());
             }
             queues.add(queueInCore);
@@ -296,7 +300,7 @@ public class CFSSimulator {
         return queues;
     }
 
-    private void addJobs(List<Core> cores, List<Queue<Task>> queues, List<CoreState> coreStates, int time) {
+    private void addJobs(List<Core> cores, List<Queue<Task>> queues, List<CoreState> coreStates, long time) {
         boolean isAdded = false;
         for (Core core : cores) {
             CoreState coreState = coreStates.get(core.coreID - 1);
@@ -309,8 +313,8 @@ public class CFSSimulator {
                 }
 
                 if (initialJobs(time, task) || periodicJobs(time, task)) {
-                    logger.fine("- Task " + task.id + " (Read Time: " + task.readTime + ", Body Time: " + task.bodyTime
-                            + ", Write Time: " + task.writeTime + ")");
+                    logger.fine("- Task " + task.id + " (Read Time: " + task.readTimeInNanoSeconds + ", Body Time: " + task.bodyTimeInNanoSeconds
+                            + ", Write Time: " + task.writeTimeInNanoSeconds + ")");
                     task.readReleaseTime = time;
                     task.virtualRuntime = coreState.minimumVirtualRuntime;
                     skipReadStageIfNoReadTime(task);
@@ -322,26 +326,26 @@ public class CFSSimulator {
         // logger.info("");
     }
 
-    private boolean initialJobs(int time, Task task) {
+    private boolean initialJobs(long time, Task task) {
         return task.startTime > 0 && time == task.startTime;
     }
 
-    private boolean periodicJobs(int time, Task task) {
+    private boolean periodicJobs(long time, Task task) {
         return time > task.startTime && task.period > 0 && (time - task.startTime) % task.period == 0;
     }
 
     private void skipReadStageIfNoReadTime(Task task) {
-        if (task.stage == Stage.READ && task.readTime <= 0) {
+        if (task.stage == Stage.READ && task.readTimeInNanoSeconds <= 0) {
             task.stage = Stage.BODY;
             task.bodyReleaseTime = task.readReleaseTime;
         }
     }
 
     private void pathDivergesBlocking(List<Task> blockingTasks, List<Core> cores, List<Queue<Task>> queues,
-            HashMap<Integer, Double> wcrtMap, CFSSimulationState simulationState, int time, long hyperperiod)
+            HashMap<Integer, Long> wcrtMap, CFSSimulationState simulationState, long time, long hyperperiod)
             throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException,
             IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-        List<HashMap<Integer, Double>> possibleWCRTs = new ArrayList<>();
+        List<HashMap<Integer, Long>> possibleWCRTs = new ArrayList<>();
         for (int i = 0; i < blockingTasks.size(); i++) {
             if (blockingTasks.get(i).stage == Stage.READ)
                 simulationState.blockingPolicy = BlockingPolicy.READ;
@@ -352,28 +356,28 @@ public class CFSSimulator {
             possibleWCRTs.add(simulatePathBlocking(cores, queues, wcrtMap, simulationState, time, hyperperiod));
         }
 
-        for (Entry<Integer, Double> entry : wcrtMap.entrySet()) {
-            double maxWCRT = 0;
-            for (HashMap<Integer, Double> possibleWcrtMap : possibleWCRTs) {
-                maxWCRT = Math.max(maxWCRT, possibleWcrtMap.get(entry.getKey()));
+        for (Entry<Integer, Long> entry : wcrtMap.entrySet()) {
+            long maxWCRT = 0;
+            for (HashMap<Integer, Long> possibleWcrtMap : possibleWCRTs) {
+                maxWCRT = Math.max(maxWCRT, possibleWcrtMap.get(entry.getKey()).longValue());
             }
-            wcrtMap.put(entry.getKey(), maxWCRT);
+            wcrtMap.put(entry.getKey(), Long.valueOf(maxWCRT));
         }
     }
 
     private void pathDivergesEqualMinRuntime(int coreIndex, List<Task> minRuntimeTasks, List<Core> cores,
-            List<Queue<Task>> queues, HashMap<Integer, Double> wcrtMap, CFSSimulationState simulationState, int time,
+            List<Queue<Task>> queues, HashMap<Integer, Long> wcrtMap, CFSSimulationState simulationState, long time,
             long hyperperiod) throws ClassNotFoundException, NoSuchMethodException, SecurityException,
             InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-        List<HashMap<Integer, Double>> possibleWCRTs = new ArrayList<>();
+        List<HashMap<Integer, Long>> possibleWCRTs = new ArrayList<>();
         for (int i = 0; i < minRuntimeTasks.size(); i++)
             possibleWCRTs.add(simulatePathEqualMinRuntime(cores, queues, wcrtMap, simulationState, time, hyperperiod,
                     minRuntimeTasks, i, coreIndex));
 
-        for (Entry<Integer, Double> entry : wcrtMap.entrySet()) {
-            double maxWCRT = 0;
-            for (HashMap<Integer, Double> possibleWcrtMap : possibleWCRTs) {
-                maxWCRT = Math.max(maxWCRT, possibleWcrtMap.get(entry.getKey()));
+        for (Entry<Integer, Long> entry : wcrtMap.entrySet()) {
+            long maxWCRT = 0;
+            for (HashMap<Integer, Long> possibleWcrtMap : possibleWCRTs) {
+                maxWCRT = Math.max(maxWCRT, possibleWcrtMap.get(entry.getKey()).longValue());
             }
             wcrtMap.put(entry.getKey(), maxWCRT);
         }
@@ -381,10 +385,10 @@ public class CFSSimulator {
 
     private void setRuntime(int coreIndex, Task task, Queue<Task> queueInCore, CFSSimulationState simulationState) {
         CoreState coreState = simulationState.coreStates.get(coreIndex);
-        double totalWeight = queueInCore.stream().mapToDouble(t -> t.weight).sum() + task.weight;
+        long totalWeight = queueInCore.stream().mapToLong(t -> t.weight).sum() + task.weight;
         coreState.remainingRuntime = (int) Math.max(simulationState.targetedLatency * task.weight / totalWeight,
                 simulationState.minimumGranularity);
-        coreState.remainingRuntime = Math.min(coreState.remainingRuntime, (int) (task.readTime + task.bodyTime + task.writeTime));
+        coreState.remainingRuntime = Math.min(coreState.remainingRuntime, (int) (task.readTimeInNanoSeconds + task.bodyTimeInNanoSeconds + task.writeTimeInNanoSeconds));
         coreState.isRunning = true;
     }
 
@@ -470,25 +474,25 @@ public class CFSSimulator {
         return minRuntimeTasks;
     }
 
-    private HashMap<Integer, Double> cloneHashMap(HashMap<Integer, Double> mapToBeCopied) {
-        HashMap<Integer, Double> clonedMap = new HashMap<Integer, Double>();
+    private HashMap<Integer, Long> cloneHashMap(HashMap<Integer, Long> mapToBeCopied) {
+        HashMap<Integer, Long> clonedMap = new HashMap<Integer, Long>();
 
         for (Integer key : mapToBeCopied.keySet()) {
-            clonedMap.put(key, Double.valueOf(mapToBeCopied.get(key).doubleValue()));
+            clonedMap.put(key, Long.valueOf(mapToBeCopied.get(key).longValue()));
         }
 
         return clonedMap;
     }
 
-    private HashMap<Integer, Double> simulatePathBlocking(List<Core> cores, List<Queue<Task>> queues,
-            HashMap<Integer, Double> wcrtMap, CFSSimulationState simulationState, int time, long hyperperiod)
+    private HashMap<Integer, Long> simulatePathBlocking(List<Core> cores, List<Queue<Task>> queues,
+            HashMap<Integer, Long> wcrtMap, CFSSimulationState simulationState, long time, long hyperperiod)
             throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException,
             IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         logger.info("\n*** Path diverged due to blocking ***");
 
         CFSSimulationState cloneSimulationState = simulationState.copy();
         List<Queue<Task>> cloneQueues = copyQueues(queues);
-        HashMap<Integer, Double> cloneWcrtMap = cloneHashMap(wcrtMap);
+        HashMap<Integer, Long> cloneWcrtMap = cloneHashMap(wcrtMap);
 
         simulationState.blockingPolicyReset = false;
         for (int i = 0; i < cores.size(); i++) {
@@ -545,8 +549,8 @@ public class CFSSimulator {
      * @throws NoSuchMethodException
      * @throws ClassNotFoundException
      */
-    private HashMap<Integer, Double> simulatePathEqualMinRuntime(List<Core> cores, List<Queue<Task>> queues,
-            HashMap<Integer, Double> wcrtMap, CFSSimulationState simulationState, int time, long hyperperiod,
+    private HashMap<Integer, Long> simulatePathEqualMinRuntime(List<Core> cores, List<Queue<Task>> queues,
+            HashMap<Integer, Long> wcrtMap, CFSSimulationState simulationState, long time, long hyperperiod,
             List<Task> minRuntimeTasks, int taskIndex, int coreIndex)
             throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException,
             IllegalAccessException, IllegalArgumentException, InvocationTargetException {
@@ -560,7 +564,7 @@ public class CFSSimulator {
         CFSSimulationState cloneSimulationState = simulationState.copy();
         List<Queue<Task>> cloneQueues = copyQueues(queues);
         cloneQueues.get(coreIndex).addAll(cloneMinRuntimeTasks);
-        HashMap<Integer, Double> cloneWcrtMap = cloneHashMap(wcrtMap);
+        HashMap<Integer, Long> cloneWcrtMap = cloneHashMap(wcrtMap);
         Queue<Task> cloneQueue = cloneQueues.get(coreIndex);
         CoreState cloneCoreState = cloneSimulationState.coreStates.get(coreIndex);
 
@@ -635,7 +639,7 @@ public class CFSSimulator {
     }
 
     private SimulationResult checkSchedulability(List<Core> cores, List<Queue<Task>> queues,
-            HashMap<Integer, Double> wcrtMap) {
+            HashMap<Integer, Long> wcrtMap) {
         boolean schedulability = true;
 
         logger.fine("\n------------------------------");
