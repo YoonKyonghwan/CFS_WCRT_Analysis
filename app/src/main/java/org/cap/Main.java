@@ -19,7 +19,7 @@ import java.util.Map.Entry;
 import net.sourceforge.argparse4j.inf.Namespace;
 
 public class Main {
-    private static final int targetLatency = 30000;  //us (30ms)
+    private static final int targetLatency = 20000;  //us (20ms)
 
     public static void main(String[] args) throws ClassNotFoundException, NoSuchMethodException, SecurityException,
             InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
@@ -52,10 +52,6 @@ public class Main {
                     ComparatorCase.fromValue(params.getString("tie_comparator")), params.getLong("simulation_time"));
             int simulator_timeConsumption = (int)((System.nanoTime() - startTime)/1000); //us
             System.out.println("Time consumption (CFS simulator): " + simulator_timeConsumption + " us");
-            
-            // (only for testing)
-            // boolean simulator_schedulability = true;
-            // int simulator_timeConsumption = 0;
 
             // analyze by proposed
             startTime = System.nanoTime();

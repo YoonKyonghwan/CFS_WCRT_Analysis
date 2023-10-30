@@ -48,34 +48,6 @@ public class CFSAnalyzer {
     }
 
 
-    // public boolean analyze_parallel(List<Core> cores, boolean verbose, boolean is_min_timeslice) {
-    //     this.cores = cores;
-
-    //     // convert nice_value to weight
-    //     for (Core core : this.cores) {
-    //         for (Task task : core.tasks) {
-    //             task.weight = NiceToWeight.getWeight(task.nice);
-    //         }
-    //     }
-        
-    //     // compute E for each task in parallel
-    //     ExecutorService threads_for_E = Executors.newFixedThreadPool(max_num_threads);
-    //     for (Core core : this.cores) {
-    //         for (Task task : core.tasks) {
-    //             Runnable task_computeE = new Runnable() {
-    //                 @Override
-    //                 public void run() {
-    //                     computeE(core, task, verbose);
-    //                 }
-    //             };
-    //             threads_for_E.execute(task_computeE);
-    //         }
-    //     }
-    //     threads_for_E.shutdown();
-    //     return checkSchedulabilityByE();
-    // }
-
-
     /* 
     * Theorem1 in the paper.
     */
@@ -111,16 +83,20 @@ public class CFSAnalyzer {
      * Lemma4 in the paper.
      */
     private long getInterference(Task task_j, int R_prev, Core core, Task task_i) {
-        int C_i = (int) task_i.bodyTime;
+        // int C_i = (int) task_i.bodyTime;
         long T_j = task_j.period;
         int C_j = (int) task_j.bodyTime;
         long T_i = task_i.period;
         double w_i = task_i.weight;
-        long lastRequestTime = R_prev - (R_prev % T_j); // (R_prev / T_j) * T_j
-        int remainWorkload = getRemainWorkload(lastRequestTime, C_i, task_i.id, core);
-        long S_j = getS_j(task_j, C_j, remainWorkload, w_i, T_i, core.minWeight);
+        long lastRequestTime = Math.floorDiv(R_prev, T_j) * T_j; // (R_prev / T_j) * T_j
+        // int remainWorkload = getRemainWorkload(lastRequestTime, C_i, task_i.id, core);
+        int remainWorkload = getRemainWorkload_v2(lastRequestTime, task_i, core);
+        long S_j = 0;
+        if(remainWorkload != 0){
+            S_j = getS_j(task_j, C_j, remainWorkload, w_i, T_i, core.minWeight);
+        }
 
-        return (((long)(R_prev / T_j)) * C_j) + S_j;
+        return (Math.floorDiv(R_prev, T_j) * C_j) + S_j;
     }
 
     /*
@@ -132,15 +108,16 @@ public class CFSAnalyzer {
     private long getS_j(Task task_j, int C_j, int remainWorkload, double w_i, long T_i, double minWeight) {
         double w_j = task_j.weight;
         long T_j = task_j.period;
-        int alpha = (int) (this.targetLatency * (w_j / w_i + minWeight));
+        int alpha = (int) (this.targetLatency * (w_j / (w_i + minWeight)));
         int beta = (int) (remainWorkload * (w_j / w_i));
         int gamma = (int) (this.targetLatency * (w_j / (w_i + w_j)));
         if (T_j > T_i || T_j == T_i) {
-            return (int) Math.min(alpha + beta + gamma, C_j);
-        }else{
             return (int) Math.min(beta + gamma, C_j);
+        }else{
+            return (int) Math.min(alpha + beta + gamma, C_j);
         }
     }
+
 
     /*
      * Lemma6 in the paper.
@@ -151,11 +128,38 @@ public class CFSAnalyzer {
             if (task_i_id != task_k.id) {
                 long T_k = task_k.period;
                 int C_k = (int) task_k.bodyTime;
-                int interference_k = (((int)(lastRequestTime / T_k)) * C_k);
+                int interference_k = (int) ((Math.floorDiv(lastRequestTime, T_k)) * C_k);
                 interference_k += Math.min(C_k, lastRequestTime % T_k);
                 maxInterferenceUntilLastRequestTime += interference_k;
             }
         }
         return (int) (C_i - (lastRequestTime - maxInterferenceUntilLastRequestTime));
+    }
+
+    private int getRemainWorkload_v2(long lastRequestTime, Task task_i, Core core) {
+        int max_min_task_i_processed = 0;
+        int C_i = (int) task_i.bodyTime;
+        double w_i = task_i.weight;
+        for (Task task_k : core.tasks) {
+            if (task_i.id != task_k.id) {
+                long T_k = task_k.period;
+                double w_k = task_k.weight;
+                int C_k = (int) task_k.bodyTime;
+                if (T_k > lastRequestTime){
+                    continue;
+                }else{
+                    int min_task_i_processed = (int) (Math.floorDiv(lastRequestTime, T_k) * C_k * (w_i / w_k));
+                    if (min_task_i_processed > max_min_task_i_processed){
+                        max_min_task_i_processed = min_task_i_processed;
+                    }
+                }
+            }
+        }
+        if(max_min_task_i_processed > C_i){
+            return 0;
+        }else{
+            return (int) C_i - max_min_task_i_processed;
+        }
+
     }
 }
