@@ -44,16 +44,16 @@ public class Main {
             JsonReader jsonReader = new JsonReader();
             TestConfiguration testConf = jsonReader.readTasksFromFile(taskInfoPath);
             testConf.initializeTaskData();
-
+            
             long startTime = System.nanoTime();
+            
             // analyze by simulator
             boolean simulator_schedulability = analyze_by_CFS_simulator(testConf,
-                    ScheduleSimulationMethod.fromValue(params.getString("schedule_simulation_method")),
-                    ComparatorCase.fromValue(params.getString("tie_comparator")), params.getLong("simulation_time"));
+            ScheduleSimulationMethod.fromValue(params.getString("schedule_simulation_method")),
+            ComparatorCase.fromValue(params.getString("tie_comparator")), params.getLong("simulation_time"));
             int simulator_timeConsumption = (int)((System.nanoTime() - startTime)/1000); //us
-
             System.out.println("Time consumption (CFS simulator): " + simulator_timeConsumption + " us");
-
+            
             // analyze by proposed
             startTime = System.nanoTime();
             CFSAnalyzer analyzer = new CFSAnalyzer(testConf.mappingInfo, targetLatency);
