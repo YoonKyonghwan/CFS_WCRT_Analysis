@@ -18,7 +18,7 @@ public class CFSSimulator {
     ScheduleSimulationMethod method;
     ComparatorCase comparatorCase;
     private long targetLatency;
-    private long minimumGranularity = 3000 * 1000L;
+    private long minimumGranularity = 1 * 1000L;
     private long triedScheduleCount = 0;
 
     public CFSSimulator(ScheduleSimulationMethod method, ComparatorCase comparatorCase, int targetLatency) {
@@ -76,6 +76,15 @@ public class CFSSimulator {
         return checkSchedulability(cores, queues, wcrtMap);
     }
 
+    private void updateOriginalTaskStructure(List<Core> cores, Task task) {
+        for(Core core : cores) {
+            for(Task taskInCore :core.tasks) {
+                if(taskInCore.id == task.id)
+                    taskInCore.virtualRuntime = task.virtualRuntime;
+            }
+        }
+    }
+
     private void performSimulation(List<Core> cores, List<Queue<Task>> queues, HashMap<Integer, Long> wcrtMap,
             CFSSimulationState simulationState, long time, long simulationTime)
             throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException,
@@ -104,6 +113,7 @@ public class CFSSimulator {
                     task = coreState.currentTask;
                     executeTask(task, queue, wcrtMap, simulationState, coreState, time, i);
                     updateMinimumVirtualRuntime(coreState, queue);
+                    updateOriginalTaskStructure(cores, task);
                 }
                 if(coreState.isRunning == false) {
                     task = null;
@@ -123,7 +133,7 @@ public class CFSSimulator {
                     if (task == null)
                         continue;
                     else
-                         logger.fine("Task " + task.id + " started to run at time " + time + ", minimum_vruntime: " + task.virtualRuntime);
+                        logger.fine("Task " + task.id + " started to run at time " + time + ", minimum_vruntime: " + task.virtualRuntime);
                     setRuntime(i, task, queue, simulationState);
                     simulationState.putEventTime((time + coreState.remainingRuntime));
                     coreState.currentTask = task;
@@ -157,10 +167,10 @@ public class CFSSimulator {
         coreState.remainingRuntime -= timeUpdated;
 
         // Update virtual runtime
-        //long temp = (long) (Math.ceil(((timeUpdated << 10L)  / task.weight) /100) *100);
-        //task.virtualRuntime += temp ;
+        // long temp = (long) (Math.ceil(((timeUpdated << 10L)  / task.weight) /100) *100);
+        // task.virtualRuntime += temp ;
 
-        //task.virtualRuntime += (timeUpdated << 10L)  / task.weight ;
+        // task.virtualRuntime += (timeUpdated << 10L)  / task.weight ;
         task.virtualRuntime += (timeUpdated << 10L) * NiceToWeight.getWeightMul(task.nice) >> 32;
 
         // Decrease execution time for each stage
@@ -307,7 +317,7 @@ public class CFSSimulator {
                     logger.fine("- Task " + task.id + " (Read Time: " + task.readTimeInNanoSeconds + ", Body Time: " + task.bodyTimeInNanoSeconds
                             + ", Write Time: " + task.writeTimeInNanoSeconds + ")");
                     task.readReleaseTime = time;
-                    task.virtualRuntime = coreState.minimumVirtualRuntime;
+                    task.virtualRuntime = Math.max(task.virtualRuntime, coreState.minimumVirtualRuntime);
                     skipReadStageIfNoReadTime(task);
                     queue.add(task.copy());
                 }
