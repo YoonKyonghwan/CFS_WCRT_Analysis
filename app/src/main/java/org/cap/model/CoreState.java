@@ -3,7 +3,7 @@ package org.cap.model;
 public class CoreState {
     public Task currentTask;
     public boolean isRunning;
-    public int remainingRuntime;
+    public long remainingRuntime;
     public long minimumVirtualRuntime = 0L;
 
     public CoreState copy() {

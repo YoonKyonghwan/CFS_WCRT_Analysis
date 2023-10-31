@@ -112,6 +112,7 @@ public class Main {
             for(Entry<Integer, Long> wcrt : simulResult.wcrtMap.entrySet()) {
                 logger.info("Task ID with " + wcrt.getKey() + " (WCRT: " + wcrt.getValue()/1000 + " us)");
             }
+            System.out.println("Schedule execution count: " + CFSSimulator.getTriedScheduleCount());
             system_schedulability = simulResult.schedulability;
             if (system_schedulability) {
                 System.out.println("All tasks are schedulable");

@@ -19,11 +19,17 @@ public class CFSSimulator {
     ComparatorCase comparatorCase;
     private long targetLatency;
     private long minimumGranularity = 3000 * 1000L;
+    private long triedScheduleCount = 0;
 
     public CFSSimulator(ScheduleSimulationMethod method, ComparatorCase comparatorCase, int targetLatency) {
         this.method = method;
         this.comparatorCase = comparatorCase;
-        this.targetLatency = targetLatency * 1000L; 
+        this.targetLatency = targetLatency * 1000L;
+        this.triedScheduleCount = 0;
+    }
+    
+    public long getTriedScheduleCount() {
+        return triedScheduleCount;
     }
 
     private long getMaximumPeriod(List<Core> cores) {
@@ -76,14 +82,6 @@ public class CFSSimulator {
             IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         boolean diverged = false;
         int i = 0;
-
-        long max_period = 0;
-        for (Core core : cores) {
-            for (Task task : core.tasks) {
-                if (task.period > max_period)
-                    max_period = task.period;
-            }
-        }
 
         outerLoop:
         while (time < simulationTime && time >= 0) {
@@ -145,6 +143,8 @@ public class CFSSimulator {
                 Queue<Task> queue = queues.get(i);
                 queue.clear();
             }
+        } else {
+            this.triedScheduleCount++; 
         }
     }
 
@@ -155,8 +155,6 @@ public class CFSSimulator {
         // Decrease runtime
         
         coreState.remainingRuntime -= timeUpdated;
-        if (coreState.remainingRuntime <= 0)
-            coreState.isRunning = false;
 
         // Update virtual runtime
         //long temp = (long) (Math.ceil(((timeUpdated << 10L)  / task.weight) /100) *100);
@@ -201,7 +199,6 @@ public class CFSSimulator {
                         }
                         else {
                             task.stage = Stage.COMPLETED;
-                            coreState.isRunning = false;
                         }
                     }
                     break;
@@ -215,14 +212,13 @@ public class CFSSimulator {
                     }
                     if (task.writeTimeInNanoSeconds <= 0) {
                         task.stage = Stage.COMPLETED;
-                        coreState.isRunning = false;
                         simulationState.blockingPolicyReset = true;
                     }
                     else
                         simulationState.blockingPolicy = BlockingPolicy.WRITE;
                     break;
                 case COMPLETED:
-                    //logger.severe("Task " + task.id + " entered with completed stage.");
+                    logger.severe("Task " + task.id + " entered with completed stage.");
                     break;
                 default:
                     break;
@@ -233,24 +229,19 @@ public class CFSSimulator {
         if (task.stage != Stage.COMPLETED) {
             // handling the preemption from other tasks becuase of new task invocation
             // if time is still remained (which means the task cannot be executed until the time slice), clear the next end event of this task
-            if(timeUpdated > 0) { 
-                coreState.isRunning = false; 
+            if(coreState.remainingRuntime > 0) { 
                 simulationState.clearEventTime(time + coreState.remainingRuntime);
             }
-            
-            if (coreState.isRunning)
-                coreState.currentTask = task;
-            else {
-                queueInCore.add(task);
-                if (simulationState.blockingPolicy == BlockingPolicy.READ)
-                    simulationState.blockingPolicyReset = true;
-            }
+            queueInCore.add(task);
+            if (simulationState.blockingPolicy == BlockingPolicy.READ)
+                simulationState.blockingPolicyReset = true;
         } else {
             logger.fine("Task " + task.id + " completed at time " + time + " with RT "
                     + (time - task.readReleaseTime));
             wcrtMap.put(Integer.valueOf(task.getId()),
                     Math.max(wcrtMap.get(Integer.valueOf(task.getId())), time - task.readReleaseTime));
         }
+        coreState.isRunning = false;
     }
 
     private void updateMinimumVirtualRuntime(CoreState coreState, Queue<Task> queue) {
