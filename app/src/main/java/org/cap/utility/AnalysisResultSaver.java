@@ -98,7 +98,7 @@ public class AnalysisResultSaver {
                     writer.write(dataToWrite);
                 }
             }
-            System.out.println("Detailed results saved to " + detailResultDir);
+            System.out.println("Detailed results saved to " + resultFileName);
         } catch (IOException e) {
             e.printStackTrace();
         }

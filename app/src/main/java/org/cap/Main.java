@@ -19,7 +19,7 @@ import java.util.Map.Entry;
 import net.sourceforge.argparse4j.inf.Namespace;
 
 public class Main {
-    private static final int targetLatency = 20000;  //us (20ms)
+    private static final int targetLatency = 30000;  //us (20ms)
 
     public static void main(String[] args) throws ClassNotFoundException, NoSuchMethodException, SecurityException,
             InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {

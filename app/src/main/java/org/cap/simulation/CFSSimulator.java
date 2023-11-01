@@ -136,7 +136,7 @@ public class CFSSimulator {
                     if (task == null)
                         continue;
                     else
-                        logger.fine("Task " + task.id + " started to run at time " + time + ", minimum_vruntime: " + task.virtualRuntime);
+                        logger.fine("Task " + task.id + "(vruntime:" + task.virtualRuntime + ") started to run at time " + time);
                     setRuntime(i, task, queue, simulationState);
                     simulationState.putEventTime((time + coreState.remainingRuntime));
                     coreState.currentTask = task;
@@ -173,8 +173,10 @@ public class CFSSimulator {
         // long temp = (long) (Math.ceil(((timeUpdated << 10L)  / task.weight) /100) *100);
         // task.virtualRuntime += temp ;
 
-        // task.virtualRuntime += (timeUpdated << 10L)  / task.weight ;
-        task.virtualRuntime += (timeUpdated << 10L) * NiceToWeight.getWeightMul(task.nice) >> 32;
+        // long vruntime_increment = (timeUpdated << 10L)  / task.weight ;
+        long vruntime_increment = (timeUpdated << 10L) * NiceToWeight.getWeightMul(task.nice) >> 32;
+        task.virtualRuntime += vruntime_increment;
+        logger.fine("Task " + task.id + " spends " + timeUpdated + " ns [vruntime_increment: " + vruntime_increment + "]");
 
         // Decrease execution time for each stage
         while(timeUpdated > 0 && task.stage != Stage.COMPLETED) {
