@@ -18,7 +18,7 @@ public class LoggerUtility {
             fileHandler.setFormatter(new CustomFormatter());
             logger.setUseParentHandlers(false);
             logger.addHandler(fileHandler);
-            logger.setLevel(Level.FINE);
+            logger.setLevel(Level.INFO);
         } catch (IOException e) {
             e.printStackTrace();
         }

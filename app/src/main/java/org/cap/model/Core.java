@@ -18,6 +18,7 @@ public class Core {
         Core newCore = new Core();
         newCore.coreID = this.coreID;
         newCore.tasks = new ArrayList<>(this.tasks.size());
+        newCore.minWeight = this.minWeight;
         for (Task task : this.tasks) {
             newCore.tasks.add(task.copy());
         }
