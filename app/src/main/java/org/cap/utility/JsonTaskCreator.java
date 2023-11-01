@@ -114,10 +114,44 @@ public class JsonTaskCreator {
         return remainingUtilization;
     }
 
+    private ArrayList<Double> generateTaskUtilization(double utilization, int numTasks){
+        double taskMaxUtilization = ((2*utilization) / numTasks);
+        double taskMinUtilization = 0.001;
+        
+        ArrayList<Double> task_utilization_list = new ArrayList<Double>();
+        while(true){
+            // initialize remainingUtilization and task_utilization_list
+            double remainingUtilization = utilization;
+            task_utilization_list.clear();
+
+            for (int i = 1; i <= numTasks; i++) {
+                double taskUtilization = 0;
+                if (i != numTasks) {
+                    //taskUtilization is randomly sampled from [0.01, 2*utilization/numTasks]
+                    taskUtilization = Math.random() * taskMaxUtilization;
+                    if (taskUtilization < taskMinUtilization){
+                        taskUtilization = taskMinUtilization;
+                    } else if (taskUtilization > remainingUtilization){
+                        taskUtilization = taskMinUtilization;
+                    }
+                    remainingUtilization -= taskUtilization;
+                } else {
+                    taskUtilization = remainingUtilization;
+                }
+                task_utilization_list.add(taskUtilization);
+            }
+            if (remainingUtilization > 0){
+                break;
+            }
+        }
+        return task_utilization_list;
+    }
+
     private TestConfiguration generateTasks_v2(int numTasks, double utilization, List<Core> cores) {
         int coreIndex = 0;
-        double remainingUtilization = utilization;
-        double taskMaxUtilization = ((2*utilization) / numTasks);
+        
+        ArrayList<Double> task_utilization_list = generateTaskUtilization(utilization, numTasks);
+        assert task_utilization_list.size() == numTasks: "task_utilization_list size should be equal to numTasks";
 
         for (int task_index = 1; task_index <= numTasks; task_index++) {
             Task task = new Task();
@@ -127,8 +161,7 @@ public class JsonTaskCreator {
             task.writeTime = 0;  // task.writeTime = generateBlockingTime();
 
             task.period = setPeriod_v2(task);
-            remainingUtilization = setWCET(task_index, taskMaxUtilization, remainingUtilization, numTasks, task);
-
+            task.bodyTime = (int) Math.ceil(task.period * task_utilization_list.get(task_index-1));
             task.nice = (int) Math.round(Math.random() * 19);   //randomly sampled from [0, 19]
             task.index = cores.get(coreIndex).tasks.size();
 
@@ -146,26 +179,6 @@ public class JsonTaskCreator {
         testConf.idNameMap = idNameMap;
 
         return testConf;
-    }
-
-    private double setWCET(int task_index, double taskMaxUtilization, double remainingUtilization, int numTasks,  Task task){
-        double minUtilization = 0.01;
-        double taskUtilization = 0;
-        if (task_index == numTasks) {
-            taskUtilization = remainingUtilization;
-        } else {
-            //taskUtilization is randomly sampled from [0.01, 2*utilization/numTasks]
-            taskUtilization = Math.random() * (taskMaxUtilization);
-            if (taskUtilization < minUtilization){
-                taskUtilization = minUtilization;
-            } else if (taskUtilization > remainingUtilization){
-                taskUtilization = minUtilization;
-            }
-        }
-        task.bodyTime = (int) Math.ceil(task.period * taskUtilization);
-
-        remainingUtilization -= taskUtilization;
-        return remainingUtilization;
     }
 
 

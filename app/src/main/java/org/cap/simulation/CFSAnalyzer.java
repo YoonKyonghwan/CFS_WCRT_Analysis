@@ -37,17 +37,6 @@ public class CFSAnalyzer {
         }
     }
 
-    public boolean checkSystemSchedulability() {
-        for (Core core : this.cores) {
-            for (Task task : core.tasks) {
-                if (!task.isSchedulable_by_proposed) {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
 
     /* 
     * Theorem1 in the paper.
@@ -166,6 +155,17 @@ public class CFSAnalyzer {
         }else{
             return (int) C_i - max_min_task_i_processed;
         }
-
     }
+
+    public boolean checkSystemSchedulability() {
+        for (Core core : this.cores) {
+            for (Task task : core.tasks) {
+                if (!task.isSchedulable_by_proposed) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
 }

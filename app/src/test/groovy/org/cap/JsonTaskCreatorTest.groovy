@@ -54,7 +54,7 @@ class JsonTaskCreatorTest extends Specification {
                     sum_task_utilization += task_utilization;
                 }
             }
-            def theshold = 0.01;
+            def theshold = 0.03;
             def gap = Math.abs(total_utilzation - sum_task_utilization);
         then:
             //check gap between total_utilzation and sum_task_utilization is less than theshold

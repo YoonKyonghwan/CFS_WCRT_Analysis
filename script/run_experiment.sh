@@ -3,14 +3,14 @@
 # set arguments
 result_dir="exp_results"
 
-generated_files_save_dir="app/src/main/resources/generated_taskset"
+generated_files_save_dir="generated_taskset"
 num_cores=1
 num_tasks=(3 6 9 12 15)
 utilizations=(0.2 0.4 0.6 0.8)
-num_sets=10
+num_sets=50
 
 schedule_simulation_method="priority-queue"
-tie_comparator="BodyWCETComparator"
+tie_comparator="PeriodComparator"
 
 
 ./gradlew build
@@ -34,5 +34,5 @@ done
 
 end_time="$(date -u +%s)"
 elapsed="$(($end_time-$start_time))"
-echo "Total of $elapsed seconds elapsed for process"
+echo "Total of $elapsed seconds elapsed for the experiment"
 
