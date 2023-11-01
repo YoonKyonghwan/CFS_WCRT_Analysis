@@ -10,7 +10,7 @@ mv ./app/build/libs/run.jar ./run.jar
 
 
 generated_files_save_dir="app/src/main/resources/generated_taskset"
-file_name="1cores_3tasks_0.6utilization_20.json"
+file_name="1cores_15tasks_0.2utilization_21.json"
 task_info_path="${generated_files_save_dir}/${file_name}"
 echo "running with ${file_name}"
 java -jar run.jar -t=$task_info_path -rd=$result_dir -ssm=$schedule_simulation_method -tc=$tie_comparator
@@ -19,4 +19,4 @@ java -jar run.jar -t=$task_info_path -rd=$result_dir -ssm=$schedule_simulation_m
 # java -jar run.jar -t=app/src/main/resources/generated_taskset/1cores_6tasks_0.8utilization_28.json -rd=exp_results -ssm=priority-queue -tc=BodyWCETComparator
 
 
-# 1cores_9tasks_0.4utilization_35.json
+# 1cores_15tasks_0.2utilization_21.json

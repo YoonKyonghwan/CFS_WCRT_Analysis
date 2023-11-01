@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # set arguments
-generated_files_save_dir="app/src/main/resources/generated_taskset"
+generated_files_save_dir="generated_taskset"
 num_cores=1
 num_tasks=(3 6 9 12 15)
 utilizations=(0.2 0.4 0.6 0.8)
