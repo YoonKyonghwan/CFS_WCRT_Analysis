@@ -57,7 +57,7 @@ public class CFSSimulator {
             if(!finalResult.getWcrtMap().containsKey(entry.getKey())) {
                 finalResult.getWcrtMap().put(entry.getKey(), entry.getValue());
             } else {
-                if (finalResult.getWcrtMap().get(entry.getKey()) < entry.getValue()) {
+                if (finalResult.getWcrtMap().get(entry.getKey()).longValue() < entry.getValue().longValue()) {
                     finalResult.getWcrtMap().put(entry.getKey(), entry.getValue());
                 }
             }
@@ -744,8 +744,6 @@ public class CFSSimulator {
                         + task.period + ")");
                 if (wcrtMap.get(Integer.valueOf(task.getId())) > task.period) { // ns
                     schedulability = false;
-                }else{
-                    schedulability = true;
                 }
             }
         }
