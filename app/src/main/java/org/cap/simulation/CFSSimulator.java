@@ -219,7 +219,7 @@ public class CFSSimulator {
         // task.virtualRuntime += temp ;
 
         // long vruntime_increment = (timeUpdated << 10L)  / task.weight ;
-        long vruntime_increment = (timeUpdated << 10L) * NiceToWeight.getWeightMul(task.nice) >> 32;
+        long vruntime_increment = (timeUpdated << 10L) * NiceToWeight.getWeightMul(task.nice) >> 32L;
         task.virtualRuntime += vruntime_increment;
         logger.fine("Task " + task.id + " spends " + timeUpdated + " ns [vruntime_increment: " + vruntime_increment + "]");
 
@@ -565,7 +565,7 @@ public class CFSSimulator {
             HashMap<Integer, Long> wcrtMap, CFSSimulationState simulationState, long time, long hyperperiod)
             throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException,
             IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-        logger.info("\n*** Path diverged due to blocking ***");
+        logger.finer("\n*** Path diverged due to blocking ***");
 
         CFSSimulationState cloneSimulationState = simulationState.copy();
         List<Queue<Task>> cloneQueues = copyQueues(queues);
@@ -631,7 +631,7 @@ public class CFSSimulator {
             List<Task> minRuntimeTasks, String scheduleID, int taskIndex, int coreIndex)
             throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException,
             IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-        logger.fine("\n*** Path diverged due to equal minimum runtime ***");
+        logger.finer("\n*** Path diverged due to equal minimum runtime ***");
 
         List<Task> cloneMinRuntimeTasks = new ArrayList<>();
         for (Task task : minRuntimeTasks)
@@ -652,6 +652,7 @@ public class CFSSimulator {
         cloneSimulationState.setSelectedDivergeIndex(taskIndex);
         cloneSimulationState.setSimulationScheduleID(scheduleID);
 
+        logger.fine("Task " + minRuntimeTask.id + "(vruntime:" + minRuntimeTask.virtualRuntime + ") started to run at time " + time);
         setRuntime(coreIndex, minRuntimeTask, cloneQueue, cloneSimulationState);
         cloneSimulationState.putEventTime((time + cloneCoreState.remainingRuntime));
         cloneCoreState.currentTask = minRuntimeTask;
@@ -682,7 +683,7 @@ public class CFSSimulator {
                 if (cloneTask == null)
                     continue;
                 else
-                    logger.fine("Task " + cloneTask.id + " started to run at time " + time + ", minimum_vruntime: " + cloneTask.virtualRuntime);
+                    logger.fine("Task " + cloneTask.id + "(vruntime:" + cloneTask.virtualRuntime + ") started to run at time " + time);
                 setRuntime(i, cloneTask, cloneQueue, cloneSimulationState);
                 cloneSimulationState.putEventTime((time + cloneCoreState.remainingRuntime));
                 cloneCoreState.currentTask = cloneTask;
