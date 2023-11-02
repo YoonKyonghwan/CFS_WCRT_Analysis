@@ -61,15 +61,26 @@ public class AnalysisResultSaver {
     }
 
     public void saveDetailedResult(String resultDir, String taskInfoPath, TestConfiguration testConf){
+        String inputFileName = new File(taskInfoPath).getName();
+        Pattern pattern = Pattern.compile("(\\d+)cores_(\\d+)tasks_(\\d+(?:\\.\\d+)?)utilization_(\\d+)\\.json");
+        Matcher matcher = pattern.matcher(inputFileName);
+        
+        if (!matcher.matches()) {
+            System.err.println("Invalid input file name format");
+            return;
+        }
+        
+        String numCores = matcher.group(1);
+        String numTasks = matcher.group(2);
+        String utilization = matcher.group(3);
+        
         // Create the result directory if it doesn't exist
-        String detailResultDir = resultDir + "/detailed_result";
+        String detailResultDir = resultDir + "/detail_result/" + numCores + "cores/" + numTasks + "tasks/" + utilization + "utilization";
         File dir = new File(detailResultDir);
         if (!dir.exists()) {
             dir.mkdirs();
         }
-
-        String inputFileName = new File(taskInfoPath).getName();
-        String resultFileName = detailResultDir + "/" + inputFileName.substring(0, inputFileName.length() - 5) + "_result.csv";
+        String resultFileName = detailResultDir + "/" + inputFileName.replace(".json", "_result.csv");
         File file = new File(resultFileName);
         if (file.exists()) {
             file.delete();
@@ -77,7 +88,7 @@ public class AnalysisResultSaver {
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(resultFileName, true))) {
             // write the header first
-            String header = "id,name,WCRT_by_simulator,isSchedulable_by_simulator,WCRT_by_proposed,isSchedulable_by_proposed\n";
+            String header = "id,name,WCRT_by_simulator,simulator_schedulability,WCRT_by_proposed,proposed_schedulability\n";
             writer.write(header);
 
             // write the result for each task

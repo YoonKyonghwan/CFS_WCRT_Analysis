@@ -2,8 +2,8 @@
 
 # set arguments
 result_dir="exp_results"
-schedule_simulation_method="priority-queue"
-tie_comparator="PeriodComparator"
+schedule_simulation_method="random"
+tie_comparator="BodyWCETComparator"
 
 ./gradlew build
 mv ./app/build/libs/run.jar ./run.jar

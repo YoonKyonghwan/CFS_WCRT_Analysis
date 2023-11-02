@@ -69,7 +69,7 @@ public class ArgParser {
         parser.addArgument("--schedule_try_count", "-stc")
                 .dest("schedule_try_count")
                 .type(Long.class)
-                .setDefault(1000L)
+                .setDefault(10000L)
                 .nargs("?")
                 .help("The number of tries to perform a schedule (this option is only valid for the random option of schedule_simulation_method) ");
         Namespace params = parser.parseArgsOrFail(args);

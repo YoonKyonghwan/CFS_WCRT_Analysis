@@ -203,6 +203,10 @@ public class JsonTaskCreator {
         
         // get project base directory
         Path saveDir = Paths.get(generatedFilesSaveDir).toAbsolutePath();
+        saveDir = Paths.get(saveDir.toString(), 
+                            numCores + "cores",
+                            numTasks + "tasks",
+                            utilization + "utilization");
         // If directory is not existed, create it
         if (!Files.exists(saveDir)) {
             try {
