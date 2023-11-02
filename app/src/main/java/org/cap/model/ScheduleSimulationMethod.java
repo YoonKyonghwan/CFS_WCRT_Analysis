@@ -1,7 +1,9 @@
 package org.cap.model;
 
 public enum ScheduleSimulationMethod {
-    BRUTE_FORCE("brute-force"), PRIORITY_QUEUE("priority-queue");
+    BRUTE_FORCE("brute-force"), 
+	PRIORITY_QUEUE("priority-queue"),
+	RANDOM("random");
 
     private final String value;
 

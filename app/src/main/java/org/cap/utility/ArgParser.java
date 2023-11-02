@@ -53,7 +53,7 @@ public class ArgParser {
                 .type(Arguments.enumStringType(ScheduleSimulationMethod.class))
                 .setDefault(ScheduleSimulationMethod.BRUTE_FORCE.toString())
                 .nargs("?")
-                .help("search method (either brute-force or priority-queue) ");
+                .help("search method (either brute-force, random, or priority-queue) ");
         parser.addArgument("--simulation_time", "-st")
                 .dest("simulation_time")
                 .type(Long.class)
@@ -66,6 +66,12 @@ public class ArgParser {
                 .setDefault(ComparatorCase.WEIGHT.getClassName())
                 .nargs("?")
                 .help("tie comparator when the virtual runtime is same (BodyWCETComparator, PeriodComparator, WeightComparator, or UnorderedComparator). If schedule simulation method is brute-force, tie comparator is fixed to UnorderedComparator.");
+        parser.addArgument("--schedule_try_count", "-stc")
+                .dest("schedule_try_count")
+                .type(Long.class)
+                .setDefault(1000L)
+                .nargs("?")
+                .help("The number of tries to perform a schedule (this option is only valid for the random option of schedule_simulation_method) ");
         Namespace params = parser.parseArgsOrFail(args);
         return params;
     }

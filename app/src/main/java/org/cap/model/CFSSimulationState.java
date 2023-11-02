@@ -18,10 +18,28 @@ public class CFSSimulationState {
     private HashMap<Long, Integer> eventTimeMap;
     private PriorityQueue<Long> eventQueue;
     private Long previousEventTime;
+    private int selectedDivergeIndex;
+    private String simulationScheduleID;
 
     // TODO consider moving WCRTs and Queues to here after completion
 
     
+    public String getSimulationScheduleID() {
+        return simulationScheduleID;
+    }
+
+    public void setSimulationScheduleID(String simulationScheduleID) {
+        this.simulationScheduleID = simulationScheduleID;
+    }
+
+    public void setSelectedDivergeIndex(int selectedDivergeIndex) {
+        this.selectedDivergeIndex = selectedDivergeIndex;
+    }
+
+    public int getSelectedDivergeIndex() {
+        return selectedDivergeIndex;
+    }
+
     public CFSSimulationState copy() {
         CFSSimulationState newState = new CFSSimulationState(this.method);
         newState.targetedLatency = this.targetedLatency;
@@ -30,6 +48,8 @@ public class CFSSimulationState {
         newState.blockingTaskId = this.blockingTaskId;
         newState.coreStates = new ArrayList<>(this.coreStates.size());
         newState.previousEventTime = this.previousEventTime;
+        newState.selectedDivergeIndex = this.selectedDivergeIndex;
+        newState.simulationScheduleID = this.simulationScheduleID;
         for (CoreState coreState : this.coreStates) {
             newState.coreStates.add(coreState.copy());
         }
@@ -104,6 +124,8 @@ public class CFSSimulationState {
         this.method = method;
         this.eventQueue = new PriorityQueue<Long>(); // default is ascending order
         this.eventTimeMap = new HashMap<Long, Integer>();
+        this.selectedDivergeIndex = 0;
+        this.simulationScheduleID = "";
 
         //this.coreStates = new ArrayList<>(Collections.nCopies(numberOfCores, new CoreState()));
 

@@ -10,4 +10,21 @@ public class SimulationResult {
         this.schedulability = schedulability;
         this.wcrtMap = wcrtMap;
     }
+
+    public SimulationResult() {
+        this.schedulability = true;
+        this.wcrtMap = new HashMap<Integer, Long>();
+    }
+
+    public boolean isSchedulability() {
+        return schedulability;
+    }
+
+    public void setSchedulability(boolean schedulability) {
+        this.schedulability = schedulability;
+    }
+
+    public HashMap<Integer, Long> getWcrtMap() {
+        return wcrtMap;
+    }
 }
