@@ -14,7 +14,6 @@ import org.cap.utility.LoggerUtility;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.logging.Logger;
-import java.util.Map.Entry;
 
 import net.sourceforge.argparse4j.inf.Namespace;
 
@@ -50,9 +49,9 @@ public class Main {
             // analyze by simulator
             boolean simulator_schedulability = analyze_by_CFS_simulator(testConf,
             ScheduleSimulationMethod.fromValue(params.getString("schedule_simulation_method")),
-            ComparatorCase.fromValue(params.getString("tie_comparator")), params.getLong("simulation_time"), params.getLong("schedule_try_count"));
+            ComparatorCase.fromValue(params.getString("tie_comparator")), params.getLong("simulation_time"), params.getLong("schedule_try_count"), params.getString("logger_option"));
             int simulator_timeConsumption = (int)((System.nanoTime() - startTime)/1000); //us
-            System.out.println("Time consumption (CFS simulator): " + simulator_timeConsumption + " us");
+            // System.out.println("Time consumption (CFS simulator): " + simulator_timeConsumption + " us");
             
             // analyze by proposed
             startTime = System.nanoTime();
@@ -60,7 +59,7 @@ public class Main {
             analyzer.analyze(); // without parallel
             boolean proposed_schedulability = analyzer.checkSystemSchedulability();
             int proposed_timeConsumption = (int) ((System.nanoTime() - startTime) / 1000);
-            System.out.println("Time consumption (Analysis): " + proposed_timeConsumption + " us");
+            // System.out.println("Time consumption (Analysis): " + proposed_timeConsumption + " us");
 
             // save analysis results into file
             AnalysisResultSaver analysisResultSaver = new AnalysisResultSaver();
@@ -75,9 +74,9 @@ public class Main {
     }
 
     private static boolean analyze_by_CFS_simulator(TestConfiguration testConf, ScheduleSimulationMethod scheduleMethod,
-            ComparatorCase compareCase, long simulationTime, long schedule_try_count) throws ClassNotFoundException, NoSuchMethodException, SecurityException,
+            ComparatorCase compareCase, long simulationTime, long schedule_try_count, String logger_option) throws ClassNotFoundException, NoSuchMethodException, SecurityException,
             InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-        LoggerUtility.initializeLogger();
+        LoggerUtility.initializeLogger(logger_option);
         LoggerUtility.addConsoleLogger();
 
         // for brute-force method, unordered comparator is used.

@@ -54,7 +54,7 @@ public class AnalysisResultSaver {
                     simulator_schedulability, simulator_timeConsumption,
                     proposed_schedulability, proposed_timeConsumption);
             writer.write(dataToWrite);
-            System.out.println("Results saved to " + resultFileName);
+            // System.out.println("Results saved to " + resultFileName);
         } catch (IOException e) {
             e.printStackTrace();
         }
@@ -109,7 +109,7 @@ public class AnalysisResultSaver {
                     writer.write(dataToWrite);
                 }
             }
-            System.out.println("Detailed results saved to " + resultFileName);
+            // System.out.println("Detailed results saved to " + resultFileName);
         } catch (IOException e) {
             e.printStackTrace();
         }

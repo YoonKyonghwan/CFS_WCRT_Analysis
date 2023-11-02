@@ -18,8 +18,8 @@ public class PFSSimulator {
      *
      * @return WCRT - list of worst case response times
      */
-    public SimulationResult simulatePFS(List<Core> cores) {
-        LoggerUtility.initializeLogger();
+    public SimulationResult simulatePFS(List<Core> cores, String logger_option) {
+        LoggerUtility.initializeLogger(logger_option);
         logger.info("Starting PFS simulation");
 
         HashMap<Integer, Long> wcrtMap = initializeWCRTs(cores);

@@ -77,20 +77,20 @@ public class CFSAnalyzer {
         long T_j = task_j.period;
         int C_j = (int) task_j.bodyTime;
         int C_i = (int) task_i.bodyTime;
-        long T_i = task_i.period;
         double w_i = task_i.weight;
-        long lastRequestTime = Math.floorDiv(R_prev, T_j) * T_j; // (R_prev / T_j) * T_j
+        long k_j = Math.floorDiv(R_prev, T_j)+1;
+        long lastRequestTime = (k_j-1) * T_j; // (R_prev / T_j) * T_j
         // int remainWorkload = getRemainWorkload(lastRequestTime, C_i, task_i.id, core);
         int remainWorkload = C_i;
         if (lastRequestTime > 0){
-            remainWorkload = getRemainWorkload_v2(lastRequestTime, task_i, core);
+            remainWorkload = getRemainWorkload(lastRequestTime, task_i, core);
         }
         long S_j = 0;
         if(remainWorkload != 0){
-            S_j = getS_j(task_j, C_j, remainWorkload, w_i, T_i, core.minWeight);
+            S_j = getS_j(task_j, C_j, remainWorkload, w_i, k_j, core.minWeight);
         }
 
-        return (Math.floorDiv(R_prev, T_j) * C_j) + S_j;
+        return ((k_j - 1) * C_j) + S_j;
     }
 
     /*
@@ -99,13 +99,12 @@ public class CFSAnalyzer {
      * \beta =  \Delta_{i}^{t_{s(j,q)}} \cdot \frac{w_j}{w_i},  \quad
      * \gamma = L \cdot \frac{w_j}{w_i + w_j} 
      */
-    private long getS_j(Task task_j, int C_j, int remainWorkload, double w_i, long T_i, double minWeight) {
+    private long getS_j(Task task_j, int C_j, int remainWorkload, double w_i, long k_j, double minWeight) {
         double w_j = task_j.weight;
-        long T_j = task_j.period;
         int alpha = (int) (this.targetLatency * w_j / (w_i + minWeight));
         int beta = (int) (remainWorkload * w_j / w_i);
         int gamma = (int) (this.targetLatency * w_j / (w_i + w_j));
-        if (T_j > T_i || T_j == T_i) {
+        if (k_j == 1) {
             return (int) Math.min(beta + gamma, C_j);
         }else{
             return (int) Math.min(alpha + beta + gamma, C_j);
@@ -116,21 +115,7 @@ public class CFSAnalyzer {
     /*
      * Lemma6 in the paper.
      */
-    private int getRemainWorkload(long lastRequestTime, double C_i, int task_i_id, Core core) {
-        int maxInterferenceUntilLastRequestTime = 0;
-        for (Task task_k : core.tasks) {
-            if (task_i_id != task_k.id) {
-                long T_k = task_k.period;
-                int C_k = (int) task_k.bodyTime;
-                int interference_k = (int) ((Math.floorDiv(lastRequestTime, T_k)) * C_k);
-                interference_k += Math.min(C_k, lastRequestTime % T_k);
-                maxInterferenceUntilLastRequestTime += interference_k;
-            }
-        }
-        return (int) (C_i - (lastRequestTime - maxInterferenceUntilLastRequestTime));
-    }
-
-    private int getRemainWorkload_v2(long lastRequestTime, Task task_i, Core core) {
+    private int getRemainWorkload(long lastRequestTime, Task task_i, Core core) {
         int max_min_task_i_processed = 0;
         int C_i = (int) task_i.bodyTime;
         double w_i = task_i.weight;
@@ -143,7 +128,7 @@ public class CFSAnalyzer {
                     continue;
                 }else{
                     // int min_task_i_processed = (int) (Math.floorDiv(lastRequestTime, T_k) * C_k * w_i / w_k) - (int) (this.targetLatency * w_i / (w_i + w_k));
-                    int min_task_i_processed = (int) (Math.floorDiv(lastRequestTime, T_k) * C_k * w_i / w_k);
+                    int min_task_i_processed = (int) (Math.floorDiv(lastRequestTime, T_k) * C_k * w_i / w_k) - (int) (this.targetLatency * w_i / (w_i + w_k));
                     if (min_task_i_processed > max_min_task_i_processed){
                         max_min_task_i_processed = min_task_i_processed;
                     }

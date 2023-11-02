@@ -57,7 +57,7 @@ public class ArgParser {
         parser.addArgument("--simulation_time", "-st")
                 .dest("simulation_time")
                 .type(Long.class)
-                .setDefault(-1L)
+                .setDefault(0L)
                 .nargs("?")
                 .help("simulation time (0 for hyper period, -1 for max period, other positive integer values are used as an exact value) ");
         parser.addArgument("--tie_comparator", "-tc")
@@ -72,6 +72,13 @@ public class ArgParser {
                 .setDefault(10000L)
                 .nargs("?")
                 .help("The number of tries to perform a schedule (this option is only valid for the random option of schedule_simulation_method) ");
+        parser.addArgument("--logger_option", "-lo")
+                .dest("logger_option")
+                .type(String.class)
+                .setDefault("off")
+                .nargs("?")
+                .help("logger option (off, info, fine)");
+        
         Namespace params = parser.parseArgsOrFail(args);
         return params;
     }

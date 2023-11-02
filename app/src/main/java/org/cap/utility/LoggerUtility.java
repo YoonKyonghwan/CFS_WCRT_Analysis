@@ -8,7 +8,7 @@ import java.io.IOException;
 public class LoggerUtility {
     private static final Logger logger = Logger.getLogger(LoggerUtility.class.getName());
 
-    public static void initializeLogger() {
+    public static void initializeLogger(String logger_option) {
         try {
             LocalDateTime now = LocalDateTime.now();
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
@@ -18,7 +18,20 @@ public class LoggerUtility {
             fileHandler.setFormatter(new CustomFormatter());
             logger.setUseParentHandlers(false);
             logger.addHandler(fileHandler);
-            logger.setLevel(Level.INFO);
+            switch (logger_option) { // logger_option = ["off", "info", "fine"]
+                case "off":
+                    logger.setLevel(Level.OFF);
+                    break;
+                case "info":
+                    logger.setLevel(Level.INFO);
+                    break;
+                case "fine":
+                    logger.setLevel(Level.FINE);
+                    break;
+                default:
+                    break;
+            }
+            
         } catch (IOException e) {
             e.printStackTrace();
         }
