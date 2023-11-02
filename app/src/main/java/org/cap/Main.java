@@ -80,7 +80,8 @@ public class Main {
         LoggerUtility.addConsoleLogger();
 
         // for brute-force method, unordered comparator is used.
-        if (scheduleMethod == ScheduleSimulationMethod.BRUTE_FORCE || scheduleMethod == ScheduleSimulationMethod.RANDOM) {
+        if ((scheduleMethod == ScheduleSimulationMethod.BRUTE_FORCE || scheduleMethod == ScheduleSimulationMethod.RANDOM) && 
+            compareCase != ComparatorCase.RELEASE_TIME) {
             compareCase = ComparatorCase.UNORDERED;
         }
 

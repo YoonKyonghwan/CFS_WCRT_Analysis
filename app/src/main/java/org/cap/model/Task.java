@@ -31,6 +31,10 @@ public class Task {
     @Expose
     public long period;
 
+    // start priority at time 0
+    @Expose
+    public int initialPriority;
+
     @Expose
     public int index;
 
@@ -98,6 +102,7 @@ public class Task {
         newTask.weight = this.weight;
         newTask.virtualRuntime = this.virtualRuntime;
         newTask.isTargetTask = this.isTargetTask;
+        newTask.initialPriority = this.initialPriority;
 
         newTask.readTimeInNanoSeconds = this.readTimeInNanoSeconds;
         newTask.bodyTimeInNanoSeconds = this.bodyTimeInNanoSeconds;
@@ -129,11 +134,13 @@ public class Task {
         this.bodyTimeInNanoSeconds = ((long) this.bodyTime) * 1000L;
         this.writeTimeInNanoSeconds = ((long) this.writeTime) * 1000L;
         this.virtualRuntime = 0L;
+        this.initialPriority = -1;
         this.initialized = true;
     }
 
     public Task() {
         this.isTargetTask = false;
+        this.initialPriority = -1;
     }
 
     public int getId() {

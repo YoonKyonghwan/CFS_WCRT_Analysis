@@ -5,6 +5,7 @@ public enum ComparatorCase {
 	PERIOD("PeriodComparator"), 
 	WEIGHT("WeightComparator"),
     TARGET_TASK("TargetTaskBasedComparator"),
+    RELEASE_TIME("ReleaseTimeComparator"),
     UNORDERED("UnorderedComparator");
 	
 	private final String value;
