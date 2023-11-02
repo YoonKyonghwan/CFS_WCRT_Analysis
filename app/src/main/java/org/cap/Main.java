@@ -19,7 +19,7 @@ import java.util.Map.Entry;
 import net.sourceforge.argparse4j.inf.Namespace;
 
 public class Main {
-    private static final int targetLatency = 30000;  //us (20ms)
+    private static final int targetLatency = 20000;  //us (20ms)
 
     public static void main(String[] args) throws ClassNotFoundException, NoSuchMethodException, SecurityException,
             InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
@@ -91,7 +91,7 @@ public class Main {
 
         if (scheduleMethod == ScheduleSimulationMethod.PRIORITY_QUEUE) {
             for (Integer taskID : testConf.idNameMap.keySet()) {
-                logger.fine("Start simulation with target task " + taskID);
+                logger.fine("\n\n ********** Start simulation with target task: " + taskID + " **********");
                 SimulationResult simulResult = CFSSimulator.simulateCFS(testConf.mappingInfo,
                         taskID.intValue(), simulationTime);
                 int WCRT_by_simulator = (int) (simulResult.wcrtMap.get(taskID)/1000);

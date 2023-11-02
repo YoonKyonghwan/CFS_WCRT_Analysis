@@ -173,8 +173,8 @@ public class CFSSimulator {
         // long temp = (long) (Math.ceil(((timeUpdated << 10L)  / task.weight) /100) *100);
         // task.virtualRuntime += temp ;
 
-        // long vruntime_increment = (timeUpdated << 10L)  / task.weight ;
-        long vruntime_increment = (timeUpdated << 10L) * NiceToWeight.getWeightMul(task.nice) >> 32;
+        long vruntime_increment = (timeUpdated << 10L)  / task.weight;
+        // long vruntime_increment = (timeUpdated << 10L) * NiceToWeight.getWeightMul(task.nice) >> 32;
         task.virtualRuntime += vruntime_increment;
         logger.fine("Task " + task.id + " spends " + timeUpdated + " ns [vruntime_increment: " + vruntime_increment + "]");
 
