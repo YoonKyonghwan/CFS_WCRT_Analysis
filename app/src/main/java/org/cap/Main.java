@@ -99,32 +99,26 @@ public class Main {
                 long task_period = CFSSimulator.findTaskbyID(testConf, taskID.intValue()).period/1000;
                 boolean task_schedulability = (WCRT_by_simulator <= task_period);
                 CFSSimulator.findTaskbyID(testConf, taskID.intValue()).isSchedulable_by_simulator = task_schedulability;
-                
-                if (task_schedulability) {
-                    logger.info("Task ID with " + taskID + " (WCRT: " + simulResult.wcrtMap.get(taskID)/1000 + " us) is schedulable");
-                } else {
-                    logger.info("Task ID with " + taskID + " (WCRT: " + simulResult.wcrtMap.get(taskID)/1000 + " us) is not schedulable");
-                    system_schedulability = false;
-                }
+
+                logger.info(String.format("Task ID with %3d (WCRT: %8d us, Period: %8d us, Schedulability: %5s)", taskID, WCRT_by_simulator, task_period, task_schedulability));
+                system_schedulability = simulResult.schedulability;
             }
         } else {
             SimulationResult simulResult = CFSSimulator.simulateCFS(testConf.mappingInfo, -1, simulationTime);
-            for(Entry<Integer, Long> wcrt : simulResult.wcrtMap.entrySet()) {
-                logger.info("Task ID with " + wcrt.getKey() + " (WCRT: " + wcrt.getValue()/1000 + " us)");
-            }
-            System.out.println("Schedule execution count: " + CFSSimulator.getTriedScheduleCount());
             system_schedulability = simulResult.schedulability;
-            if (system_schedulability) {
-                System.out.println("All tasks are schedulable");
-            } else {
-                System.out.println("Not all tasks are schedulable");
-            }
             for (Integer taskID : testConf.idNameMap.keySet()) {
                 long WCRT_by_simulator = (simulResult.wcrtMap.get(taskID)/1000);
-                long deadline = CFSSimulator.findTaskbyID(testConf, taskID.intValue()).period;
+                long deadline = CFSSimulator.findTaskbyID(testConf, taskID.intValue()).period/1000;
                 boolean task_schedulability = (WCRT_by_simulator <= deadline);
                 CFSSimulator.findTaskbyID(testConf, taskID.intValue()).isSchedulable_by_simulator = task_schedulability;
                 CFSSimulator.findTaskbyID(testConf, taskID.intValue()).WCRT_by_simulator = (int) WCRT_by_simulator;
+                logger.info(String.format("Task ID with %3d (WCRT: %8d us, Period: %8d us, Schedulability: %5s)", taskID, WCRT_by_simulator, deadline, task_schedulability));
+            }
+            logger.info("Schedule execution count: " + CFSSimulator.getTriedScheduleCount());
+            if (system_schedulability) {
+                logger.info("All tasks are schedulable");
+            } else {
+                logger.info("Not all tasks are schedulable");
             }
         }
 
