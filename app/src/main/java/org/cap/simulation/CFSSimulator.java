@@ -487,11 +487,17 @@ public class CFSSimulator {
         return readWriteTasks;
     }
 
-    private static List<Task> getMinRuntimeTasks(Queue<Task> queueInCore, CFSSimulationState simulationState) {
+    private List<Task> getMinRuntimeTasks(Queue<Task> queueInCore, CFSSimulationState simulationState) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         if (queueInCore.isEmpty())
             return new ArrayList<>();
 
+        Class<?> clazz = Class
+                    .forName(this.getClass().getPackage().getName() + ".comparator." + comparatorCase.getClassName());
+        Constructor<?> ctor = clazz.getConstructor();
+        BasicTaskComparator taskComparator = (BasicTaskComparator) ctor.newInstance(new Object[] {});
+
         List<Task> minRuntimeTasks = new ArrayList<>();
+        Task previousTask = null;
         double minRuntime;
         switch (simulationState.blockingPolicy) {
             case NONE:
@@ -500,8 +506,15 @@ public class CFSSimulator {
                     if (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
                         minRuntimeTasks.add(queueInCore.poll());
                 } else { // BRUTE_FORCE
-                    while (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
-                        minRuntimeTasks.add(queueInCore.poll());
+                    previousTask = null;
+                    while (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime) {
+                        Task task = queueInCore.poll();
+                        minRuntimeTasks.add(task);
+                        if(previousTask != null && taskComparator.compare(task, previousTask) != 0) {
+                            break;
+                        }
+                        previousTask = task;
+                    }
                 }
                 break;
             case READ:
@@ -520,8 +533,15 @@ public class CFSSimulator {
                         if (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
                             minRuntimeTasks.add(queueInCore.poll());
                     } else { // BRUTE_FORCE
-                        while (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
-                            minRuntimeTasks.add(queueInCore.poll());
+                        previousTask = null;
+                        while (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime) {
+                            Task task = queueInCore.poll();
+                            minRuntimeTasks.add(task);
+                            if(previousTask != null && taskComparator.compare(task, previousTask) != 0) {
+                            break;
+                            }
+                            previousTask = task;
+                        }
                     }
                 }
                 queueInCore.addAll(readTasks);
@@ -542,8 +562,15 @@ public class CFSSimulator {
                         if (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
                             minRuntimeTasks.add(queueInCore.poll());
                     } else { // BRUTE_FORCE
-                        while (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
-                            minRuntimeTasks.add(queueInCore.poll());
+                        previousTask = null;
+                        while (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime) {
+                            Task task = queueInCore.poll();
+                            minRuntimeTasks.add(task);
+                            if(previousTask != null && taskComparator.compare(task, previousTask) != 0) {
+                                break;
+                            }
+                            previousTask = task;
+                        }
                     }
                 }
                 queueInCore.addAll(writeTasks);
