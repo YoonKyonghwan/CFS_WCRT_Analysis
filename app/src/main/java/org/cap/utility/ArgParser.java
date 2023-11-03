@@ -63,9 +63,9 @@ public class ArgParser {
         parser.addArgument("--tie_comparator", "-tc")
                 .dest("tie_comparator")
                 .type(Arguments.enumStringType(ComparatorCase.class))
-                .setDefault(ComparatorCase.PERIOD.getClassName())
+                .setDefault(ComparatorCase.FIFO.getClassName())
                 .nargs("?")
-                .help("tie comparator when the virtual runtime is same (BodyWCETComparator, PeriodComparator, WeightComparator, ReleaseTimeComparator or UnorderedComparator). If schedule simulation method is brute-force, tie comparator is fixed to UnorderedComparator.");
+                .help("tie comparator when the virtual runtime is same (BodyWCETComparator, PeriodComparator, WeightComparator, FIFOComparator, ReleaseTimeComparator or UnorderedComparator). If schedule simulation method is brute-force, tie comparator is fixed to UnorderedComparator.");
         parser.addArgument("--schedule_try_count", "-stc")
                 .dest("schedule_try_count")
                 .type(Long.class)

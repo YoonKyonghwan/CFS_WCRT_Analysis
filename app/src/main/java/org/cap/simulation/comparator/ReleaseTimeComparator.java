@@ -2,10 +2,10 @@ package org.cap.simulation.comparator;
 
 import org.cap.model.Task;
 
-public class ReleaseTimeComparator extends UnorderedComparator {
+public class ReleaseTimeComparator extends FIFOComparator {
 
     @Override
-    public int compareTie(Task o1, Task o2) {
+    public int compareTieWithSameQueueInsertTime(Task o1, Task o2) {
         if(o1.bodyReleaseTime < o2.bodyReleaseTime) {
             return -1;
         }
@@ -23,7 +23,7 @@ public class ReleaseTimeComparator extends UnorderedComparator {
                 return 0;
             }
         } else {
-            return 0;
+            return 1;
         }
     }
     

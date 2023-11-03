@@ -81,8 +81,8 @@ public class Main {
 
         // for brute-force method, unordered comparator is used.
         if ((scheduleMethod == ScheduleSimulationMethod.BRUTE_FORCE || scheduleMethod == ScheduleSimulationMethod.RANDOM) && 
-            compareCase != ComparatorCase.RELEASE_TIME) {
-            compareCase = ComparatorCase.UNORDERED;
+            (compareCase != ComparatorCase.RELEASE_TIME && compareCase != ComparatorCase.FIFO)) {
+            compareCase = ComparatorCase.FIFO;
         }
 
         CFSSimulator CFSSimulator = new CFSSimulator(scheduleMethod, compareCase, targetLatency, schedule_try_count);

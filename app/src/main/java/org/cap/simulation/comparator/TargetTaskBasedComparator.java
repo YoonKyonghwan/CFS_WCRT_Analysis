@@ -2,7 +2,7 @@ package org.cap.simulation.comparator;
 
 import org.cap.model.Task;
 
-public class TargetTaskBasedComparator implements BasicTaskComparator {
+public class TargetTaskBasedComparator extends FIFOComparator {
 
     boolean reverseOrder;
 
@@ -19,7 +19,7 @@ public class TargetTaskBasedComparator implements BasicTaskComparator {
     }
 
     @Override
-    public int compareTie(Task o1, Task o2) {
+    public int compareTieWithOtherCases(Task o1, Task o2) {
     if(o1.isTargetTask == true && o2.isTargetTask == false) {
             return 1;
         }

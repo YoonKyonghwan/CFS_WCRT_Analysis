@@ -82,6 +82,8 @@ public class Task {
 
     private boolean initialized = false;
 
+    private long queueInsertTime = 0;
+
     public Task copy() {
         Task newTask = new Task();
         newTask.id = this.id;
@@ -103,6 +105,7 @@ public class Task {
         newTask.virtualRuntime = this.virtualRuntime;
         newTask.isTargetTask = this.isTargetTask;
         newTask.initialPriority = this.initialPriority;
+        newTask.queueInsertTime = this.queueInsertTime;
 
         newTask.readTimeInNanoSeconds = this.readTimeInNanoSeconds;
         newTask.bodyTimeInNanoSeconds = this.bodyTimeInNanoSeconds;
@@ -136,11 +139,21 @@ public class Task {
         this.virtualRuntime = 0L;
         this.initialPriority = -1;
         this.initialized = true;
+        this.queueInsertTime = -1;
     }
 
     public Task() {
         this.isTargetTask = false;
         this.initialPriority = -1;
+        this.queueInsertTime = -1;
+    }
+
+    public void setQueueInsertTime(long queueInsertTime) {
+        this.queueInsertTime = queueInsertTime;
+    }
+
+    public long getQueueInsertTime() {
+        return queueInsertTime;
     }
 
     public int getId() {
