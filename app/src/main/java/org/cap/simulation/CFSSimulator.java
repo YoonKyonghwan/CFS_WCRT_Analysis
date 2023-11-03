@@ -236,7 +236,8 @@ public class CFSSimulator {
         long vruntime_increment = (timeUpdated << 10L)  / task.weight;
         // long vruntime_increment = (timeUpdated << 10L) * NiceToWeight.getWeightMul(task.nice) >> 32L;
         task.virtualRuntime += vruntime_increment;
-        logger.fine("Task " + task.id + " spends " + timeUpdated + " ns [vruntime_increment: " + vruntime_increment + "]");
+        logger.fine("Task " + task.id + " spends " + timeUpdated + " ns from " + simulationState.getPreviousEventTime() + " to " + time + "[vruntime_increment: " + vruntime_increment + "]");
+
 
         // Decrease execution time for each stage
         while(timeUpdated > 0 && task.stage != Stage.COMPLETED) {
@@ -375,13 +376,14 @@ public class CFSSimulator {
 
             for (Task task : core.tasks) {
                 if (!isAdded && (initialJobs(time, task) || periodicJobs(time, task))) {
-                    logger.fine("\nTasks Released (" + time + "):");
+                    // logger.fine("\nTasks " + task.id + "Released (at time " + time + "):");
                     isAdded = true;
                 }
 
                 if (initialJobs(time, task) || periodicJobs(time, task)) {
-                    logger.fine("- Task " + task.id + " (Read Time: " + task.readTimeInNanoSeconds + ", Body Time: " + task.bodyTimeInNanoSeconds
-                            + ", Write Time: " + task.writeTimeInNanoSeconds + ")");
+                    logger.fine("Tasks " + task.id + " Released at time " + time);
+                    // logger.fine("- Task " + task.id + " (Read Time: " + task.readTimeInNanoSeconds + ", Body Time: " + task.bodyTimeInNanoSeconds
+                            // + ", Write Time: " + task.writeTimeInNanoSeconds + ")");
                     task.readReleaseTime = time;
                     task.virtualRuntime = Math.max(task.virtualRuntime, coreState.minimumVirtualRuntime);
                     skipReadStageIfNoReadTime(task);

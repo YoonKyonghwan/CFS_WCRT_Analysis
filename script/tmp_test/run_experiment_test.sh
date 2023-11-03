@@ -13,7 +13,7 @@ rm -rf logs/*.txt*
 num_core=1
 num_task=3
 utilization=0.4
-dataset_index=10
+dataset_index=29
 
 generated_files_save_dir="generated_taskset/${num_core}cores/${num_task}tasks/${utilization}utilization"
 file_name="${num_core}cores_${num_task}tasks_${utilization}utilization_${dataset_index}.json"
