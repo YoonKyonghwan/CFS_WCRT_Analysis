@@ -88,7 +88,7 @@ public class AnalysisResultSaver {
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(resultFileName, true))) {
             // write the header first
-            String header = "id,name,WCRT_by_simulator,simulator_schedulability,WCRT_by_proposed,proposed_schedulability\n";
+            String header = "id,deadline,name,WCRT_by_simulator,simulator_schedulability,WCRT_by_proposed,proposed_schedulability\n";
             writer.write(header);
 
             // write the result for each task
@@ -96,6 +96,7 @@ public class AnalysisResultSaver {
             for (Core core : testConf.mappingInfo){
                 for (Task task : core.tasks){
                     int id = task.id;
+                    int deadline = (int) task.period;
                     String name = testConf.idNameMap.get(task.id);
                     int WCRT_by_simulator = task.WCRT_by_simulator;
                     boolean isSchedulable_by_simulator = task.isSchedulable_by_simulator;
@@ -103,8 +104,8 @@ public class AnalysisResultSaver {
                     boolean isSchedulable_by_proposed = task.isSchedulable_by_proposed;
 
                     // Prepare data to be written to the CSV file
-                    dataToWrite = String.format("%d,%s,%d,%b,%d,%b\n",
-                            id, name, WCRT_by_simulator, isSchedulable_by_simulator, WCRT_by_proposed, isSchedulable_by_proposed);
+                    dataToWrite = String.format("%d,%d,%s,%d,%b,%d,%b\n",
+                            id, deadline, name, WCRT_by_simulator, isSchedulable_by_simulator, WCRT_by_proposed, isSchedulable_by_proposed);
                     
                     writer.write(dataToWrite);
                 }

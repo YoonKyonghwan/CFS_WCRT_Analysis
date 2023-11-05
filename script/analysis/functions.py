@@ -245,6 +245,14 @@ def show_detail_result(detail_result_dir, num_cores, num_tasks, utilization, tas
     return detail_result
 
 
+def get_detail_result(detail_result_dir, num_cores, num_tasks, utilization, taskset_index):
+    filepath = os.path.join(detail_result_dir, str(num_cores) + 'cores', str(num_tasks) + 'tasks', str(utilization) + 'utilization')
+    filename = str(num_cores) + 'cores_' + str(num_tasks) + 'tasks_' + str(utilization) + 'utilization_' + str(taskset_index) + '_result.csv'
+    filepath_filename = os.path.join(filepath, filename)
+    detail_df = pd.read_csv(filepath_filename, sep=",", header=None, index_col=0)
+    return detail_df
+
+
 def combine_detail_result(summary_path,  detail_result_dir, combine_detail_result_path):
     summary_df = pd.read_csv(summary_path, sep=",")
     
@@ -257,10 +265,7 @@ def combine_detail_result(summary_path,  detail_result_dir, combine_detail_resul
             utilization = result['utilization']
             taskset_index = result['tasksetIndex']
             
-            filepath = os.path.join(detail_result_dir, str(num_cores) + 'cores', str(num_tasks) + 'tasks', str(utilization) + 'utilization')
-            filename = str(num_cores) + 'cores_' + str(num_tasks) + 'tasks_' + str(utilization) + 'utilization_' + str(taskset_index) + '_result.csv'
-            filepath_filename = os.path.join(filepath, filename)
-            detail_df = pd.read_csv(filepath_filename, sep=",", header=None, index_col=0)
+            detail_df = get_detail_result(detail_result_dir, num_cores, num_tasks, utilization, taskset_index)
             detail_df = detail_df.iloc[1:] # remove the first row
             detail_df['numCores'] = num_cores
             detail_df['numTasks'] = num_tasks
@@ -270,9 +275,9 @@ def combine_detail_result(summary_path,  detail_result_dir, combine_detail_resul
     
     combined_df = pd.concat(results, axis=0, ignore_index=True)
     # add column names
-    combined_df.columns = ['name', 'WCRT(sim)', 'simulator_schedulability', 'WCRT(prop)', 'proposed_schedulability', 'numCores', 'numTasks', 'utilization', 'tasksetIndex']
+    combined_df.columns = ['name', 'deadline', 'WCRT(sim)', 'simulator_schedulability', 'WCRT(prop)', 'proposed_schedulability', 'numCores', 'numTasks', 'utilization', 'tasksetIndex']
     # reorder columns
-    combined_df = combined_df[['numCores', 'numTasks', 'utilization', 'tasksetIndex', 'name', 'WCRT(sim)', 'simulator_schedulability', 'WCRT(prop)', 'proposed_schedulability']]
+    combined_df = combined_df[['numCores', 'numTasks', 'utilization', 'tasksetIndex', 'name', 'deadline', 'WCRT(sim)', 'simulator_schedulability', 'WCRT(prop)', 'proposed_schedulability']]
     # sort the results by numTasks and utilization
     combined_df = combined_df.sort_values(['numTasks', 'utilization'])
     
