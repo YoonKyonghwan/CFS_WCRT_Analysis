@@ -56,6 +56,7 @@ public class CFSAnalyzer {
             }
 
             if (task_i.period < R_cur) {
+                task_i.WCRT_by_proposed = R_cur;
                 task_i.isSchedulable_by_proposed = false;
                 break;
             }else if (R_prev == R_cur){
@@ -127,8 +128,8 @@ public class CFSAnalyzer {
                 if (T_k > lastRequestTime){
                     continue;
                 }else{
-                    // int min_task_i_processed = (int) (Math.floorDiv(lastRequestTime, T_k) * C_k * w_i / w_k) - (int) (this.targetLatency * w_i / (w_i + w_k));
                     int min_task_i_processed = (int) (Math.floorDiv(lastRequestTime, T_k) * C_k * w_i / w_k) - (int) (this.targetLatency * w_i / (w_i + w_k));
+                    // int min_task_i_processed = (int) (Math.floorDiv(lastRequestTime, T_k) * C_k * w_i / w_k) ;
                     if (min_task_i_processed > max_min_task_i_processed){
                         max_min_task_i_processed = min_task_i_processed;
                     }

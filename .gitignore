@@ -52,9 +52,7 @@ inputs/
 t/
 
 app/src/main/resources/generated_taskset
-exp_results/
+exp_results*
 ./run.jar
 script/analysis/venv/
-generated_taskset/
-exp_results_backup/
-exp_results_tmp/
+generated_taskset*

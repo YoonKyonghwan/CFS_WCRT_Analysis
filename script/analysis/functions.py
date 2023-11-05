@@ -66,7 +66,7 @@ def ns_to_us(ns):
 
 # Plotting function
 def plot_gantt(task_data, releases, completions):
-    fig, ax = plt.subplots(figsize=(12, 5))
+    fig, ax = plt.subplots(figsize=(15, 5))
     
     for task, start, duration in task_data:
         ax.broken_barh([(ns_to_us(start), ns_to_us(duration))], (task - 0.4, 0.8), facecolors='tab:blue')
@@ -200,7 +200,7 @@ def check_correntness(input_path, output_path):
             FP = confusion[0, 1]
             FN = confusion[1, 0]
         else:
-            assert confusion.shape == (1, 1)
+            assert confusion.shape == (1, 1), "need to check the confusion matrix : confusion.shape" + str(confusion.shape)
             if subset['simulator_schedulability'].iloc[0] == False:
                 TP = 0
                 TN = confusion[0, 0]
@@ -225,56 +225,88 @@ def check_correntness(input_path, output_path):
     results_df.to_csv(output_path, index=False)
     print(results_df)
     
-def show_detail_result(input_path, num_tasks, utilization):
+def search_FN_info(input_path, num_tasks, utilization):
     df = pd.read_csv(input_path, sep=",")
     subset = df[(df['numTasks'] == num_tasks) & (df['utilization'] == utilization)]
+    FN_subset = subset[(subset['simulator_schedulability'] == True) & (subset['proposed_schedulability'] == False)]
+    FN_subset_info = FN_subset[['numTasks', 'utilization', 'tasksetIndex', 'simulator_schedulability', 'proposed_schedulability']]
+    FN_subset_info.columns = ['nTasks', 'util', 'tasksetIndex', 'sched(Sim)', 'sched(proposed)']
     # merge subsets of simulator_schedulability and proposed_schedulability
-    print(subset[['simulator_schedulability', 'proposed_schedulability']])
+    return FN_subset_info
 
 
-def combine_detail_result(detail_result_dir, numCores, numTasks, utilizations, output_path):
-    current_dir = os.getcwd()
+def show_detail_result(detail_result_dir, num_cores, num_tasks, utilization, taskset_index):
+    filepath = os.path.join(detail_result_dir, str(num_cores) + 'cores', str(num_tasks) + 'tasks', str(utilization) + 'utilization')
+    filename = str(num_cores) + 'cores_' + str(num_tasks) + 'tasks_' + str(utilization) + 'utilization_' + str(taskset_index) + '_result.csv'
+    filepath_filename = os.path.join(filepath, filename)
+    df = pd.read_csv(filepath_filename, sep=",", index_col=0)
+    detail_result = df[["WCRT_by_simulator", "simulator_schedulability", "WCRT_by_proposed", "proposed_schedulability"]]
+    detail_result.columns = ["WCRT(Sim)", "sched(Sim)", "WCRT(proposed)", "sched(proposed)"]
+    return detail_result
+
+
+def combine_detail_result(summary_path,  detail_result_dir, combine_detail_result_path):
+    summary_df = pd.read_csv(summary_path, sep=",")
     
     results = []
-    for num_cores in numCores:
-        for num_tasks in numTasks:
-            for utilization in utilizations:
-    # detail_input_dir = exp_results/
-    # file_name sample = exp_results/detail_result/1cores/3tasks/0.2utilization/1cores_3tasks_0.2utilization_0_result.csv
-                tmp_detail_result_dir = os.path.join(detail_result_dir, str(num_cores) + 'cores', str(num_tasks) + 'tasks', str(utilization) + 'utilization')
-                os.chdir(tmp_detail_result_dir)
-                extension = 'csv'
-                all_filenames = [i for i in glob.glob('*.{}'.format(extension))]
-
-                # combine all files in the list 
-                # append filename as a first column
-                for filename in all_filenames:
-                    pattern = r'(\d+)cores_(\d+)tasks_(\d+\.\d+)utilization_(\d+)_result.csv'
-                    match = re.match(pattern, filename)
-
-                    if match:                        
-                        df = pd.read_csv(filename, sep=",", header=None, index_col=0)
-                        df = df.iloc[1:] # remove header
-                        df['numCores'] = num_cores
-                        df['numTasks'] = num_tasks
-                        df['utilization'] = utilization
-                        df['dataset_index'] = int(match.group(4))
-                        
-                        results.append(df)
-                os.chdir(current_dir)
     
-    # add column names
+    for _, result in summary_df.iterrows():
+        if result['simulator_schedulability'] == True:
+            num_cores = result['numCores']
+            num_tasks = result['numTasks']
+            utilization = result['utilization']
+            taskset_index = result['tasksetIndex']
+            
+            filepath = os.path.join(detail_result_dir, str(num_cores) + 'cores', str(num_tasks) + 'tasks', str(utilization) + 'utilization')
+            filename = str(num_cores) + 'cores_' + str(num_tasks) + 'tasks_' + str(utilization) + 'utilization_' + str(taskset_index) + '_result.csv'
+            filepath_filename = os.path.join(filepath, filename)
+            detail_df = pd.read_csv(filepath_filename, sep=",", header=None, index_col=0)
+            detail_df = detail_df.iloc[1:] # remove the first row
+            detail_df['numCores'] = num_cores
+            detail_df['numTasks'] = num_tasks
+            detail_df['utilization'] = utilization
+            detail_df['tasksetIndex'] = taskset_index
+            results.append(detail_df)
+    
     combined_df = pd.concat(results, axis=0, ignore_index=True)
-    combined_df.columns = ['name', 'WCRT(sim)', 'simulator_schedulability', 'WCRT(prop)', 'proposed_schedulability', 'numCores', 'numTasks', 'utilization', 'dataset_index']
+    # add column names
+    combined_df.columns = ['name', 'WCRT(sim)', 'simulator_schedulability', 'WCRT(prop)', 'proposed_schedulability', 'numCores', 'numTasks', 'utilization', 'tasksetIndex']
+    # reorder columns
+    combined_df = combined_df[['numCores', 'numTasks', 'utilization', 'tasksetIndex', 'name', 'WCRT(sim)', 'simulator_schedulability', 'WCRT(prop)', 'proposed_schedulability']]
     # sort the results by numTasks and utilization
     combined_df = combined_df.sort_values(['numTasks', 'utilization'])
     
-    combined_df.to_csv(output_path, index=False)
+    combined_df.to_csv(combine_detail_result_path, index=False)
     
-def print_wrong_result(combine_detail_result_path):
-    df = pd.read_csv(combine_detail_result_path, sep=",")
+    
+# def print_non_conservative_results(combine_detail_result_path):
+#     df = pd.read_csv(combine_detail_result_path, sep=",")
 
-    wrong_result = df[(df['WCRT(sim)'] > df['WCRT(prop)']) & (df['WCRT(prop)'] != 0)]
-    # wrong_result = df[(df['simulator_schedulability'] == False) & (df['proposed_schedulability'] == True)]
+#     wrong_result = df[(df['WCRT(sim)'] > df['WCRT(prop)']) & (df['WCRT(prop)'] != 0)]
+#     # wrong_result = df[(df['simulator_schedulability'] == False) & (df['proposed_schedulability'] == True)]
 
-    print(wrong_result[['numTasks', 'utilization', 'dataset_index', 'name', 'WCRT(sim)', 'WCRT(prop)']])
+#     print(wrong_result[['numTasks', 'utilization', 'tasksetIndex', 'name', 'WCRT(sim)', 'WCRT(prop)']])
+    
+
+
+# def check_non_conservative_results(summary_path, combine_detail_result_path):
+#     results_df = pd.read_csv(combine_detail_result_path, sep=",")
+#     non_conservative_results = results_df[(results_df['WCRT(sim)'] > results_df['WCRT(prop)']) & (results_df['WCRT(prop)'] != 0)]
+
+#     summary_df = pd.read_csv(summary_path, sep=",")
+
+#     for _, result in non_conservative_results.iterrows():
+#         num_cores = result['numCores']
+#         num_tasks = result['numTasks']
+#         utilization = result['utilization']
+#         taskset_index = result['tasksetIndex']
+#         result_in_summary = summary_df[(summary_df['numCores'] == num_cores) & (summary_df['numTasks'] == num_tasks) & (summary_df['utilization'] == utilization) & (summary_df['tasksetIndex'] == taskset_index)]
+#         assert len(result_in_summary) == 1
+#         result_in_summary = result_in_summary.iloc[0]
+        
+#         simulator_schedulability = result_in_summary['simulator_schedulability']
+#         proposed_schedulability = result_in_summary['proposed_schedulability']
+        
+#         assert simulator_schedulability == False & proposed_schedulability == False
+
+#     print("check the correctness : \nIf the system schedulability is true, the proposed method is always conservative ")

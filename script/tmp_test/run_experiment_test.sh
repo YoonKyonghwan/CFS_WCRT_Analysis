@@ -11,9 +11,9 @@ mv ./app/build/libs/run.jar ./run.jar
 rm -rf logs/*.txt*
 
 num_core=1
-num_task=3
-utilization=0.4
-dataset_index=29
+num_task=12
+utilization=0.6
+dataset_index=42
 
 generated_files_save_dir="generated_taskset/${num_core}cores/${num_task}tasks/${utilization}utilization"
 file_name="${num_core}cores_${num_task}tasks_${utilization}utilization_${dataset_index}.json"
