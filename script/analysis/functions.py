@@ -222,8 +222,13 @@ def check_correntness(input_path, output_path):
     # Create a DataFrame to store the results
     results_df = pd.DataFrame(results, columns=['numTasks', 'utilization', 'TP', 'TN', 'FP', 'FN', 'accuracy'])
     results_df = results_df.sort_values(['numTasks', 'utilization'])
-    results_df.to_csv(output_path, index=False)
     print(results_df)
+
+    results_df.to_csv(output_path, index=False)
+
+    # total accuracy
+    total_accuracy = results_df['accuracy'].mean()
+    print("total accuracy : ", total_accuracy)
     
 def search_FN_info(input_path, num_tasks, utilization):
     df = pd.read_csv(input_path, sep=",")
@@ -235,14 +240,14 @@ def search_FN_info(input_path, num_tasks, utilization):
     return FN_subset_info
 
 
-def show_detail_result(detail_result_dir, num_cores, num_tasks, utilization, taskset_index):
-    filepath = os.path.join(detail_result_dir, str(num_cores) + 'cores', str(num_tasks) + 'tasks', str(utilization) + 'utilization')
-    filename = str(num_cores) + 'cores_' + str(num_tasks) + 'tasks_' + str(utilization) + 'utilization_' + str(taskset_index) + '_result.csv'
-    filepath_filename = os.path.join(filepath, filename)
-    df = pd.read_csv(filepath_filename, sep=",", index_col=0)
-    detail_result = df[["WCRT_by_simulator", "simulator_schedulability", "WCRT_by_proposed", "proposed_schedulability"]]
-    detail_result.columns = ["WCRT(Sim)", "sched(Sim)", "WCRT(proposed)", "sched(proposed)"]
-    return detail_result
+# def show_detail_result(detail_result_dir, num_cores, num_tasks, utilization, taskset_index):
+#     filepath = os.path.join(detail_result_dir, str(num_cores) + 'cores', str(num_tasks) + 'tasks', str(utilization) + 'utilization')
+#     filename = str(num_cores) + 'cores_' + str(num_tasks) + 'tasks_' + str(utilization) + 'utilization_' + str(taskset_index) + '_result.csv'
+#     filepath_filename = os.path.join(filepath, filename)
+#     df = pd.read_csv(filepath_filename, sep=",", index_col=0)
+#     detail_result = df[["WCRT_by_simulator", "simulator_schedulability", "WCRT_by_proposed", "proposed_schedulability"]]
+#     detail_result.columns = ["WCRT(Sim)", "sched(Sim)", "WCRT(proposed)", "sched(proposed)"]
+#     return detail_result
 
 
 def get_detail_result(detail_result_dir, num_cores, num_tasks, utilization, taskset_index):
