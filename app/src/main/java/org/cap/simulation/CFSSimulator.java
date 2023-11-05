@@ -194,7 +194,7 @@ public class CFSSimulator {
         }
 
         if (diverged == true) {
-            for (i = i + 1; i < cores.size(); i++) {
+            for (i = 0; i < cores.size(); i++) {
                 Queue<Task> queue = queues.get(i);
                 queue.clear();
             }

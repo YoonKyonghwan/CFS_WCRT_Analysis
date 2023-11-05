@@ -101,7 +101,8 @@ public class Main {
                 CFSSimulator.findTaskbyID(testConf, taskID.intValue()).isSchedulable_by_simulator = task_schedulability;
 
                 logger.info(String.format("Task ID with %3d (WCRT: %8d us, Period: %8d us, Schedulability: %5s)", taskID, WCRT_by_simulator, task_period, task_schedulability));
-                system_schedulability = simulResult.schedulability;
+                if(simulResult.schedulability == false)
+                    system_schedulability = false;
             }
         } else {
             SimulationResult simulResult = CFSSimulator.simulateCFS(testConf.mappingInfo, -1, simulationTime);
