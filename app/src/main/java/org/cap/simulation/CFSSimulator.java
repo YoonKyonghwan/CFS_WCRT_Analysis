@@ -166,7 +166,7 @@ public class CFSSimulator {
                     if (simulationState.getMethod() == ScheduleSimulationMethod.PRIORITY_QUEUE) {
                         if (minRuntimeTasks.size() > 0)
                             task = minRuntimeTasks.get(0);
-                    } else { // BRUTE_FORCE
+                    } else { // BRUTE_FORCE or RANDOM
                         if (minRuntimeTasks.size() > 1) {
                             pathDivergesEqualMinRuntime(i, minRuntimeTasks, cores, queues, wcrtMap, simulationState, time, simulationTime);
                             diverged = true;
@@ -387,7 +387,7 @@ public class CFSSimulator {
                     task.readReleaseTime = time;
                     task.virtualRuntime = Math.max(task.virtualRuntime, coreState.minimumVirtualRuntime);
                     skipReadStageIfNoReadTime(task);
-                    queue.add(task.copy());
+                    addIntoQueue(queue, task.copy(), time);
                 }
             }
         }
