@@ -155,7 +155,7 @@ def show_bar_chart(time_data, values, title):
     plt.tight_layout()
     plt.show()
     
-def show_box_plot(file_path, values, title):
+def show_box_plot(file_path, values, title, fontsize):
     data = pd.read_csv(file_path)
 
     # Group the data by the number of tasks and utilization
@@ -173,10 +173,13 @@ def show_box_plot(file_path, values, title):
     plt.figure(figsize=(10, 6))
     plt.boxplot(boxplot_data, labels=labels, showfliers=False)
     plt.xticks(rotation=45)
-    plt.xlabel('Number of Tasks and Utilization')
-    plt.ylabel('Time Consumption (us)')
-    plt.title(title)
+    plt.xlabel('Number of Tasks and Utilization', fontsize=fontsize)
+    plt.ylabel('Time Consumption (us)', fontsize=fontsize)
+    # plt.title(title, fontsize=fontsize)
     plt.tight_layout()
+
+    plt.xticks(fontsize=fontsize)
+    plt.yticks(fontsize=fontsize)
 
     # Display the plot
     plt.show()
