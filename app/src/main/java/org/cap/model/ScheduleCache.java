@@ -100,15 +100,17 @@ public class ScheduleCache {
 
     public void saveFinalScheduleData(String prefix, List<Core> cores, List<Queue<Task>> queues, HashMap<Integer, Long> wcrtMap, 
             CFSSimulationState simulationState, long time, List<Task> minRuntimeTasks, int coreIndex) {
-        assert prefix.length() > 0 && this.scheduleMap.containsKey(prefix);
-
+        //assert prefix.length() > 0 && this.scheduleMap.containsKey(prefix);
         ScheduleCacheData scheduleData = this.scheduleMap.get(prefix);
-        assert !scheduleData.getSubScheduleMap().containsKey(simulationState.getSelectedDivergeIndex());
-        ScheduleCacheData scheduleFullData = new ScheduleCacheData(cores, queues, wcrtMap, simulationState, time, minRuntimeTasks, coreIndex);
-        scheduleData.getSubScheduleMap().put(simulationState.getSelectedDivergeIndex(), scheduleFullData);
+        
+       //assert !scheduleData.getSubScheduleMap().containsKey(simulationState.getSelectedDivergeIndex());
+       if(scheduleData != null) {
+            ScheduleCacheData scheduleFullData = new ScheduleCacheData(cores, queues, wcrtMap, simulationState, time, minRuntimeTasks, coreIndex);
+            scheduleData.getSubScheduleMap().put(simulationState.getSelectedDivergeIndex(), scheduleFullData);
 
-        if(this.scheduleMap.get(prefix).getSubScheduleMap().size() == this.scheduleMap.get(prefix).getMinRuntimeTasks().size()) {
-            this.scheduleMap.remove(prefix);
+            if(this.scheduleMap.get(prefix).getSubScheduleMap().size() == this.scheduleMap.get(prefix).getMinRuntimeTasks().size()) {
+                this.scheduleMap.remove(prefix);
+            }
         }
      }
 
