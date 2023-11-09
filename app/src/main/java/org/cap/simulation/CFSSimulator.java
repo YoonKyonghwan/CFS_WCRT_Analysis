@@ -80,6 +80,7 @@ public class CFSSimulator {
                 cores.size(), this.method);
         long time = 0;
         this.triedScheduleCount = 0;
+        this.scheduleCache = new ScheduleCache();
 
         if(simulationTime == 0) { // hyper period
             simulationTime = MathUtility.getLCM(cores);
