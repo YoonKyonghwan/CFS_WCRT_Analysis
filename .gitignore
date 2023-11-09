@@ -44,8 +44,6 @@ bin/
 .idea/
 .gradle/
 gradle
-gradlew
-gradlew.bat
 
 logs/
 inputs/
