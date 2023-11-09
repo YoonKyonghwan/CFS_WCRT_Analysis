@@ -48,8 +48,9 @@ public class Main {
             
             // analyze by simulator
             boolean simulator_schedulability = analyze_by_CFS_simulator(testConf,
-            ScheduleSimulationMethod.fromValue(params.getString("schedule_simulation_method")),
-            ComparatorCase.fromValue(params.getString("tie_comparator")), params.getLong("simulation_time"), params.getLong("schedule_try_count"), params.getString("logger_option"));
+                    ScheduleSimulationMethod.fromValue(params.getString("schedule_simulation_method")),
+                    ComparatorCase.fromValue(params.getString("tie_comparator")), params.getLong("simulation_time"),
+                    params.getLong("schedule_try_count"), params.getString("logger_option"), params.getInt("test_try_count"));
             int simulator_timeConsumption = (int)((System.nanoTime() - startTime)/1000); //us
             // System.out.println("Time consumption (CFS simulator): " + simulator_timeConsumption + " us");
             
@@ -74,7 +75,7 @@ public class Main {
     }
 
     private static boolean analyze_by_CFS_simulator(TestConfiguration testConf, ScheduleSimulationMethod scheduleMethod,
-            ComparatorCase compareCase, long simulationTime, long schedule_try_count, String logger_option) throws ClassNotFoundException, NoSuchMethodException, SecurityException,
+            ComparatorCase compareCase, long simulationTime, long schedule_try_count, String logger_option, int test_try_count) throws ClassNotFoundException, NoSuchMethodException, SecurityException,
             InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         LoggerUtility.initializeLogger(logger_option);
         LoggerUtility.addConsoleLogger();
@@ -105,17 +106,24 @@ public class Main {
                     system_schedulability = false;
             }
         } else {
-            SimulationResult simulResult = CFSSimulator.simulateCFS(testConf.mappingInfo, -1, simulationTime);
-            system_schedulability = simulResult.schedulability;
+            SimulationResult finalSimulationResult = new SimulationResult();
+            long totalTryCount = 0L;
+            for(int i = 0 ; i  < test_try_count ; i++) {
+                SimulationResult simulResult = CFSSimulator.simulateCFS(testConf.mappingInfo, -1, simulationTime);
+                CFSSimulator.mergeToFinalResult(finalSimulationResult, simulResult);
+                totalTryCount += CFSSimulator.getTriedScheduleCount();
+            }
+            
+            system_schedulability = finalSimulationResult.schedulability;
             for (Integer taskID : testConf.idNameMap.keySet()) {
-                long WCRT_by_simulator = (simulResult.wcrtMap.get(taskID)/1000);
+                long WCRT_by_simulator = (finalSimulationResult.wcrtMap.get(taskID)/1000);
                 long deadline = CFSSimulator.findTaskbyID(testConf, taskID.intValue()).period/1000;
                 boolean task_schedulability = (WCRT_by_simulator <= deadline);
                 CFSSimulator.findTaskbyID(testConf, taskID.intValue()).isSchedulable_by_simulator = task_schedulability;
                 CFSSimulator.findTaskbyID(testConf, taskID.intValue()).WCRT_by_simulator = (int) WCRT_by_simulator;
                 logger.info(String.format("Task ID with %3d (WCRT: %8d us, Period: %8d us, Schedulability: %5s)", taskID, WCRT_by_simulator, deadline, task_schedulability));
             }
-            logger.info("Schedule execution count: " + CFSSimulator.getTriedScheduleCount());
+            logger.info("Schedule execution count: " + totalTryCount);
             if (system_schedulability) {
                 logger.info("All tasks are schedulable");
             } else {

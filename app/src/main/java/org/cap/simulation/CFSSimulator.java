@@ -48,7 +48,7 @@ public class CFSSimulator {
         return maxPeriod;
     }
 
-    private SimulationResult mergeToFinalResult(SimulationResult finalResult, SimulationResult resultToAdd) {
+    public SimulationResult mergeToFinalResult(SimulationResult finalResult, SimulationResult resultToAdd) {
         if(resultToAdd.isSchedulability() == false) {
                 finalResult.setSchedulability(false);
         }
