@@ -1,6 +1,7 @@
 package org.cap.model;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Queue;
@@ -11,20 +12,14 @@ import java.util.ArrayList;
 import org.cap.simulation.comparator.*;
 
 public class ScheduleCacheData {
-    private List<Core> cores;
-
     private List<Queue<Task>> queues;
     private HashMap<Integer, Long> wcrtMap;
     private CFSSimulationState simulationState;
     private long time;
     private List<Task> minRuntimeTasks;
     private int coreIndex;
-    private HashMap<Integer, ScheduleCacheData> subScheduleMap;
+    private HashSet<Integer> subScheduleSet;
     private ComparatorCase comparatorCase;
-
-    public List<Core> getCores() {
-        return cores;
-    }
 
     public List<Queue<Task>> getQueues() {
         return queues;
@@ -50,19 +45,19 @@ public class ScheduleCacheData {
         return coreIndex;
     }
 
-    public HashMap<Integer, ScheduleCacheData> getSubScheduleMap() {
-        return subScheduleMap;
+    public HashSet<Integer> getSubScheduleSet() {
+        return subScheduleSet;
     }
 
     public ScheduleCacheData copy() throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-        ScheduleCacheData scheduleData = new ScheduleCacheData(this.cores, this.queues, this.wcrtMap,
+        ScheduleCacheData scheduleData = new ScheduleCacheData(this.queues, this.wcrtMap,
             this.simulationState, this.time, this.minRuntimeTasks, this.coreIndex,
             this.comparatorCase, true);
 
         return scheduleData;
     }
 
-    public ScheduleCacheData(List<Core> cores, List<Queue<Task>> queues, HashMap<Integer, Long> wcrtMap,
+    public ScheduleCacheData(List<Queue<Task>> queues, HashMap<Integer, Long> wcrtMap,
             CFSSimulationState simulationState, long time, List<Task> minRuntimeTasks, int coreIndex) {
         this.queues = queues;
         this.wcrtMap = wcrtMap;
@@ -70,8 +65,7 @@ public class ScheduleCacheData {
         this.time = time;
         this.minRuntimeTasks = minRuntimeTasks;
         this.coreIndex = coreIndex;
-        this.subScheduleMap = new HashMap<Integer, ScheduleCacheData>();
-        this.cores = cores;
+        this.subScheduleSet = new HashSet<Integer>();
         this.comparatorCase = ComparatorCase.FIFO;
     }
 
@@ -106,7 +100,7 @@ public class ScheduleCacheData {
         return clonedMap;
     }
 
-    public ScheduleCacheData(List<Core> cores, List<Queue<Task>> queues, HashMap<Integer, Long> wcrtMap,
+    public ScheduleCacheData(List<Queue<Task>> queues, HashMap<Integer, Long> wcrtMap,
             CFSSimulationState simulationState, long time, List<Task> minRuntimeTasks, int coreIndex,
             ComparatorCase comparatorCase, boolean copyData)
             throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException,
@@ -123,18 +117,13 @@ public class ScheduleCacheData {
             for (Task task : minRuntimeTasks) {
                 this.minRuntimeTasks.add(task.copy());
             }
-            this.subScheduleMap = new HashMap<Integer, ScheduleCacheData>();
-            this.cores = new ArrayList<Core>();
-            for (Core core : cores) {
-                this.cores.add(core.copy());
-            }
+            this.subScheduleSet = new HashSet<Integer>();
         } else {
             this.queues = queues;
             this.wcrtMap = wcrtMap;
             this.simulationState = simulationState;            
             this.minRuntimeTasks = minRuntimeTasks;
-            this.subScheduleMap = new HashMap<Integer, ScheduleCacheData>();
-            this.cores = cores;
+            this.subScheduleSet = new HashSet<Integer>();
         }
     }
 }

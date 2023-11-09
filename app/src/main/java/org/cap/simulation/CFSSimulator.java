@@ -101,7 +101,7 @@ public class CFSSimulator {
             for(int i = 0 ; i < this.numOfTryToSchedule - 1 ; i++) {
                 SchedulePickResult pickResult = this.scheduleCache.pickScheduleData();
                 ScheduleCacheData pickData = pickResult.getScheduleData();
-                SimulationResult simulResult = performSimulation(pickData.getCores(), pickData.getQueues(), pickData.getWcrtMap(),
+                SimulationResult simulResult = performSimulation(cores, pickData.getQueues(), pickData.getWcrtMap(),
                         pickData.getSimulationState(), pickData.getTime(), simulationTime, pickData.getCoreIndex());
                 finalSimulationResult = mergeToFinalResult(finalSimulationResult, simulResult);                
             }
@@ -110,15 +110,6 @@ public class CFSSimulator {
         logger.fine("******** Final Result ********");
         logger.fine("------------------------------");
         return finalSimulationResult;
-    }
-
-    private void updateOriginalTaskStructure(List<Core> cores, Task task) {
-        for(Core core : cores) {
-            for(Task taskInCore :core.tasks) {
-                if(taskInCore.id == task.id)
-                    taskInCore.virtualRuntime = task.virtualRuntime;
-            }
-        }
     }
 
     private SimulationResult performSimulation(List<Core> cores, List<Queue<Task>> queues, HashMap<Integer, Long> wcrtMap,
@@ -157,7 +148,6 @@ public class CFSSimulator {
                         if(queue.size() == 0) {
                             coreState.minimumVirtualRuntime = task.virtualRuntime;
                         }
-                        updateOriginalTaskStructure(cores, task);
                     }
                     if(coreState.isRunning == false) {
                         task = null;
@@ -167,7 +157,7 @@ public class CFSSimulator {
                                 task = minRuntimeTasks.get(0);
                         } else { // BRUTE_FORCE or RANDOM
                             if (minRuntimeTasks.size() > 1) {
-                                String scheduleID = this.scheduleCache.pushScheduleData(simulationState.getSimulationScheduleID(), cores, queues, cloneWcrtMap, simulationState, time, minRuntimeTasks, coreIndex, comparatorCase);
+                                long scheduleID = this.scheduleCache.pushScheduleData(simulationState.getSimulationScheduleID(), queues, cloneWcrtMap, simulationState, time, minRuntimeTasks, coreIndex, comparatorCase);
                                 int taskIndexToSelect = pickNextTaskToSchedule(simulationState, scheduleID);
                                 if(taskIndexToSelect == -1) {
                                     diverged = true;
@@ -223,7 +213,6 @@ public class CFSSimulator {
             }
             if(this.scheduleCache.getScheduleStackSize() > 0) {
                 scheduleData = this.scheduleCache.popScheduleData().copy();
-                cores = scheduleData.getCores();
                 queues = scheduleData.getQueues();
                 cloneWcrtMap = scheduleData.getWcrtMap();
                 simulationState = scheduleData.getSimulationState();
@@ -343,6 +332,7 @@ public class CFSSimulator {
                     + (time - task.readReleaseTime));
             wcrtMap.put(Integer.valueOf(task.getId()),
                     Math.max(wcrtMap.get(Integer.valueOf(task.getId())), time - task.readReleaseTime));
+            coreState.putFinishedTaskVirtualRuntime(task.id, task.virtualRuntime);
         }
         coreState.isRunning = false;
     }
@@ -412,7 +402,7 @@ public class CFSSimulator {
                     // logger.fine("- Task " + task.id + " (Read Time: " + task.readTimeInNanoSeconds + ", Body Time: " + task.bodyTimeInNanoSeconds
                             // + ", Write Time: " + task.writeTimeInNanoSeconds + ")");
                     task.readReleaseTime = time;
-                    task.virtualRuntime = Math.max(task.virtualRuntime, coreState.minimumVirtualRuntime);
+                    task.virtualRuntime = Math.max(coreState.getLastVirtualRuntime(task.id), coreState.minimumVirtualRuntime);
                     skipReadStageIfNoReadTime(task);
                     addIntoQueue(queue, task.copy(), time);
                 }
@@ -461,7 +451,7 @@ public class CFSSimulator {
         }
     }
 
-    private int pickNextTaskToSchedule(CFSSimulationState simulationState, String scheduleId) {
+    private int pickNextTaskToSchedule(CFSSimulationState simulationState, long scheduleId) {
         SchedulePickResult pickResult;
         if(simulationState.getMethod() == ScheduleSimulationMethod.BRUTE_FORCE) {
             pickResult = this.scheduleCache.pickScheduleDataByEntry(scheduleId, false);
@@ -487,12 +477,11 @@ public class CFSSimulator {
         if(simulationState.getMethod() == ScheduleSimulationMethod.BRUTE_FORCE) {
             for (int i = 0; i < minRuntimeTasks.size(); i++)
                 possibleWCRTs.add(simulatePathEqualMinRuntime(cores, queues, wcrtMap, simulationState, time, hyperperiod,
-                        minRuntimeTasks, "", i, coreIndex));
+                        minRuntimeTasks, -1L, i, coreIndex));
         } else {  // RANDOM
-            String scheduleId = this.scheduleCache.saveIntermediateScheduleData(simulationState.getSimulationScheduleID(), cores, queues, wcrtMap, simulationState, time, minRuntimeTasks, coreIndex);
+            long scheduleId = this.scheduleCache.saveIntermediateScheduleData(simulationState.getSimulationScheduleID(), cores, queues, wcrtMap, simulationState, time, minRuntimeTasks, coreIndex);
             SchedulePickResult pickResult = this.scheduleCache.pickScheduleDataByEntry(scheduleId, true);
 
-            cores = pickResult.getScheduleData().getCores();
             queues = pickResult.getScheduleData().getQueues();
             wcrtMap = pickResult.getScheduleData().getWcrtMap();
             simulationState = pickResult.getScheduleData().getSimulationState();
@@ -716,7 +705,7 @@ public class CFSSimulator {
      */
     private SimulationResult simulatePathEqualMinRuntime(List<Core> cores, List<Queue<Task>> queues,
             HashMap<Integer, Long> wcrtMap, CFSSimulationState simulationState, long time, long hyperperiod,
-            List<Task> minRuntimeTasks, String scheduleID, int taskIndex, int coreIndex)
+            List<Task> minRuntimeTasks, long scheduleID, int taskIndex, int coreIndex)
             throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException,
             IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         logger.finer("\n*** Path diverged due to equal minimum runtime ***");
