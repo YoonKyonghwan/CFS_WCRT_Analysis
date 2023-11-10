@@ -37,7 +37,7 @@ public class ScheduleCache {
         ScheduleCacheData scheduleData = null;
         
         if(!this.scheduleMap.containsKey(scheduleId)) {
-            scheduleData = new ScheduleCacheData(queues, wcrtMap, simulationState, time, minRuntimeTasks, coreIndex, comparatorCase, true);
+            scheduleData = new ScheduleCacheData(queues, simulationState, time, minRuntimeTasks, coreIndex, comparatorCase, true);
         } else {
             scheduleData = this.scheduleMap.get(scheduleId);
         }
@@ -109,17 +109,16 @@ public class ScheduleCache {
         return scheduleId;
     }
 
-    public void saveFinalScheduleData(long prefix, List<Core> cores, List<Queue<Task>> queues, HashMap<Integer, Long> wcrtMap, 
-            CFSSimulationState simulationState, long time, List<Task> minRuntimeTasks, int coreIndex) {
+    public void saveFinalScheduledIndex(long parentScheduleID, CFSSimulationState simulationState) {
         //assert prefix.length() > 0 && this.scheduleMap.containsKey(prefix);
-        ScheduleCacheData scheduleData = this.scheduleMap.get(prefix);
+        ScheduleCacheData scheduleData = this.scheduleMap.get(parentScheduleID);
         
        //assert !scheduleData.getSubScheduleMap().containsKey(simulationState.getSelectedDivergeIndex());
        if(scheduleData != null) {
             scheduleData.getSubScheduleSet().add(simulationState.getSelectedDivergeIndex());
 
-            if(this.scheduleMap.get(prefix).getSubScheduleSet().size() == this.scheduleMap.get(prefix).getMinRuntimeTasks().size()) {
-                this.scheduleMap.remove(prefix);
+            if(this.scheduleMap.get(parentScheduleID).getSubScheduleSet().size() == this.scheduleMap.get(parentScheduleID).getMinRuntimeTasks().size()) {
+                this.scheduleMap.remove(parentScheduleID);
             }
         }
      }

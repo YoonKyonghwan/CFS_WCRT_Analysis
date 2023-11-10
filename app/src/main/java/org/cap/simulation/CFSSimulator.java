@@ -101,7 +101,7 @@ public class CFSSimulator {
             for(int i = 0 ; i < this.numOfTryToSchedule - 1 ; i++) {
                 SchedulePickResult pickResult = this.scheduleCache.pickScheduleData();
                 ScheduleCacheData pickData = pickResult.getScheduleData();
-                SimulationResult simulResult = performSimulation(cores, pickData.getQueues(), pickData.getWcrtMap(),
+                SimulationResult simulResult = performSimulation(cores, pickData.getQueues(), wcrtMap,
                         pickData.getSimulationState(), pickData.getTime(), simulationTime, pickData.getCoreIndex());
                 finalSimulationResult = mergeToFinalResult(finalSimulationResult, simulResult);                
             }
@@ -204,7 +204,7 @@ public class CFSSimulator {
                 mergedResult = mergeToFinalResult(mergedResult, simulResult);
 
                 if(simulationState.getMethod() != ScheduleSimulationMethod.PRIORITY_QUEUE) { 
-                    this.scheduleCache.saveFinalScheduleData(simulationState.getSimulationScheduleID(), null, null, cloneWcrtMap, simulationState, time, null, cores.size());
+                    this.scheduleCache.saveFinalScheduledIndex(simulationState.getSimulationScheduleID(), simulationState);
                     if(simulationState.getMethod() == ScheduleSimulationMethod.RANDOM) {
                         this.scheduleCache.clearStack();
                         break;
@@ -214,7 +214,6 @@ public class CFSSimulator {
             if(this.scheduleCache.getScheduleStackSize() > 0) {
                 scheduleData = this.scheduleCache.popScheduleData().copy();
                 queues = scheduleData.getQueues();
-                cloneWcrtMap = scheduleData.getWcrtMap();
                 simulationState = scheduleData.getSimulationState();
                 time = scheduleData.getTime();
                 minRuntimeTasks = scheduleData.getMinRuntimeTasks();
@@ -483,7 +482,6 @@ public class CFSSimulator {
             SchedulePickResult pickResult = this.scheduleCache.pickScheduleDataByEntry(scheduleId, true);
 
             queues = pickResult.getScheduleData().getQueues();
-            wcrtMap = pickResult.getScheduleData().getWcrtMap();
             simulationState = pickResult.getScheduleData().getSimulationState();
             time = pickResult.getScheduleData().getTime();
             minRuntimeTasks = pickResult.getScheduleData().getMinRuntimeTasks();

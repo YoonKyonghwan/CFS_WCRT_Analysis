@@ -13,7 +13,6 @@ import org.cap.simulation.comparator.*;
 
 public class ScheduleCacheData {
     private List<Queue<Task>> queues;
-    private HashMap<Integer, Long> wcrtMap;
     private CFSSimulationState simulationState;
     private long time;
     private List<Task> minRuntimeTasks;
@@ -23,10 +22,6 @@ public class ScheduleCacheData {
 
     public List<Queue<Task>> getQueues() {
         return queues;
-    }
-
-    public HashMap<Integer, Long> getWcrtMap() {
-        return wcrtMap;
     }
 
     public CFSSimulationState getSimulationState() {
@@ -50,8 +45,7 @@ public class ScheduleCacheData {
     }
 
     public ScheduleCacheData copy() throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-        ScheduleCacheData scheduleData = new ScheduleCacheData(this.queues, this.wcrtMap,
-            this.simulationState, this.time, this.minRuntimeTasks, this.coreIndex,
+        ScheduleCacheData scheduleData = new ScheduleCacheData(this.queues, this.simulationState, this.time, this.minRuntimeTasks, this.coreIndex,
             this.comparatorCase, true);
 
         return scheduleData;
@@ -60,7 +54,6 @@ public class ScheduleCacheData {
     public ScheduleCacheData(List<Queue<Task>> queues, HashMap<Integer, Long> wcrtMap,
             CFSSimulationState simulationState, long time, List<Task> minRuntimeTasks, int coreIndex) {
         this.queues = queues;
-        this.wcrtMap = wcrtMap;
         this.simulationState = simulationState;
         this.time = time;
         this.minRuntimeTasks = minRuntimeTasks;
@@ -90,18 +83,7 @@ public class ScheduleCacheData {
         return newQueues;
     }
 
-    private HashMap<Integer, Long> cloneHashMap(HashMap<Integer, Long> mapToBeCopied) {
-        HashMap<Integer, Long> clonedMap = new HashMap<Integer, Long>();
-
-        for (Integer key : mapToBeCopied.keySet()) {
-            clonedMap.put(key, Long.valueOf(mapToBeCopied.get(key).longValue()));
-        }
-
-        return clonedMap;
-    }
-
-    public ScheduleCacheData(List<Queue<Task>> queues, HashMap<Integer, Long> wcrtMap,
-            CFSSimulationState simulationState, long time, List<Task> minRuntimeTasks, int coreIndex,
+    public ScheduleCacheData(List<Queue<Task>> queues, CFSSimulationState simulationState, long time, List<Task> minRuntimeTasks, int coreIndex,
             ComparatorCase comparatorCase, boolean copyData)
             throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException,
             IllegalAccessException, IllegalArgumentException, InvocationTargetException {
@@ -111,7 +93,6 @@ public class ScheduleCacheData {
         this.comparatorCase = comparatorCase;
         if(copyData == true) {
             this.queues = copyQueues(queues, comparatorCase);
-            this.wcrtMap = cloneHashMap(wcrtMap);
             this.simulationState = simulationState.copy();
             this.minRuntimeTasks = new ArrayList<>();
             for (Task task : minRuntimeTasks) {
@@ -120,7 +101,7 @@ public class ScheduleCacheData {
             this.subScheduleSet = new HashSet<Integer>();
         } else {
             this.queues = queues;
-            this.wcrtMap = wcrtMap;
+            
             this.simulationState = simulationState;            
             this.minRuntimeTasks = minRuntimeTasks;
             this.subScheduleSet = new HashSet<Integer>();
