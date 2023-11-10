@@ -1,6 +1,6 @@
 package org.cap.simulation.comparator;
 
-import org.cap.model.Task;
+import org.cap.model.TaskStat;
 
 public class TargetTaskBasedComparator extends FIFOComparator {
 
@@ -14,16 +14,16 @@ public class TargetTaskBasedComparator extends FIFOComparator {
         this.reverseOrder = reverseOrder;
     }
 
-    public int compareNotTargetTask(Task o1, Task o2) {
+    public int compareNotTargetTask(TaskStat o1, TaskStat o2) {
         return 0;
     }
 
     @Override
-    public int compareTieWithOtherCases(Task o1, Task o2) {
-    if(o1.isTargetTask == true && o2.isTargetTask == false) {
+    public int compareTieWithOtherCases(TaskStat o1, TaskStat o2) {
+    if(o1.task.isTargetTask == true && o2.task.isTargetTask == false) {
             return 1;
         }
-        else if(o1.isTargetTask == false && o2.isTargetTask == true) {
+        else if(o1.task.isTargetTask == false && o2.task.isTargetTask == true) {
             return -1;
         }
         else {

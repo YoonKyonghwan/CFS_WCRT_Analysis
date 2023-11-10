@@ -73,6 +73,44 @@ public class CFSSimulationState {
         this.previousEventTime = previousEventTime;
     }
 
+    public void insertPeriodsAtStartTime(List<Core> cores) {
+        for(Core core : cores) {
+            for (Task task : core.tasks) {
+                putEventTime(task.startTime);
+            }
+        }
+    }
+
+    public void insertNextPeriodsBeforeSimulationTime(List<Core> cores, long previousEventTime, long simulationTime) {
+        for(Core core : cores) {
+            for (Task task : core.tasks) {
+                long time = Math.max(task.startTime, task.startTime + (task.period * ((previousEventTime - task.startTime)/task.period)));
+                while(time < simulationTime) {
+                    if(time > previousEventTime) {
+                        putEventTime(time);
+                        break;
+                    }
+                    time += task.period;
+                }
+            }
+        }
+    }
+
+    // insert events in ( fromTime < eventTime <= toTime)
+    public void insertPeriodsInTimeRange(List<Core> cores, long fromTime, long toTime) {
+        for(Core core : cores) {
+            for (Task task : core.tasks) {
+                long time = Math.max(task.startTime, task.startTime + (task.period * ((fromTime - task.startTime)/task.period)));
+                while(time <= toTime) {
+                    if(time > fromTime) {
+                        putEventTime(time);
+                    }
+                    time += task.period;
+                }
+            }
+        }
+    }
+
     public void insertPeriodsIntoEventQueue(long hyperperiod, List<Core> cores) {
         for(Core core : cores) {
             for (Task task : core.tasks) {
@@ -102,6 +140,22 @@ public class CFSSimulationState {
         if (this.eventTimeMap.containsKey(timeLong) == true) {
             this.eventTimeMap.put(timeLong, Integer.valueOf(eventTimeMap.get(timeLong).intValue() - 1));
         }
+    }
+
+    public long peekNextEventTime() {
+        long nextTime = -1;
+        while(this.eventQueue.size() > 0) {
+            Long nextTimeObj = this.eventQueue.peek();
+            if(this.eventTimeMap.get(nextTimeObj).longValue() == 0L) {
+                this.eventTimeMap.remove(nextTimeObj);
+                nextTimeObj = this.eventQueue.poll();
+            } else {
+                nextTime = nextTimeObj.longValue();
+                break;
+            }
+        }
+
+        return nextTime;
     }
     
     public long getNextEventTime() {

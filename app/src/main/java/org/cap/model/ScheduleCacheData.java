@@ -12,15 +12,15 @@ import java.util.ArrayList;
 import org.cap.simulation.comparator.*;
 
 public class ScheduleCacheData {
-    private List<Queue<Task>> queues;
+    private List<Queue<TaskStat>> queues;
     private CFSSimulationState simulationState;
     private long time;
-    private List<Task> minRuntimeTasks;
+    private List<TaskStat> minRuntimeTasks;
     private int coreIndex;
     private HashSet<Integer> subScheduleSet;
     private ComparatorCase comparatorCase;
 
-    public List<Queue<Task>> getQueues() {
+    public List<Queue<TaskStat>> getQueues() {
         return queues;
     }
 
@@ -32,7 +32,7 @@ public class ScheduleCacheData {
         return time;
     }
 
-    public List<Task> getMinRuntimeTasks() {
+    public List<TaskStat> getMinRuntimeTasks() {
         return minRuntimeTasks;
     }
 
@@ -51,8 +51,8 @@ public class ScheduleCacheData {
         return scheduleData;
     }
 
-    public ScheduleCacheData(List<Queue<Task>> queues, HashMap<Integer, Long> wcrtMap,
-            CFSSimulationState simulationState, long time, List<Task> minRuntimeTasks, int coreIndex) {
+    public ScheduleCacheData(List<Queue<TaskStat>> queues, HashMap<Integer, Long> wcrtMap,
+            CFSSimulationState simulationState, long time, List<TaskStat> minRuntimeTasks, int coreIndex) {
         this.queues = queues;
         this.simulationState = simulationState;
         this.time = time;
@@ -62,19 +62,19 @@ public class ScheduleCacheData {
         this.comparatorCase = ComparatorCase.FIFO;
     }
 
-    private List<Queue<Task>> copyQueues(List<Queue<Task>> originalQueues, ComparatorCase comparatorCase)
+    private List<Queue<TaskStat>> copyQueues(List<Queue<TaskStat>> originalQueues, ComparatorCase comparatorCase)
             throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException,
             IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-        List<Queue<Task>> newQueues = new ArrayList<>();
+        List<Queue<TaskStat>> newQueues = new ArrayList<>();
 
-        for (Queue<Task> originalQueueInCore : originalQueues) {
+        for (Queue<TaskStat> originalQueueInCore : originalQueues) {
             Class<?> clazz = Class
                     .forName(ComparatorCase.class.getPackageName() + "." + comparatorCase.getClassName());
             Constructor<?> ctor = clazz.getConstructor();
             BasicTaskComparator taskComparator = (BasicTaskComparator) ctor.newInstance(new Object[] {});
-            Queue<Task> newQueueInCore = new PriorityQueue<>(taskComparator);
+            Queue<TaskStat> newQueueInCore = new PriorityQueue<>(taskComparator);
             // Since it clones the queue, we must not change the queue insert time
-            for (Task task : originalQueueInCore) {
+            for (TaskStat task : originalQueueInCore) {
                 newQueueInCore.add(task.copy());
             }
             newQueues.add(newQueueInCore);
@@ -83,7 +83,7 @@ public class ScheduleCacheData {
         return newQueues;
     }
 
-    public ScheduleCacheData(List<Queue<Task>> queues, CFSSimulationState simulationState, long time, List<Task> minRuntimeTasks, int coreIndex,
+    public ScheduleCacheData(List<Queue<TaskStat>> queues, CFSSimulationState simulationState, long time, List<TaskStat> minRuntimeTasks, int coreIndex,
             ComparatorCase comparatorCase, boolean copyData)
             throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException,
             IllegalAccessException, IllegalArgumentException, InvocationTargetException {
@@ -95,7 +95,7 @@ public class ScheduleCacheData {
             this.queues = copyQueues(queues, comparatorCase);
             this.simulationState = simulationState.copy();
             this.minRuntimeTasks = new ArrayList<>();
-            for (Task task : minRuntimeTasks) {
+            for (TaskStat task : minRuntimeTasks) {
                 this.minRuntimeTasks.add(task.copy());
             }
             this.subScheduleSet = new HashSet<Integer>();

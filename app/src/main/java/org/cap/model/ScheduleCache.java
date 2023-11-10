@@ -26,9 +26,9 @@ public class ScheduleCache {
         return scheduleID;
     }
 
-    public long pushScheduleData(long parentScheduleID, List<Queue<Task>> queues,
+    public long pushScheduleData(long parentScheduleID, List<Queue<TaskStat>> queues,
             HashMap<Integer, Long> wcrtMap,
-            CFSSimulationState simulationState, long time, List<Task> minRuntimeTasks, int coreIndex,
+            CFSSimulationState simulationState, long time, List<TaskStat> minRuntimeTasks, int coreIndex,
             ComparatorCase comparatorCase) throws ClassNotFoundException, NoSuchMethodException, SecurityException,
             InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         
@@ -87,8 +87,8 @@ public class ScheduleCache {
         }
     }
 
-    public long saveIntermediateScheduleData(long parentScheduleID, List<Core> cores, List<Queue<Task>> queues, HashMap<Integer, Long> wcrtMap, 
-            CFSSimulationState simulationState, long time, List<Task> minRuntimeTasks, int coreIndex) {
+    public long saveIntermediateScheduleData(long parentScheduleID, List<Core> cores, List<Queue<TaskStat>> queues, HashMap<Integer, Long> wcrtMap, 
+            CFSSimulationState simulationState, long time, List<TaskStat> minRuntimeTasks, int coreIndex) {
         long scheduleId = getNewScheduleID();
         //String scheduleId = makeScheduleId(prefix, simulationState.getSelectedDivergeIndex(), time, minRuntimeTasks.size(), coreIndex);
         if(!this.scheduleMap.containsKey(scheduleId)) {

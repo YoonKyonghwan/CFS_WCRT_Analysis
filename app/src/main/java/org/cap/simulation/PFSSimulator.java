@@ -23,7 +23,7 @@ public class PFSSimulator {
         logger.info("Starting PFS simulation");
 
         HashMap<Integer, Long> wcrtMap = initializeWCRTs(cores);
-        List<Queue<Task>> queues = initializeQueues(cores);
+        List<Queue<TaskStat>> queues = initializeQueues(cores);
         PFSSimulationState simulationState = new PFSSimulationState(BlockingPolicy.NONE, "-1:0");
         int time = 0;
 
@@ -37,11 +37,12 @@ public class PFSSimulator {
      * This method performs the simulation while the current time is less than the LCM of the tasks.
      * It calculates the allocation for each task and executes it accordingly.
      */
-    private void performSimulation(List<Core> cores, List<Queue<Task>> queues, HashMap<Integer, Long> WCRTs, PFSSimulationState simulationState, int time) {
+    
+    private void performSimulation(List<Core> cores, List<Queue<TaskStat>> queues, HashMap<Integer, Long> WCRTs, PFSSimulationState simulationState, int time) {
         long hyperperiod = MathUtility.getLCM(cores);
         while (time < hyperperiod) {
             logger.info(String.format("\n>>> CURRENT TIME: %d <<<\n", time));
-            List<List<Task>> runningTasks = initializeRunningTasks(queues, simulationState, time);
+            List<List<TaskStat>> runningTasks = initializeRunningTasks(queues, simulationState, time);
 
             if (runningTasks.isEmpty()) {
                 time++;
@@ -50,10 +51,10 @@ public class PFSSimulator {
 
             // Share the CPU proportional to priority weight
             for (int i = 0; i < cores.size(); i++) {
-                List<Task> runningTasksInCore = runningTasks.get(i);
-                double totalWeight = runningTasksInCore.stream().mapToDouble(t -> t.weight).sum();
-                for (Task task : runningTasksInCore) {
-                    double allocation = 1.0 * (task.weight / totalWeight);
+                List<TaskStat> runningTasksInCore = runningTasks.get(i);
+                double totalWeight = runningTasksInCore.stream().mapToDouble(t -> t.task.weight).sum();
+                for (TaskStat task : runningTasksInCore) {
+                    double allocation = 1.0 * (task.task.weight / totalWeight);
                     executeTask(task, allocation, queues.get(i), WCRTs, simulationState, time);
                 }
             }
@@ -76,10 +77,10 @@ public class PFSSimulator {
      *
      * @return cloneWCRT - list of worst case response times for the simulated path
      */
-    private HashMap<Integer, Long> simulatePath(List<Core> cores, List<Queue<Task>> queues, HashMap<Integer, Long> WCRTs, int time, PFSSimulationState simulationState) {
+    private HashMap<Integer, Long> simulatePath(List<Core> cores, List<Queue<TaskStat>> queues, HashMap<Integer, Long> WCRTs, int time, PFSSimulationState simulationState) {
         logger.info("\n******* Path diverged *******");
 
-        List<Queue<Task>> cloneQueues = copyQueues(queues);
+        List<Queue<TaskStat>> cloneQueues = copyQueues(queues);
         HashMap<Integer, Long> cloneWCRTs = cloneHashMap(WCRTs);
 
         performSimulation(cores, cloneQueues, cloneWCRTs, simulationState, time);
@@ -104,13 +105,13 @@ public class PFSSimulator {
      * The task can be at the READ, BODY, or WRITE stage.
      * If the task is completed, it is removed from the queue, and its response time is calculated.
      */
-    private void executeTask(Task task, double allocation, Queue<Task> queueInCore, HashMap<Integer, Long> WCRTs, PFSSimulationState simulationState, int time) {
-        logger.info("Task " + task.id + " executed for " + allocation + " in stage: " + task.stage);
+    private void executeTask(TaskStat task, double allocation, Queue<TaskStat> queueInCore, HashMap<Integer, Long> WCRTs, PFSSimulationState simulationState, int time) {
+        logger.info("Task " + task.task.id + " executed for " + allocation + " in stage: " + task.stage);
 
         switch (task.stage) {
             case READ:
-                task.readTime -= allocation;
-                if (MathUtility.withinTolerance(task.readTime, 0)) {
+                task.task.readTime -= allocation;
+                if (MathUtility.withinTolerance(task.task.readTime, 0)) {
                     task.stage = Stage.BODY;
                     task.bodyReleaseTime = time + 1;
                 }
@@ -121,9 +122,9 @@ public class PFSSimulator {
                 }
                 break;
             case BODY:
-                task.bodyTime -= allocation;
-                if (MathUtility.withinTolerance(task.bodyTime, 0)) {
-                    if (task.writeTime > 0) {
+                task.task.bodyTime -= allocation;
+                if (MathUtility.withinTolerance(task.task.bodyTime, 0)) {
+                    if (task.task.writeTime > 0) {
                         task.stage = Stage.WRITE;
                         task.writeReleaseTime = time + 1;
                     }
@@ -132,15 +133,15 @@ public class PFSSimulator {
                 }
                 break;
             case WRITE:
-                task.writeTime -= allocation;
-                if (MathUtility.withinTolerance(task.writeTime, 0)) {
+                task.task.writeTime -= allocation;
+                if (MathUtility.withinTolerance(task.task.writeTime, 0)) {
                     task.stage = Stage.COMPLETED;
                     simulationState.writingTaskKey = "-1:0";
                 }
                 else {
                     if (simulationState.blockingPolicy == BlockingPolicy.NONE) {
                         simulationState.blockingPolicy = BlockingPolicy.WRITE;
-                        simulationState.writingTaskKey = String.format("%s:%s", task.id, task.readReleaseTime);
+                        simulationState.writingTaskKey = String.format("%s:%s", task.task.id, task.readReleaseTime);
                     }
                 }
                 break;
@@ -152,7 +153,7 @@ public class PFSSimulator {
             queueInCore.add(task);
         } else {
             // TODO save RT of all jobs at the end
-            logger.info("Task " + task.id + " completed at time " + (time + 1) + " with RT " + (time - task.readReleaseTime + 1));
+            logger.info("Task " + task.task.id + " completed at time " + (time + 1) + " with RT " + (time - task.readReleaseTime + 1));
             WCRTs.put(Integer.valueOf(task.getId()), Math.max(WCRTs.get(Integer.valueOf(task.getId())), time - task.readReleaseTime + 1));
         }
     }
@@ -163,37 +164,37 @@ public class PFSSimulator {
      *
      * @return boolean - returns true if the path diverges, false otherwise
      */
-    private boolean pathDiverges(List<Core> cores, List<Queue<Task>> queues, HashMap<Integer, Long> WCRTs, PFSSimulationState simulationState, int time) {
-        List<Task> allTasks = queues.stream()
+    private boolean pathDiverges(List<Core> cores, List<Queue<TaskStat>> queues, HashMap<Integer, Long> WCRTs, PFSSimulationState simulationState, int time) {
+        List<TaskStat> allTasks = queues.stream()
             .flatMap(Collection::stream)
             .collect(Collectors.toList());
 
-        Task earliestReadTask = allTasks.stream()
-            .filter(task -> task.stage == Stage.READ && task.startTime <= time)
+        TaskStat earliestReadTask = allTasks.stream()
+            .filter(task -> task.stage == Stage.READ && task.task.startTime <= time)
             .min(Comparator.comparingLong(task -> task.readReleaseTime))
             .orElse(null);
 
-        Task earliestWriteTask = allTasks.stream()
-            .filter(task -> task.stage == Stage.WRITE && task.startTime <= time)
+        TaskStat earliestWriteTask = allTasks.stream()
+            .filter(task -> task.stage == Stage.WRITE && task.task.startTime <= time)
             .min(Comparator.comparingLong(task -> task.writeReleaseTime))
             .orElse(null);
 
-        List<Task> earliestReadTasks = new ArrayList<>();
-        List<Task> earliestWriteTasks = new ArrayList<>();
+        List<TaskStat> earliestReadTasks = new ArrayList<>();
+        List<TaskStat> earliestWriteTasks = new ArrayList<>();
 
         if ((earliestReadTask != null) && ((earliestWriteTask == null) || (earliestReadTask.readReleaseTime < earliestWriteTask.writeReleaseTime))) {
             earliestReadTasks = allTasks.stream()
-                .filter(task -> task.stage == Stage.READ && task.startTime <= time && task.readReleaseTime == earliestReadTask.readReleaseTime)
+                .filter(task -> task.stage == Stage.READ && task.task.startTime <= time && task.readReleaseTime == earliestReadTask.readReleaseTime)
                 .collect(Collectors.toList());
             earliestWriteTasks = allTasks.stream()
-                .filter(task -> task.stage == Stage.WRITE && task.startTime <= time && task.writeReleaseTime == earliestReadTask.readReleaseTime)
+                .filter(task -> task.stage == Stage.WRITE && task.task.startTime <= time && task.writeReleaseTime == earliestReadTask.readReleaseTime)
                 .collect(Collectors.toList());
         } else if ((earliestWriteTask != null) && ((earliestReadTask == null) || (earliestWriteTask.writeReleaseTime <= earliestReadTask.readReleaseTime))) {
             earliestReadTasks = allTasks.stream()
-                .filter(task -> task.stage == Stage.READ && task.startTime <= time && task.readReleaseTime == earliestWriteTask.writeReleaseTime)
+                .filter(task -> task.stage == Stage.READ && task.task.startTime <= time && task.readReleaseTime == earliestWriteTask.writeReleaseTime)
                 .collect(Collectors.toList());
             earliestWriteTasks = allTasks.stream()
-                .filter(task -> task.stage == Stage.WRITE && task.startTime <= time && task.writeReleaseTime == earliestWriteTask.writeReleaseTime)
+                .filter(task -> task.stage == Stage.WRITE && task.task.startTime <= time && task.writeReleaseTime == earliestWriteTask.writeReleaseTime)
                 .collect(Collectors.toList());
         }
 
@@ -202,8 +203,8 @@ public class PFSSimulator {
         // Case 1: one or more read and write tasks exist with the same earliest release time
         if (!earliestReadTasks.isEmpty() && !earliestWriteTasks.isEmpty()) {
             possibleWCRTs.add(simulatePath(cores, queues, WCRTs, time, new PFSSimulationState(BlockingPolicy.READ, simulationState.writingTaskKey)));
-            for (Task writeTask : earliestWriteTasks) {
-                possibleWCRTs.add(simulatePath(cores, queues, WCRTs, time, new PFSSimulationState(BlockingPolicy.WRITE, String.format("%s:%s", writeTask.id, writeTask.readReleaseTime))));
+            for (TaskStat writeTask : earliestWriteTasks) {
+                possibleWCRTs.add(simulatePath(cores, queues, WCRTs, time, new PFSSimulationState(BlockingPolicy.WRITE, String.format("%s:%s", writeTask.task.id, writeTask.readReleaseTime))));
             }
 
             for (Entry<Integer, Long> entry : WCRTs.entrySet()) {
@@ -217,8 +218,8 @@ public class PFSSimulator {
         }
         // Case 2: multiple write tasks exist with the same earliest release time
         else if (earliestWriteTasks.size() > 1) {
-            for (Task writeTask : earliestWriteTasks) {
-                possibleWCRTs.add(simulatePath(cores, queues, WCRTs, time, new PFSSimulationState(BlockingPolicy.WRITE, String.format("%s:%s", writeTask.id, writeTask.readReleaseTime))));
+            for (TaskStat writeTask : earliestWriteTasks) {
+                possibleWCRTs.add(simulatePath(cores, queues, WCRTs, time, new PFSSimulationState(BlockingPolicy.WRITE, String.format("%s:%s", writeTask.task.id, writeTask.readReleaseTime))));
             }
 
             for (Entry<Integer, Long> entry : WCRTs.entrySet()) {
@@ -240,19 +241,19 @@ public class PFSSimulator {
      *
      * @return runningTasks - list of tasks that are currently running
      */
-    private List<List<Task>> initializeRunningTasks(List<Queue<Task>> queues, PFSSimulationState simulationState, int time) {
-        List<List<Task>> runningTasks = new ArrayList<>();
+    private List<List<TaskStat>> initializeRunningTasks(List<Queue<TaskStat>> queues, PFSSimulationState simulationState, int time) {
+        List<List<TaskStat>> runningTasks = new ArrayList<>();
 
         // TODO when choosing running tasks, apply FIFO policy
         // If multiple read, write tasks exist, choose based on releaseTime
         // If release times are equal, then diverge path
-        for (Queue<Task> queueInCore : queues) {
+        for (Queue<TaskStat> queueInCore : queues) {
             // TODO iterate in order of release time
-            Iterator<Task> iterator = queueInCore.iterator();
-            List<Task> runningTasksInCore = new ArrayList<>();
+            Iterator<TaskStat> iterator = queueInCore.iterator();
+            List<TaskStat> runningTasksInCore = new ArrayList<>();
             while (iterator.hasNext()) {
-                Task task = iterator.next();
-                if (task.startTime > time)
+                TaskStat task = iterator.next();
+                if (task.task.startTime > time)
                     continue;
 
                 switch (simulationState.blockingPolicy) {
@@ -262,7 +263,7 @@ public class PFSSimulator {
                             simulationState.blockingPolicy = BlockingPolicy.READ;
                         else if (task.stage == Stage.WRITE) {
                             simulationState.blockingPolicy = BlockingPolicy.WRITE;
-                            simulationState.writingTaskKey = String.format("%s:%s", task.id, task.readReleaseTime);
+                            simulationState.writingTaskKey = String.format("%s:%s", task.task.id, task.readReleaseTime);
                         }
                         break;
                     case READ:
@@ -271,7 +272,7 @@ public class PFSSimulator {
                         else
                             continue;
                     case WRITE:
-                        if (simulationState.writingTaskKey.equals((String.format("%s:%s", task.id, task.readReleaseTime))) || task.stage == Stage.BODY)
+                        if (simulationState.writingTaskKey.equals((String.format("%s:%s", task.task.id, task.readReleaseTime))) || task.stage == Stage.BODY)
                             break;
                         else
                             continue;
@@ -281,7 +282,7 @@ public class PFSSimulator {
             }
 
             runningTasks.add(runningTasksInCore);
-            logger.info("Running tasks in core " + runningTasks.size() + ": " + runningTasksInCore.stream().map(task -> task.id).collect(Collectors.toList()));
+            logger.info("Running tasks in core " + runningTasks.size() + ": " + runningTasksInCore.stream().map(task -> task.task.id).collect(Collectors.toList()));
         }
 
         return runningTasks;
@@ -299,32 +300,31 @@ public class PFSSimulator {
     }
 
 
-    private List<Queue<Task>> initializeQueues(List<Core> cores) {
-        List<Queue<Task>> queues = new ArrayList<>();
-        // TODO order based on not release time but rather when that read and write stage started
+    private List<Queue<TaskStat>> initializeQueues(List<Core> cores) {
+        List<Queue<TaskStat>> queues = new ArrayList<>();
         for (Core core : cores) {
-            Queue<Task> queueInCore = new PriorityQueue<>(Comparator.comparingDouble(task -> task.readReleaseTime));
-            // TODO add to queue in order of release time
+            Queue<TaskStat> queueInCore = new PriorityQueue<>(Comparator.comparingDouble(task -> task.readReleaseTime));
             for (Task task : core.tasks) {
-                task.weight = NiceToWeight.getWeight(task.nice);
-                task.originalReadTime = task.readTimeInNanoSeconds;
-                task.originalBodyTime = task.bodyTimeInNanoSeconds;
-                task.originalWriteTime = task.writeTimeInNanoSeconds;
-                task.readReleaseTime = task.startTime;
-                skipReadStageIfNoReadTime(task);
-                queueInCore.add(task.copy());
+                TaskStat taskStat = new TaskStat(task);
+                taskStat.readReleaseTime = task.startTime;
+                taskStat.virtualRuntime = 0L;
+                
+                skipReadStageIfNoReadTime(taskStat);
+                if (task.startTime == 0L) {
+                    queueInCore.add(taskStat);
+                }
             }
             queues.add(queueInCore);
         }
         return queues;
     }
 
-    private List<Queue<Task>> copyQueues(List<Queue<Task>> originalQueues) {
-        List<Queue<Task>> newQueues = new ArrayList<>();
+    private List<Queue<TaskStat>> copyQueues(List<Queue<TaskStat>> originalQueues) {
+        List<Queue<TaskStat>> newQueues = new ArrayList<>();
 
-        for (Queue<Task> originalQueueInCore : originalQueues) {
-            Queue<Task> newQueueInCore = new PriorityQueue<>(Comparator.comparingDouble(task -> task.readReleaseTime));
-            for (Task task : originalQueueInCore) {
+        for (Queue<TaskStat> originalQueueInCore : originalQueues) {
+            Queue<TaskStat> newQueueInCore = new PriorityQueue<>(Comparator.comparingDouble(task -> task.readReleaseTime));
+            for (TaskStat task : originalQueueInCore) {
                 newQueueInCore.add(task.copy());
             }
             newQueues.add(newQueueInCore);
@@ -334,35 +334,36 @@ public class PFSSimulator {
     }
 
 
-    private void addPeriodicJobs(List<Core> cores, List<Queue<Task>> queues, int time) {
+    private void addPeriodicJobs(List<Core> cores, List<Queue<TaskStat>> queues, int time) {
         for (Core core : cores) {
             // TODO add to core in order of release time
             for (Task task : core.tasks) {
                 if (time > task.startTime && task.period > 0 && time % task.period == 0) {
                     logger.info("Task " + task.id + " released with read time " + task.readTime + ", body Time " + task.bodyTime + ", write time " + task.writeTime);
-                    task.readReleaseTime = time;
-                    skipReadStageIfNoReadTime(task);
-                    queues.get(core.coreID-1).add(task.copy());
+                    TaskStat taskStat = new TaskStat(task);
+                    taskStat.readReleaseTime = time;
+                    skipReadStageIfNoReadTime(taskStat);
+                    queues.get(core.coreID-1).add(taskStat.copy());
                 }
             }
         }
     }
 
-    private void skipReadStageIfNoReadTime(Task task) {
-        if (task.stage == Stage.READ && task.readTime <= 0) {
+    private void skipReadStageIfNoReadTime(TaskStat task) {
+        if (task.stage == Stage.READ && task.task.readTime <= 0) {
             task.stage = Stage.BODY;
             task.bodyReleaseTime = task.readReleaseTime;
         }
     }
 
     // TODO check if condition has to change
-    private boolean noReadAndWriteTasksRunning(List<List<Task>> runningTasks, BlockingPolicy blockingPolicy) {
+    private boolean noReadAndWriteTasksRunning(List<List<TaskStat>> runningTasks, BlockingPolicy blockingPolicy) {
         return runningTasks.stream()
                 .flatMap(List::stream)
                 .noneMatch(task -> task.stage == Stage.READ || task.stage == Stage.WRITE) || blockingPolicy == BlockingPolicy.NONE;
     }
 
-    private SimulationResult checkSchedulability(List<Core> cores, List<Queue<Task>> queues, HashMap<Integer, Long> WCRTs) {
+    private SimulationResult checkSchedulability(List<Core> cores, List<Queue<TaskStat>> queues, HashMap<Integer, Long> WCRTs) {
         boolean schedulability = true;
 
         logger.info("\n******************************");
@@ -370,8 +371,8 @@ public class PFSSimulator {
         logger.info("******************************");
 
         for (int i = 0; i < queues.size(); i++) {
-            Queue<Task> queue = queues.get(i);
-            logger.info("Unfinished tasks in core " + (i+1) + ": " + queue.stream().map(task -> task.id).collect(Collectors.toList()));
+            Queue<TaskStat> queue = queues.get(i);
+            logger.info("Unfinished tasks in core " + (i+1) + ": " + queue.stream().map(task -> task.task.id).collect(Collectors.toList()));
             schedulability = false;
         }
 

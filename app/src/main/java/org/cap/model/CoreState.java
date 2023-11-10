@@ -4,7 +4,7 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 
 public class CoreState {
-    public Task currentTask;
+    public TaskStat currentTask;
     public boolean isRunning;
     public long remainingRuntime;
     public long minimumVirtualRuntime = 0L;

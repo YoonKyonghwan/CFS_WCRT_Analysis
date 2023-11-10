@@ -38,9 +38,6 @@ public class Task {
     @Expose
     public int index;
 
-    // Current stage of the task
-    public Stage stage = Stage.READ;
-
     // Original time required to read the task
     public long originalReadTime;
 
@@ -50,26 +47,8 @@ public class Task {
     // Original time required to write the task
     public long originalWriteTime;
 
-    // Release time for read stage of the task
-    public long readReleaseTime;
-
-    // Release time for body stage of the task
-    public long bodyReleaseTime;
-
-    // Release time for write stage of the task
-    public long writeReleaseTime;
-
-    public long readTimeInNanoSeconds;
-
-    public long bodyTimeInNanoSeconds;
-
-    public long writeTimeInNanoSeconds;
-
     // Weight of task
     public long weight;
-
-    // Virtual runtime
-    public long virtualRuntime;
 
     // target task id
     public boolean isTargetTask;
@@ -94,32 +73,23 @@ public class Task {
         newTask.nice = this.nice;
         newTask.period = this.period;
         newTask.index = this.index;
-        newTask.stage = this.stage;
         newTask.originalReadTime = this.originalReadTime;
         newTask.originalBodyTime = this.originalBodyTime;
         newTask.originalWriteTime = this.originalWriteTime;
-        newTask.readReleaseTime = this.readReleaseTime;
-        newTask.bodyReleaseTime = this.bodyReleaseTime;
-        newTask.writeReleaseTime = this.writeReleaseTime;
         newTask.weight = this.weight;
-        newTask.virtualRuntime = this.virtualRuntime;
         newTask.isTargetTask = this.isTargetTask;
         newTask.initialPriority = this.initialPriority;
         newTask.queueInsertTime = this.queueInsertTime;
-
-        newTask.readTimeInNanoSeconds = this.readTimeInNanoSeconds;
-        newTask.bodyTimeInNanoSeconds = this.bodyTimeInNanoSeconds;
-        newTask.writeTimeInNanoSeconds = this.writeTimeInNanoSeconds;
         return newTask;
     }
 
     public void initializeMemberVariables() {
         if(this.initialized == false) {
             this.period = period * 1000L;
-            this.readTimeInNanoSeconds = ((long) this.readTime) * 1000L;
-            this.bodyTimeInNanoSeconds = ((long) this.bodyTime) * 1000L;
-            this.writeTimeInNanoSeconds = ((long) this.writeTime) * 1000L;            
-            this.virtualRuntime = 0L;
+            this.originalReadTime = ((long) this.readTime) * 1000L;
+            this.originalBodyTime = ((long) this.bodyTime) * 1000L;
+            this.originalWriteTime = ((long) this.writeTime) * 1000L;
+            this.weight = NiceToWeight.getWeight(this.nice);
             this.initialized = true;
         }
     }
@@ -133,10 +103,6 @@ public class Task {
         this.nice = nice;
         this.period = period * 1000L;
         this.index = index;
-        this.readTimeInNanoSeconds = ((long) this.readTime) * 1000L;
-        this.bodyTimeInNanoSeconds = ((long) this.bodyTime) * 1000L;
-        this.writeTimeInNanoSeconds = ((long) this.writeTime) * 1000L;
-        this.virtualRuntime = 0L;
         this.initialPriority = -1;
         this.initialized = true;
         this.queueInsertTime = -1;

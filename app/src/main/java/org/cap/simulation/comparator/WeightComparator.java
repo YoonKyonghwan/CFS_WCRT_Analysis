@@ -1,14 +1,14 @@
 package org.cap.simulation.comparator;
 
-import org.cap.model.Task;
+import org.cap.model.TaskStat;
 
 public class WeightComparator extends TargetTaskBasedComparator {
     @Override
-    public int compareNotTargetTask(Task o1, Task o2) {
-        if(o1.nice < o2.nice) { // smaller nice executed first
+    public int compareNotTargetTask(TaskStat o1, TaskStat o2) {
+        if(o1.task.nice < o2.task.nice) { // smaller nice executed first
             return -1;
         }
-        else if(o1.nice > o2.nice) {
+        else if(o1.task.nice > o2.task.nice) {
             return 1;
         }
         else {
