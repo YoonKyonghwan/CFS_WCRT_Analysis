@@ -84,7 +84,24 @@ public class ArgParser {
                 .setDefault(1)
                 .nargs("?")
                 .help("The number of tries to perform a test");
-        
+        parser.addArgument("--target_latency", "-tl")
+                .dest("target_latency")
+                .type(Integer.class)
+                .setDefault(20000)
+                .nargs("?")
+                .help("The target latency");
+        parser.addArgument("--minimum_granularity", "-mg")
+                .dest("minimum_granularity")
+                .type(Integer.class)
+                .setDefault(1)
+                .nargs("?")
+                .help("The minimum granularity");
+        parser.addArgument("--wakeup_granularity", "-wg")
+                .dest("wakeup_granularity")
+                .type(Integer.class)
+                .setDefault(0)
+                .nargs("?")
+                .help("The wakeup granularity");
         Namespace params = parser.parseArgsOrFail(args);
         return params;
     }

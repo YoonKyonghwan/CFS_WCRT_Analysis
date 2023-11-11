@@ -19,14 +19,17 @@ public class CFSSimulator {
     ComparatorCase comparatorCase;
     private long targetLatency;
     private long minimumGranularity = 1 * 1000L;
+    private long wakeupGranularity = 3 * 1000 * 1000L;
     private long triedScheduleCount = 0;
     private ScheduleCache scheduleCache;
     private long numOfTryToSchedule;
 
-    public CFSSimulator(ScheduleSimulationMethod method, ComparatorCase comparatorCase, int targetLatency, long numOfTryToSchedule) {
+    public CFSSimulator(ScheduleSimulationMethod method, ComparatorCase comparatorCase, int targetLatency, int minimumGranularity, int wakeupGranularity, long numOfTryToSchedule) {
         this.method = method;
         this.comparatorCase = comparatorCase;
         this.targetLatency = targetLatency * 1000L;
+        this.minimumGranularity = minimumGranularity * 1000L;
+        this.wakeupGranularity = wakeupGranularity * 1000L;
         this.triedScheduleCount = 0;
         this.scheduleCache = new ScheduleCache();
         this.numOfTryToSchedule = numOfTryToSchedule;
@@ -329,10 +332,24 @@ public class CFSSimulator {
         if (task.stage != Stage.COMPLETED) {
             // handling the preemption from other tasks becuase of new task invocation
             // if time is still remained (which means the task cannot be executed until the time slice), clear the next end event of this task
+            coreState.isRunning = false;
             if(coreState.remainingRuntime > 0) { 
                 simulationState.clearEventTime(time + coreState.remainingRuntime);
+                if(this.wakeupGranularity > 0) {
+                    long vruntimeWakeup = (this.wakeupGranularity << 10L)  / task.task.weight;
+                    if(task.virtualRuntime <= queueInCore.peek().virtualRuntime + vruntimeWakeup)  {
+                        long remainedTime = Math.min(coreState.remainingRuntime, this.wakeupGranularity);    
+                        coreState.isRunning = true;
+                        coreState.remainingRuntime = remainedTime;
+                        simulationState.putEventTime(time + remainedTime);
+                    }
+                }
+            } 
+
+            if(coreState.isRunning == false) {
+                addIntoQueue(queueInCore, task, time);
             }
-            addIntoQueue(queueInCore, task, time);
+
             if (simulationState.blockingPolicy == BlockingPolicy.READ)
                 simulationState.blockingPolicyReset = true;
         } else {
@@ -341,8 +358,9 @@ public class CFSSimulator {
             wcrtMap.put(Integer.valueOf(task.getId()),
                     Math.max(wcrtMap.get(Integer.valueOf(task.getId())), time - task.readReleaseTime));
             coreState.putFinishedTaskVirtualRuntime(task.task.id, task.virtualRuntime);
+            coreState.isRunning = false;
         }
-        coreState.isRunning = false;
+        
     }
 
     private void updateMinimumVirtualRuntime(CoreState coreState, Queue<TaskStat> queue) {

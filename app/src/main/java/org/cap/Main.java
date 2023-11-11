@@ -18,8 +18,6 @@ import java.util.logging.Logger;
 import net.sourceforge.argparse4j.inf.Namespace;
 
 public class Main {
-    private static final int targetLatency = 20000;  //us (20ms)
-
     public static void main(String[] args) throws ClassNotFoundException, NoSuchMethodException, SecurityException,
             InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         // parse arguments
@@ -47,16 +45,13 @@ public class Main {
             long startTime = System.nanoTime();
             
             // analyze by simulator
-            boolean simulator_schedulability = analyze_by_CFS_simulator(testConf,
-                    ScheduleSimulationMethod.fromValue(params.getString("schedule_simulation_method")),
-                    ComparatorCase.fromValue(params.getString("tie_comparator")), params.getLong("simulation_time"),
-                    params.getLong("schedule_try_count"), params.getString("logger_option"), params.getInt("test_try_count"));
+            boolean simulator_schedulability = analyze_by_CFS_simulator(testConf, params);
             int simulator_timeConsumption = (int)((System.nanoTime() - startTime)/1000); //us
-            // System.out.println("Time consumption (CFS simulator): " + simulator_timeConsumption + " us");
+            System.out.println("Time consumption (CFS simulator): " + simulator_timeConsumption + " us");
             
             // analyze by proposed
             startTime = System.nanoTime();
-            CFSAnalyzer analyzer = new CFSAnalyzer(testConf.mappingInfo, targetLatency);
+            CFSAnalyzer analyzer = new CFSAnalyzer(testConf.mappingInfo, params.getInt("target_latency"));
             analyzer.analyze(); // without parallel
             boolean proposed_schedulability = analyzer.checkSystemSchedulability();
             int proposed_timeConsumption = (int) ((System.nanoTime() - startTime) / 1000);
@@ -74,19 +69,28 @@ public class Main {
         }
     }
 
-    private static boolean analyze_by_CFS_simulator(TestConfiguration testConf, ScheduleSimulationMethod scheduleMethod,
-            ComparatorCase compareCase, long simulationTime, long schedule_try_count, String logger_option, int test_try_count) throws ClassNotFoundException, NoSuchMethodException, SecurityException,
+    private static boolean analyze_by_CFS_simulator(TestConfiguration testConf, Namespace params) throws ClassNotFoundException, NoSuchMethodException, SecurityException,
             InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+        
+        ScheduleSimulationMethod scheduleMethod = ScheduleSimulationMethod.fromValue(params.getString("schedule_simulation_method"));
+        ComparatorCase compareCase = ComparatorCase.fromValue(params.getString("tie_comparator"));
+        long simulationTime = params.getLong("simulation_time");
+        long schedule_try_count = params.getLong("schedule_try_count");
+        String logger_option = params.getString("logger_option");
+        int test_try_count = params.getInt("test_try_count");
+        int targetLatency = params.getInt("target_latency");
+        int minimumGranularity = params.getInt("minimum_granularity");
+        int wakeupGranularity = params.getInt("wakeup_granularity");
         LoggerUtility.initializeLogger(logger_option);
         LoggerUtility.addConsoleLogger();
-
+                
         // for brute-force method, unordered comparator is used.
         if ((scheduleMethod == ScheduleSimulationMethod.BRUTE_FORCE || scheduleMethod == ScheduleSimulationMethod.RANDOM) && 
             (compareCase != ComparatorCase.RELEASE_TIME && compareCase != ComparatorCase.FIFO)) {
             compareCase = ComparatorCase.FIFO;
         }
 
-        CFSSimulator CFSSimulator = new CFSSimulator(scheduleMethod, compareCase, targetLatency, schedule_try_count);
+        CFSSimulator CFSSimulator = new CFSSimulator(scheduleMethod, compareCase, targetLatency, minimumGranularity, wakeupGranularity, schedule_try_count);
         Logger logger = LoggerUtility.getLogger();
         boolean system_schedulability = true;
 
