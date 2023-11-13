@@ -4,8 +4,6 @@ import org.cap.model.*;
 import org.cap.simulation.comparator.BasicTaskComparator;
 import org.cap.simulation.comparator.ComparatorCase;
 import org.cap.utility.LoggerUtility;
-import org.cap.utility.MathUtility;
-
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
@@ -37,18 +35,6 @@ public class CFSSimulator {
     
     public long getTriedScheduleCount() {
         return triedScheduleCount;
-    }
-
-    private long getMaximumPeriod(List<Core> cores) {
-        long maxPeriod = -1;
-        for (Core core : cores) {
-            for (Task task : core.tasks) {
-                if (task.period > maxPeriod)
-                    maxPeriod = task.period;
-            }
-        }
-
-        return maxPeriod;
     }
 
     public SimulationResult mergeToFinalResult(SimulationResult finalResult, SimulationResult resultToAdd) {
@@ -83,13 +69,6 @@ public class CFSSimulator {
         long time = 0;
         this.triedScheduleCount = 0;
         this.scheduleCache = new ScheduleCache();
-
-        if(simulationTime == 0) { // hyper period
-            simulationTime = MathUtility.getLCM(cores);
-        }
-        else if (simulationTime == -1) {
-            simulationTime = getMaximumPeriod(cores);
-        }
 
         simulationState.insertPeriodsAtStartTime(cores);
         //simulationState.insertPeriodsIntoEventQueue(simulationTime, cores);

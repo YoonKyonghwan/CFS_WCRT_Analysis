@@ -1,7 +1,9 @@
 package org.cap;
 
+import org.cap.model.Core;
 import org.cap.model.ScheduleSimulationMethod;
 import org.cap.model.SimulationResult;
+import org.cap.model.Task;
 import org.cap.model.TestConfiguration;
 import org.cap.simulation.CFSAnalyzer;
 import org.cap.simulation.CFSSimulator;
@@ -11,8 +13,10 @@ import org.cap.utility.ArgParser;
 import org.cap.utility.JsonReader;
 import org.cap.utility.JsonTaskCreator;
 import org.cap.utility.LoggerUtility;
+import org.cap.utility.MathUtility;
 
 import java.lang.reflect.InvocationTargetException;
+import java.util.List;
 import java.util.logging.Logger;
 
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -69,6 +73,18 @@ public class Main {
         }
     }
 
+    private static long getMaximumPeriod(List<Core> cores) {
+        long maxPeriod = -1;
+        for (Core core : cores) {
+            for (Task task : core.tasks) {
+                if (task.period > maxPeriod)
+                    maxPeriod = task.period;
+            }
+        }
+
+        return maxPeriod;
+    }
+
     private static boolean analyze_by_CFS_simulator(TestConfiguration testConf, Namespace params) throws ClassNotFoundException, NoSuchMethodException, SecurityException,
             InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         
@@ -93,6 +109,14 @@ public class Main {
         CFSSimulator CFSSimulator = new CFSSimulator(scheduleMethod, compareCase, targetLatency, minimumGranularity, wakeupGranularity, schedule_try_count);
         Logger logger = LoggerUtility.getLogger();
         boolean system_schedulability = true;
+
+        if(simulationTime == 0) { // hyper period
+            simulationTime = MathUtility.getLCM(testConf.mappingInfo);
+        }
+        else if (simulationTime == -1) {
+            simulationTime = getMaximumPeriod(testConf.mappingInfo);
+        }
+        logger.info("Simulated Time (ms): " + simulationTime/1000000L);
 
         if (scheduleMethod == ScheduleSimulationMethod.PRIORITY_QUEUE) {
             for (Integer taskID : testConf.idNameMap.keySet()) {
