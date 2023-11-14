@@ -78,7 +78,7 @@ public class CFSSimulator {
         simulationState.insertPeriodsInTimeRange(cores, previousTime, time);
         time = simulationState.getNextEventTime();
 
-        if(this.method != ScheduleSimulationMethod.RANDOM) {
+        if(this.method != ScheduleSimulationMethod.RANDOM && this.method != ScheduleSimulationMethod.RANDOM_TARGET_TASK) {
             this.numOfTryToSchedule = 1;
             finalSimulationResult = performSimulation(cores, queues, wcrtMap, simulationState, time, simulationTime, 0);
         } else {
@@ -140,7 +140,7 @@ public class CFSSimulator {
                         if (simulationState.getMethod() == ScheduleSimulationMethod.PRIORITY_QUEUE) {
                             if (minRuntimeTasks.size() > 0)
                                 task = minRuntimeTasks.get(0);
-                        } else { // BRUTE_FORCE or RANDOM
+                        } else { // BRUTE_FORCE or RANDOM or RANDOM_TARGET_TASK
                             if (minRuntimeTasks.size() > 1) {
                                 long scheduleID = this.scheduleCache.pushScheduleData(simulationState.getSimulationScheduleID(), queues, cloneWcrtMap, simulationState, time, minRuntimeTasks, coreIndex, comparatorCase);
                                 int taskIndexToSelect = pickNextTaskToSchedule(simulationState, scheduleID);
@@ -197,7 +197,8 @@ public class CFSSimulator {
 
                 if(simulationState.getMethod() != ScheduleSimulationMethod.PRIORITY_QUEUE) { 
                     this.scheduleCache.saveFinalScheduledIndex(simulationState.getSimulationScheduleID(), simulationState);
-                    if(simulationState.getMethod() == ScheduleSimulationMethod.RANDOM) {
+                    if(simulationState.getMethod() == ScheduleSimulationMethod.RANDOM || 
+                    simulationState.getMethod() == ScheduleSimulationMethod.RANDOM_TARGET_TASK) {
                         this.scheduleCache.clearStack();
                         break;
                     }
@@ -453,7 +454,7 @@ public class CFSSimulator {
         SchedulePickResult pickResult;
         if(simulationState.getMethod() == ScheduleSimulationMethod.BRUTE_FORCE) {
             pickResult = this.scheduleCache.pickScheduleDataByEntry(scheduleId, false);
-        } else { // RANDOM
+        } else { // RANDOM or RANDOM_TARGET_TASK
             pickResult = this.scheduleCache.pickScheduleDataByEntry(scheduleId, true);
         }
 
@@ -476,7 +477,7 @@ public class CFSSimulator {
             for (int i = 0; i < minRuntimeTasks.size(); i++)
                 possibleWCRTs.add(simulatePathEqualMinRuntime(cores, queues, wcrtMap, simulationState, time, hyperperiod,
                         minRuntimeTasks, -1L, i, coreIndex));
-        } else {  // RANDOM
+        } else {  // RANDOM or RANDOM_TARGET_TASK
             long scheduleId = this.scheduleCache.saveIntermediateScheduleData(simulationState.getSimulationScheduleID(), cores, queues, wcrtMap, simulationState, time, minRuntimeTasks, coreIndex);
             SchedulePickResult pickResult = this.scheduleCache.pickScheduleDataByEntry(scheduleId, true);
 

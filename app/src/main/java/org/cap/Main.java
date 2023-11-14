@@ -102,9 +102,14 @@ public class Main {
                 
         // for brute-force method, unordered comparator is used.
         if ((scheduleMethod == ScheduleSimulationMethod.BRUTE_FORCE || scheduleMethod == ScheduleSimulationMethod.RANDOM) && 
-            (compareCase != ComparatorCase.RELEASE_TIME && compareCase != ComparatorCase.FIFO)) {
+            (compareCase != ComparatorCase.RELEASE_TIME && compareCase != ComparatorCase.FIFO && compareCase != ComparatorCase.TARGET_TASK)) {
             compareCase = ComparatorCase.FIFO;
         }
+
+        if(scheduleMethod == ScheduleSimulationMethod.RANDOM_TARGET_TASK) {
+            compareCase = ComparatorCase.TARGET_TASK;
+        }
+
 
         CFSSimulator CFSSimulator = new CFSSimulator(scheduleMethod, compareCase, targetLatency, minimumGranularity, wakeupGranularity, schedule_try_count);
         Logger logger = LoggerUtility.getLogger();
@@ -133,7 +138,32 @@ public class Main {
                 if(simulResult.schedulability == false)
                     system_schedulability = false;
             }
-        } else {
+        } else if (scheduleMethod == ScheduleSimulationMethod.RANDOM_TARGET_TASK) {
+            SimulationResult finalSimulationResult = new SimulationResult();
+            long totalTryCount = 0L;
+            for (Integer taskID : testConf.idNameMap.keySet()) {
+                logger.fine("\n\n ********** Start simulation with target task: " + taskID + " **********");
+                for(int i = 0 ; i  < test_try_count ; i++) {
+                    SimulationResult simulResult = CFSSimulator.simulateCFS(testConf.mappingInfo,
+                            taskID.intValue(), simulationTime);
+                    CFSSimulator.mergeToFinalResult(finalSimulationResult, simulResult);
+                    totalTryCount += CFSSimulator.getTriedScheduleCount();
+                }
+            }
+
+            system_schedulability = finalSimulationResult.schedulability;
+            for (Integer taskIDWCRT : testConf.idNameMap.keySet()) {
+            long WCRT_by_simulator = (finalSimulationResult.wcrtMap.get(taskIDWCRT)/1000);
+            long deadline = CFSSimulator.findTaskbyID(testConf, taskIDWCRT.intValue()).period/1000;
+            boolean task_schedulability = (WCRT_by_simulator <= deadline);
+            CFSSimulator.findTaskbyID(testConf, taskIDWCRT.intValue()).isSchedulable_by_simulator = task_schedulability;
+            CFSSimulator.findTaskbyID(testConf, taskIDWCRT.intValue()).WCRT_by_simulator = (int) WCRT_by_simulator;
+            logger.info(String.format("Task ID with %3d (WCRT: %8d us, Period: %8d us, Schedulability: %5s)", taskIDWCRT, WCRT_by_simulator, deadline, task_schedulability));
+            if(finalSimulationResult.schedulability == false)
+                system_schedulability = false;
+            }
+            logger.info("Schedule execution count: " + totalTryCount);
+        } else{
             SimulationResult finalSimulationResult = new SimulationResult();
             long totalTryCount = 0L;
             for(int i = 0 ; i  < test_try_count ; i++) {
