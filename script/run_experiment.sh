@@ -10,7 +10,8 @@ utilizations=(0.2 0.4 0.6)
 num_sets=50
 
 schedule_simulation_method="random"   # "priority-queue"
-schedule_try_count=10000
+schedule_try_count=1000
+test_try_count=1000
 
 
 ./gradlew build
@@ -28,7 +29,7 @@ for num_core in "${num_cores[@]}"; do
                 file_name="${num_core}cores_${num_task}tasks_${utilization}utilization_${i}.json"
                 task_info_path="${generated_files_save_dir}/${num_core}cores/${num_task}tasks/${utilization}utilization/${file_name}"
                 echo "running with ${file_name}"
-                java -jar run.jar -t=$task_info_path -rd=$result_dir -ssm=$schedule_simulation_method -stc=$schedule_try_count
+                java -jar run.jar -t=$task_info_path -rd=$result_dir -ssm=$schedule_simulation_method -stc=$schedule_try_count -ttc=$test_try_count -lo=info
             done
         done
     done
