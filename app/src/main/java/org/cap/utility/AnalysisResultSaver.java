@@ -13,7 +13,7 @@ import org.cap.model.TestConfiguration;
 
 public class AnalysisResultSaver {
     public void saveResultSummary(String resultDir, String taskInfoPath, boolean simulator_schedulability,
-            int simulator_timeConsumption, boolean proposed_schedulability, int proposed_timeConsumption) {
+            long simulator_timeConsumption, boolean proposed_schedulability, long proposed_timeConsumption) {
 
         // Parse information from the filename
         String inputFileName = new File(taskInfoPath).getName();
