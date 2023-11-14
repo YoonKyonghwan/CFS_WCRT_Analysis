@@ -3,7 +3,8 @@ package org.cap.model;
 public enum ScheduleSimulationMethod {
     BRUTE_FORCE("brute-force"), 
 	PRIORITY_QUEUE("priority-queue"),
-	RANDOM("random");
+	RANDOM("random"),
+	RANDOM_TARGET_TASK("random_target_task");
 
     private final String value;
 
