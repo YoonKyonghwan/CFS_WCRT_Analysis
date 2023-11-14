@@ -15,13 +15,13 @@ public class CFSSimulationState {
     private PriorityQueue<Long> eventQueue;
     private Long previousEventTime;
     private int selectedDivergeIndex;
-    private long simulationScheduleID;
+    private String simulationScheduleID;
     
-    public long getSimulationScheduleID() {
+    public String getSimulationScheduleID() {
         return simulationScheduleID;
     }
 
-    public void setSimulationScheduleID(long simulationScheduleID) {
+    public void setSimulationScheduleID(String simulationScheduleID) {
         this.simulationScheduleID = simulationScheduleID;
     }
 
@@ -167,7 +167,7 @@ public class CFSSimulationState {
         this.eventQueue = new PriorityQueue<Long>(); // default is ascending order
         this.eventTimeMap = new HashMap<Long, Integer>();
         this.selectedDivergeIndex = 0;
-        this.simulationScheduleID = -1L;
+        this.simulationScheduleID = "-";
 
         //this.coreStates = new ArrayList<>(Collections.nCopies(numberOfCores, new CoreState()));
 

@@ -3,9 +3,9 @@ package org.cap.model;
 public class SchedulePickResult {
     private ScheduleCacheData scheduleData;
     private int divergeIndex;
-    private long scheduleId;
+    private String scheduleId;
     
-    public long getScheduleId() {
+    public String getScheduleId() {
         return scheduleId;
     }
 
@@ -17,7 +17,7 @@ public class SchedulePickResult {
         return divergeIndex;
     }
 
-    public SchedulePickResult(ScheduleCacheData scheduleData, int divergeIndex, long scheduleId) {
+    public SchedulePickResult(ScheduleCacheData scheduleData, int divergeIndex, String scheduleId) {
         this.scheduleData = scheduleData;
         this.divergeIndex = divergeIndex;
         this.scheduleId = scheduleId;
