@@ -7,22 +7,15 @@ import java.util.PriorityQueue;
 import java.util.Map.Entry;
 
 public class CFSSimulationState {
-
-    public long targetedLatency = 20;
-    public long minimumGranularity = 4;
     public BlockingPolicy blockingPolicy = BlockingPolicy.NONE;
     public int blockingTaskId;
     public boolean blockingPolicyReset = false;
     public List<CoreState> coreStates;
-    private ScheduleSimulationMethod method;
     private HashMap<Long, Integer> eventTimeMap;
     private PriorityQueue<Long> eventQueue;
     private Long previousEventTime;
     private int selectedDivergeIndex;
     private long simulationScheduleID;
-
-    // TODO consider moving WCRTs and Queues to here after completion
-
     
     public long getSimulationScheduleID() {
         return simulationScheduleID;
@@ -41,9 +34,7 @@ public class CFSSimulationState {
     }
 
     public CFSSimulationState copy() {
-        CFSSimulationState newState = new CFSSimulationState(this.method);
-        newState.targetedLatency = this.targetedLatency;
-        newState.minimumGranularity = this.minimumGranularity;
+        CFSSimulationState newState = new CFSSimulationState();
         newState.blockingPolicy = this.blockingPolicy;
         newState.blockingTaskId = this.blockingTaskId;
         newState.coreStates = new ArrayList<>(this.coreStates.size());
@@ -172,10 +163,7 @@ public class CFSSimulationState {
         return nextTime;
     }
 
-    public CFSSimulationState(long targetedLatency, long minimumGranularity, int numberOfCores, ScheduleSimulationMethod method) {
-        this.targetedLatency = targetedLatency;
-        this.minimumGranularity = minimumGranularity;
-        this.method = method;
+    public CFSSimulationState(int numberOfCores) {
         this.eventQueue = new PriorityQueue<Long>(); // default is ascending order
         this.eventTimeMap = new HashMap<Long, Integer>();
         this.selectedDivergeIndex = 0;
@@ -191,16 +179,7 @@ public class CFSSimulationState {
         }
     }
 
-    public ScheduleSimulationMethod getMethod() {
-        return method;
-    }
-
-    public void setMethod(ScheduleSimulationMethod method) {
-        this.method = method;
-    }
-
-    public CFSSimulationState(ScheduleSimulationMethod method) {
-        this.method = method;
+    public CFSSimulationState() {
     }
 }
 

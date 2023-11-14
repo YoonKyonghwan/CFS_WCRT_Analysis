@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Stack;
 
-import org.cap.simulation.comparator.ComparatorCase;
+import org.cap.simulation.comparator.BasicTaskComparator;
 
 public class ScheduleCache {
     HashMap<Long, ScheduleCacheData> scheduleMap;
@@ -29,7 +29,7 @@ public class ScheduleCache {
     public long pushScheduleData(long parentScheduleID, List<Queue<TaskStat>> queues,
             HashMap<Integer, Long> wcrtMap,
             CFSSimulationState simulationState, long time, List<TaskStat> minRuntimeTasks, int coreIndex,
-            ComparatorCase comparatorCase) throws ClassNotFoundException, NoSuchMethodException, SecurityException,
+            BasicTaskComparator comparator) throws ClassNotFoundException, NoSuchMethodException, SecurityException,
             InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         
         long scheduleId = getNewScheduleID();
@@ -37,7 +37,7 @@ public class ScheduleCache {
         ScheduleCacheData scheduleData = null;
         
         if(!this.scheduleMap.containsKey(scheduleId)) {
-            scheduleData = new ScheduleCacheData(queues, simulationState, time, minRuntimeTasks, coreIndex, comparatorCase, true);
+            scheduleData = new ScheduleCacheData(queues, simulationState, time, minRuntimeTasks, coreIndex, comparator, true);
         } else {
             scheduleData = this.scheduleMap.get(scheduleId);
         }
@@ -157,7 +157,7 @@ public class ScheduleCache {
         return selectedSchedule;
     }
 
-    public SchedulePickResult pickScheduleData()
+    public SchedulePickResult pickScheduleData(BasicTaskComparator comparator)
             throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException,
             IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         SchedulePickResult selectedSchedule = null;
@@ -189,7 +189,7 @@ public class ScheduleCache {
         }
 
         if(divergeIndex != -1 && scheduleData != null) {
-            selectedSchedule = new SchedulePickResult(scheduleData.copy(), divergeIndex, selectedScheduleId);
+            selectedSchedule = new SchedulePickResult(scheduleData.copy(comparator), divergeIndex, selectedScheduleId);
         }
 
         return selectedSchedule;
