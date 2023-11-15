@@ -171,7 +171,8 @@ def show_box_plot(file_path, values, title, fontsize):
 
     # Create the box plot
     plt.figure(figsize=(10, 6))
-    plt.boxplot(boxplot_data, labels=labels, showfliers=False)
+    plt.boxplot(boxplot_data, labels=labels)
+    # plt.boxplot(boxplot_data, labels=labels, showfliers=False)
     plt.xticks(rotation=45)
     plt.xlabel('Number of Tasks and Utilization', fontsize=fontsize)
     plt.ylabel('Time Consumption (us)', fontsize=fontsize)
