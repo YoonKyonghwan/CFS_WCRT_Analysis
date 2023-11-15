@@ -22,6 +22,7 @@ public class CFSSimulator {
     private ScheduleCache scheduleCache;
     private long numOfTryToSchedule;
     BasicTaskComparator comparator;
+    HashSet<String> finalScheduleHash; 
 
     public CFSSimulator(ScheduleSimulationMethod method, ComparatorCase comparatorCase, int targetLatency, int minimumGranularity, int wakeupGranularity, long numOfTryToSchedule) throws NoSuchMethodException, SecurityException, ClassNotFoundException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         this.method = method;
@@ -37,6 +38,7 @@ public class CFSSimulator {
         this.triedScheduleCount = 0;
         this.scheduleCache = new ScheduleCache();
         this.numOfTryToSchedule = numOfTryToSchedule;
+        this.finalScheduleHash = new HashSet<String>();
     }
     
     public long getTriedScheduleCount() {
@@ -192,21 +194,28 @@ public class CFSSimulator {
                     queue.clear();
                 }
             } else {
-                this.triedScheduleCount++;
-                if(this.triedScheduleCount % 10000 == 0) {
-                    logger.fine("tried: " + this.triedScheduleCount);
-                }
+                String scheduleHashString = simulationState.getSimulationScheduleID() + "_" + simulationState.getSelectedDivergeIndex();
+                if (!this.finalScheduleHash.contains(scheduleHashString)) {
+                    this.finalScheduleHash.add(simulationState.getSimulationScheduleID() + "_" + simulationState.getSelectedDivergeIndex());
+                    this.triedScheduleCount++;
 
-                SimulationResult simulResult = checkSchedulability(cores, queues, cloneWcrtMap);
-                mergedResult = mergeToFinalResult(mergedResult, simulResult);
-
-                if(this.method != ScheduleSimulationMethod.PRIORITY_QUEUE) { 
-                    this.scheduleCache.saveFinalScheduledIndex(simulationState.getSimulationScheduleID(), simulationState);
-                    if(this.method == ScheduleSimulationMethod.RANDOM || 
-                    this.method == ScheduleSimulationMethod.RANDOM_TARGET_TASK) {
-                        this.scheduleCache.clearStack();
-                        break;
+                    if(this.triedScheduleCount % 10000 == 0) {
+                        logger.fine("tried: " + this.triedScheduleCount);
                     }
+
+                    SimulationResult simulResult = checkSchedulability(cores, queues, cloneWcrtMap);
+                    mergedResult = mergeToFinalResult(mergedResult, simulResult);
+                    if(this.method != ScheduleSimulationMethod.PRIORITY_QUEUE) { 
+                        this.scheduleCache.saveFinalScheduledIndex(simulationState.getSimulationScheduleID(), simulationState);
+                    }
+                } else {
+                    logger.fine("duplicated schedule: " + scheduleHashString);
+                }
+                
+                if(this.method == ScheduleSimulationMethod.RANDOM || 
+                this.method == ScheduleSimulationMethod.RANDOM_TARGET_TASK) {
+                    this.scheduleCache.clearStack();
+                    break;
                 }
             }
             if(this.scheduleCache.getScheduleStackSize() > 0) {
