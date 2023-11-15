@@ -23,8 +23,6 @@ public class TaskStat {
     // Virtual runtime
     public long virtualRuntime;
 
-    private boolean initialized = false;
-
     private long queueInsertTime = 0;
 
     public TaskStat copy() {
@@ -39,18 +37,7 @@ public class TaskStat {
         newTask.readTimeInNanoSeconds = this.readTimeInNanoSeconds;
         newTask.bodyTimeInNanoSeconds = this.bodyTimeInNanoSeconds;
         newTask.writeTimeInNanoSeconds = this.writeTimeInNanoSeconds;
-        newTask.initialized = this.initialized;
         return newTask;
-    }
-
-    public void initializeMemberVariables() {
-        if(this.initialized == false) {
-            this.readTimeInNanoSeconds = this.task.originalReadTime;
-            this.bodyTimeInNanoSeconds = this.task.originalBodyTime;
-            this.writeTimeInNanoSeconds = this.task.originalWriteTime;
-            this.virtualRuntime = 0L;
-            this.initialized = true;
-        }
     }
 
     public TaskStat(Task task) {
@@ -59,7 +46,6 @@ public class TaskStat {
         this.bodyTimeInNanoSeconds = this.task.originalBodyTime;
         this.writeTimeInNanoSeconds = this.task.originalWriteTime;
         this.virtualRuntime = 0L;
-        this.initialized = true;
         this.queueInsertTime = -1;
     }
 

@@ -64,7 +64,7 @@ public class ScheduleCache {
     // 2_3133_4_0;3_5900_2_0;1_7000_3_2;
     // [prev_diverge_index]_[time]_[minRuntimeTasks.size()]_[coreIndex]; 
     private String makeScheduleId(String prefix, int recentDivergeIndex, long time, int divisionSize, int coreIndex) {
-        String scheduleID = prefix.hashCode() + ";" + recentDivergeIndex + "_" + time + "_" + divisionSize + "_" + coreIndex;
+        String scheduleID = String.format("%x;%x_%x_%x_%x", prefix.hashCode(), recentDivergeIndex, time, divisionSize, coreIndex);
 
         return scheduleID;
     }
