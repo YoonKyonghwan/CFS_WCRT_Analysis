@@ -6,38 +6,38 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Stack;
 
-import org.cap.simulation.comparator.ComparatorCase;
+import org.cap.simulation.comparator.BasicTaskComparator;
 
 public class ScheduleCache {
-    HashMap<Long, ScheduleCacheData> scheduleMap;
+    HashMap<String, ScheduleCacheData> scheduleMap;
     Stack<ScheduleCacheData> scheduleStateStack;
     long nextScheduleID;
 
     public ScheduleCache() {
-        this.scheduleMap = new HashMap<Long, ScheduleCacheData>();
+        this.scheduleMap = new HashMap<String, ScheduleCacheData>();
         this.scheduleStateStack = new Stack<ScheduleCacheData>();
         this.nextScheduleID = 0L;
     }
 
-    private long getNewScheduleID() {
-        long scheduleID;
-        scheduleID = this.nextScheduleID;
-        this.nextScheduleID++;
-        return scheduleID;
-    }
+    // private long getNewScheduleID() {
+    //     long scheduleID;
+    //     scheduleID = this.nextScheduleID;
+    //     this.nextScheduleID++;
+    //     return scheduleID;
+    // }
 
-    public long pushScheduleData(long parentScheduleID, List<Queue<TaskStat>> queues,
+    public String pushScheduleData(String parentScheduleID, List<Queue<TaskStat>> queues,
             HashMap<Integer, Long> wcrtMap,
             CFSSimulationState simulationState, long time, List<TaskStat> minRuntimeTasks, int coreIndex,
-            ComparatorCase comparatorCase) throws ClassNotFoundException, NoSuchMethodException, SecurityException,
+            BasicTaskComparator comparator) throws ClassNotFoundException, NoSuchMethodException, SecurityException,
             InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         
-        long scheduleId = getNewScheduleID();
-        //String scheduleId = makeScheduleId(prefix, simulationState.getSelectedDivergeIndex(), time, minRuntimeTasks.size(), coreIndex);
+        //long scheduleId = getNewScheduleID();
+        String scheduleId = makeScheduleId(parentScheduleID, simulationState.getSelectedDivergeIndex(), time, minRuntimeTasks.size(), coreIndex);
         ScheduleCacheData scheduleData = null;
         
         if(!this.scheduleMap.containsKey(scheduleId)) {
-            scheduleData = new ScheduleCacheData(queues, simulationState, time, minRuntimeTasks, coreIndex, comparatorCase, true);
+            scheduleData = new ScheduleCacheData(queues, simulationState, time, minRuntimeTasks, coreIndex, comparator, true);
         } else {
             scheduleData = this.scheduleMap.get(scheduleId);
         }
@@ -63,13 +63,13 @@ public class ScheduleCache {
     // The coreIndex of the last schedule will be the total core number
     // 2_3133_4_0;3_5900_2_0;1_7000_3_2;
     // [prev_diverge_index]_[time]_[minRuntimeTasks.size()]_[coreIndex]; 
-    // private String makeScheduleId(String prefix, int recentDivergeIndex, long time, int divisionSize, int coreIndex) {
-    //     String scheduleID = prefix + ";" + recentDivergeIndex + "_" + time + "_" + divisionSize + "_" + coreIndex;
+    private String makeScheduleId(String prefix, int recentDivergeIndex, long time, int divisionSize, int coreIndex) {
+        String scheduleID = prefix.hashCode() + ";" + recentDivergeIndex + "_" + time + "_" + divisionSize + "_" + coreIndex;
 
-    //     return scheduleID;
-    // }
+        return scheduleID;
+    }
 
-    private void saveScheduleDataToMap(long scheduleId, long parentScheduleID, ScheduleCacheData scheduleData) {
+    private void saveScheduleDataToMap(String scheduleId, String parentScheduleID, ScheduleCacheData scheduleData) {
         if(!this.scheduleMap.containsKey(scheduleId)) {
             this.scheduleMap.put(scheduleId, scheduleData);
         }
@@ -87,10 +87,10 @@ public class ScheduleCache {
         }
     }
 
-    public long saveIntermediateScheduleData(long parentScheduleID, List<Core> cores, List<Queue<TaskStat>> queues, HashMap<Integer, Long> wcrtMap, 
+    public String saveIntermediateScheduleData(String parentScheduleID, List<Core> cores, List<Queue<TaskStat>> queues, HashMap<Integer, Long> wcrtMap, 
             CFSSimulationState simulationState, long time, List<TaskStat> minRuntimeTasks, int coreIndex) {
-        long scheduleId = getNewScheduleID();
-        //String scheduleId = makeScheduleId(prefix, simulationState.getSelectedDivergeIndex(), time, minRuntimeTasks.size(), coreIndex);
+        //long scheduleId = getNewScheduleID();
+        String scheduleId = makeScheduleId(parentScheduleID, simulationState.getSelectedDivergeIndex(), time, minRuntimeTasks.size(), coreIndex);
         if(!this.scheduleMap.containsKey(scheduleId)) {
             ScheduleCacheData scheduleData = new ScheduleCacheData(queues, wcrtMap, simulationState, time, minRuntimeTasks, coreIndex);
             this.scheduleMap.put(scheduleId, scheduleData);
@@ -109,7 +109,7 @@ public class ScheduleCache {
         return scheduleId;
     }
 
-    public void saveFinalScheduledIndex(long parentScheduleID, CFSSimulationState simulationState) {
+    public void saveFinalScheduledIndex(String parentScheduleID, CFSSimulationState simulationState) {
         //assert prefix.length() > 0 && this.scheduleMap.containsKey(prefix);
         ScheduleCacheData scheduleData = this.scheduleMap.get(parentScheduleID);
         
@@ -123,7 +123,7 @@ public class ScheduleCache {
         }
      }
 
-    public SchedulePickResult pickScheduleDataByEntry(long scheduleId, boolean random) {
+    public SchedulePickResult pickScheduleDataByEntry(String scheduleId, boolean random) {
         SchedulePickResult selectedSchedule = null;
         ScheduleCacheData scheduleData = null;
         int divergeIndex = -1;
@@ -157,7 +157,7 @@ public class ScheduleCache {
         return selectedSchedule;
     }
 
-    public SchedulePickResult pickScheduleData()
+    public SchedulePickResult pickScheduleData(BasicTaskComparator comparator)
             throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException,
             IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         SchedulePickResult selectedSchedule = null;
@@ -165,9 +165,9 @@ public class ScheduleCache {
         int divergeIndex = -1;
         int index = 0;
         int randomVal = (int) (Math.random() * this.scheduleMap.keySet().size());
-        long selectedScheduleId = -1L;
+        String selectedScheduleId = "-";
         outerLoop:
-        for(Long scheduleID : this.scheduleMap.keySet()) {
+        for(String scheduleID : this.scheduleMap.keySet()) {
             if(index == randomVal) {
                 ScheduleCacheData pickedData = this.scheduleMap.get(scheduleID);
                 int randomInDivergedPath = (int) (Math.random() * (pickedData.getMinRuntimeTasks().size() - pickedData.getSubScheduleSet().size()));
@@ -178,7 +178,7 @@ public class ScheduleCache {
                         if(taskIndex == randomInDivergedPath) {
                             divergeIndex = i;
                             scheduleData = pickedData; 
-                            selectedScheduleId = Long.valueOf(scheduleID);
+                            selectedScheduleId = scheduleID;
                             break outerLoop;
                         }
                         taskIndex++;
@@ -189,7 +189,7 @@ public class ScheduleCache {
         }
 
         if(divergeIndex != -1 && scheduleData != null) {
-            selectedSchedule = new SchedulePickResult(scheduleData.copy(), divergeIndex, selectedScheduleId);
+            selectedSchedule = new SchedulePickResult(scheduleData.copy(comparator), divergeIndex, selectedScheduleId);
         }
 
         return selectedSchedule;

@@ -50,7 +50,7 @@ public class Main {
             
             // analyze by simulator
             boolean simulator_schedulability = analyze_by_CFS_simulator(testConf, params);
-            int simulator_timeConsumption = (int)((System.nanoTime() - startTime)/1000); //us
+            long simulator_timeConsumption = (System.nanoTime() - startTime)/1000L; //us
             System.out.println("Time consumption (CFS simulator): " + simulator_timeConsumption + " us");
             
             // analyze by proposed
@@ -58,7 +58,7 @@ public class Main {
             CFSAnalyzer analyzer = new CFSAnalyzer(testConf.mappingInfo, params.getInt("target_latency"));
             analyzer.analyze(); // without parallel
             boolean proposed_schedulability = analyzer.checkSystemSchedulability();
-            int proposed_timeConsumption = (int) ((System.nanoTime() - startTime) / 1000);
+            long proposed_timeConsumption = (System.nanoTime() - startTime) / 1000L;
             // System.out.println("Time consumption (Analysis): " + proposed_timeConsumption + " us");
 
             // save analysis results into file
