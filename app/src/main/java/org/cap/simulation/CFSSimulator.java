@@ -36,7 +36,7 @@ public class CFSSimulator {
         this.minimumGranularity = minimumGranularity * 1000L;
         this.wakeupGranularity = wakeupGranularity * 1000L;
         this.triedScheduleCount = 0;
-        this.scheduleCache = new ScheduleCache();
+        this.scheduleCache = new ScheduleCache(this.method);
         this.numOfTryToSchedule = numOfTryToSchedule;
         this.finalScheduleHash = new HashSet<String>();
     }
@@ -75,7 +75,7 @@ public class CFSSimulator {
         CFSSimulationState simulationState = new CFSSimulationState(cores.size());
         long time = 0;
         this.triedScheduleCount = 0;
-        this.scheduleCache = new ScheduleCache();
+        this.scheduleCache = new ScheduleCache(this.method);
 
         simulationState.insertPeriodsAtStartTime(cores);
         //simulationState.insertPeriodsIntoEventQueue(simulationTime, cores);
@@ -116,6 +116,7 @@ public class CFSSimulator {
         HashMap<Integer, Long> cloneWcrtMap = cloneHashMap(wcrtMap);
 
         do {
+            diverged = false;
             outerLoop:
             while (time < simulationTime && time >= 0) {
                 logger.finer("\nTime " + time + ":");
@@ -152,6 +153,7 @@ public class CFSSimulator {
                                 String scheduleID = this.scheduleCache.pushScheduleData(simulationState.getSimulationScheduleID(), queues, cloneWcrtMap, simulationState, time, minRuntimeTasks, coreIndex, this.comparator);
                                 int taskIndexToSelect = pickNextTaskToSchedule(simulationState, scheduleID);
                                 if(taskIndexToSelect == -1) {
+                                    this.scheduleCache.popScheduleData();
                                     diverged = true;
                                     break outerLoop;
                                 } else {
@@ -225,6 +227,7 @@ public class CFSSimulator {
                 time = scheduleData.getTime();
                 minRuntimeTasks = scheduleData.getMinRuntimeTasks();
                 coreIndex = scheduleData.getCoreIndex();
+                continue;
             }
         } while(this.scheduleCache.getScheduleStackSize() > 0);
 

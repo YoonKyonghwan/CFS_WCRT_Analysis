@@ -12,11 +12,13 @@ public class ScheduleCache {
     HashMap<String, ScheduleCacheData> scheduleMap;
     Stack<ScheduleCacheData> scheduleStateStack;
     long nextScheduleID;
+    ScheduleSimulationMethod method;
 
-    public ScheduleCache() {
+    public ScheduleCache(ScheduleSimulationMethod method) {
         this.scheduleMap = new HashMap<String, ScheduleCacheData>();
         this.scheduleStateStack = new Stack<ScheduleCacheData>();
         this.nextScheduleID = 0L;
+        this.method = method;
     }
 
     // private long getNewScheduleID() {
@@ -25,6 +27,10 @@ public class ScheduleCache {
     //     this.nextScheduleID++;
     //     return scheduleID;
     // }
+
+    public static int cacheHit = 0;
+    public static int cacheMiss = 0;
+    public static int removeHit = 0;
 
     public String pushScheduleData(String parentScheduleID, List<Queue<TaskStat>> queues,
             HashMap<Integer, Long> wcrtMap,
@@ -38,8 +44,10 @@ public class ScheduleCache {
         
         if(!this.scheduleMap.containsKey(scheduleId)) {
             scheduleData = new ScheduleCacheData(queues, simulationState, time, minRuntimeTasks, coreIndex, comparator, true);
+            cacheMiss++;
         } else {
             scheduleData = this.scheduleMap.get(scheduleId);
+            cacheHit++;
         }
         this.scheduleStateStack.push(scheduleData);
         
@@ -82,7 +90,11 @@ public class ScheduleCache {
 
             // If all the schedule path is handled, the schedule cache of the prefix schedule is removed.
             if(this.scheduleMap.get(parentScheduleID).getSubScheduleSet().size() == this.scheduleMap.get(parentScheduleID).getMinRuntimeTasks().size()) {
-                this.scheduleMap.remove(parentScheduleID);
+                if(this.method != ScheduleSimulationMethod.BRUTE_FORCE) {
+                    this.scheduleMap.remove(parentScheduleID);
+                    removeHit++;
+                }
+                
             }
         }
     }
@@ -118,7 +130,9 @@ public class ScheduleCache {
             scheduleData.getSubScheduleSet().add(simulationState.getSelectedDivergeIndex());
 
             if(this.scheduleMap.get(parentScheduleID).getSubScheduleSet().size() == this.scheduleMap.get(parentScheduleID).getMinRuntimeTasks().size()) {
-                this.scheduleMap.remove(parentScheduleID);
+                if(this.method != ScheduleSimulationMethod.BRUTE_FORCE) {
+                    this.scheduleMap.remove(parentScheduleID);
+                }
             }
         }
      }
@@ -139,12 +153,12 @@ public class ScheduleCache {
             randomInDivergedPath = 0;
         }
 
-
         for(int i = 0; i < pickedData.getMinRuntimeTasks().size() ; i++) {
             if(!pickedData.getSubScheduleSet().contains(Integer.valueOf(i))) {
                 if(taskIndex == randomInDivergedPath) {
                     divergeIndex = i;
-                    scheduleData = pickedData; 
+                    scheduleData = pickedData;
+                    break;
                 }
                 taskIndex++;
             }
