@@ -23,6 +23,8 @@ public class CFSSimulator {
     private long numOfTryToSchedule;
     private BasicTaskComparator comparator;
     private HashSet<String> finalScheduleHash;
+    private ArrayList<InterferenceRange> interferenceRangeList;
+    private int maximumInterferenceTaskNum;
 
     public CFSSimulator(ScheduleSimulationMethod method, ComparatorCase comparatorCase, int targetLatency, int minimumGranularity, int wakeupGranularity, long numOfTryToSchedule) throws NoSuchMethodException, SecurityException, ClassNotFoundException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         this.method = method;
@@ -39,6 +41,8 @@ public class CFSSimulator {
         this.scheduleCache = new ScheduleCache(this.method);
         this.numOfTryToSchedule = numOfTryToSchedule;
         this.finalScheduleHash = new HashSet<String>();
+        this.interferenceRangeList = new ArrayList<InterferenceRange>();
+        this.maximumInterferenceTaskNum = 0;
     }
     
     public long getTriedScheduleCount() {
@@ -63,6 +67,55 @@ public class CFSSimulator {
         return finalResult;
     }
 
+    private void makeInterferenceRangeList(List<Core> cores, long simulationTime) {
+        PriorityQueue<Long> eventQueue = new PriorityQueue<Long>();
+        HashMap<Long, List<Task>> eventTimeMap = new HashMap<Long, List<Task>>();
+        for(Core core : cores) {
+            for (Task task : core.tasks) {
+                long time = task.startTime;
+                while(time < simulationTime) {
+                    Long timeLong = Long.valueOf(time);
+                    if(eventTimeMap.containsKey(timeLong) == false) {
+                        eventTimeMap.put(timeLong, new ArrayList<Task>());
+                        eventQueue.add(timeLong);
+                    } 
+                    eventTimeMap.get(timeLong).add(task);
+                    time += task.period;
+                }
+            }
+        }
+
+        InterferenceRange range = new InterferenceRange();
+        boolean inserted = false;
+
+        while(!eventQueue.isEmpty()) {
+            Long timeLong = eventQueue.poll();
+            for (Task task : eventTimeMap.get(timeLong)) {
+                inserted = range.addTask(timeLong.longValue(), task);
+            }
+
+            if(inserted == false) {
+                this.interferenceRangeList.add(range);
+                range = new InterferenceRange();
+            }
+        }
+
+        if(inserted == true && range.particiatedTaskNum() > 0) {
+            this.interferenceRangeList.add(range);
+        }
+
+        for(InterferenceRange rangeInList : this.interferenceRangeList) {
+            this.maximumInterferenceTaskNum = Math.max(this.maximumInterferenceTaskNum, rangeInList.particiatedTaskNum());
+        }
+
+        int rangeLen = this.interferenceRangeList.size() - 1;
+        for(int i = rangeLen ; i >= 0 ; i--) {
+            if (this.interferenceRangeList.get(i).particiatedTaskNum() < this.maximumInterferenceTaskNum) {
+                this.interferenceRangeList.remove(i);
+            }
+        }
+    }
+
     public SimulationResult simulateCFS(List<Core> cores, int targetTaskID, long simulationTime)
             throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException,
             IllegalAccessException, IllegalArgumentException, InvocationTargetException {
@@ -76,6 +129,10 @@ public class CFSSimulator {
         long time = 0;
         this.triedScheduleCount = 0;
         this.scheduleCache = new ScheduleCache(this.method);
+
+        if(this.interferenceRangeList.size() == 0) {            
+            makeInterferenceRangeList(cores, simulationTime);
+        }
 
         simulationState.insertPeriodsAtStartTime(cores);
         //simulationState.insertPeriodsIntoEventQueue(simulationTime, cores);
@@ -102,6 +159,21 @@ public class CFSSimulator {
         logger.fine("******** Final Result ********");
         logger.fine("------------------------------");
         return finalSimulationResult;
+    }
+
+    private boolean checkTimeIsInMaximumInterferenceRange(long currentTime) {
+        boolean located = false;
+        for(InterferenceRange range : this.interferenceRangeList) {
+            if(range.particiatedTaskNum() == this.maximumInterferenceTaskNum) {
+                if(range.getStartTime() <= currentTime && currentTime < range.getEndTime()) {
+                    located = true;
+                    break;
+                }
+            }
+        }
+
+        // TODO: isabled for a while
+        return true;
     }
 
     private SimulationResult performSimulation(List<Core> cores, List<Queue<TaskStat>> queues, HashMap<Integer, Long> wcrtMap,
@@ -246,9 +318,8 @@ public class CFSSimulator {
                 coreIndex = scheduleData.getCoreIndex();
                 queues.get(coreIndex).addAll(minRuntimeTasks);
                 resume = true;
-                continue;
             }
-        } while(this.scheduleCache.getScheduleStackSize() > 0);
+        } while(this.scheduleCache.getScheduleStackSize() > 0 || resume == true);
 
         return mergedResult;
     }
@@ -519,7 +590,7 @@ public class CFSSimulator {
         switch (simulationState.blockingPolicy) {
             case NONE:
                 minRuntime = queueInCore.peek().virtualRuntime;
-                if (this.method == ScheduleSimulationMethod.PRIORITY_QUEUE) {
+                if (this.method == ScheduleSimulationMethod.PRIORITY_QUEUE || checkTimeIsInMaximumInterferenceRange(time) == false) {
                     if (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
                         minRuntimeTasks.add(queueInCore.poll());
                 } else { // BRUTE_FORCE
@@ -546,7 +617,7 @@ public class CFSSimulator {
 
                 if (!queueInCore.isEmpty()) {
                     minRuntime = queueInCore.peek().virtualRuntime;
-                    if (this.method == ScheduleSimulationMethod.PRIORITY_QUEUE) {
+                    if (this.method == ScheduleSimulationMethod.PRIORITY_QUEUE || checkTimeIsInMaximumInterferenceRange(time) == false) {
                         if (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
                             minRuntimeTasks.add(queueInCore.poll());
                     } else { // BRUTE_FORCE
@@ -575,7 +646,7 @@ public class CFSSimulator {
 
                 if (!queueInCore.isEmpty()) {
                     minRuntime = queueInCore.peek().virtualRuntime;
-                    if (this.method == ScheduleSimulationMethod.PRIORITY_QUEUE) {
+                    if (this.method == ScheduleSimulationMethod.PRIORITY_QUEUE || checkTimeIsInMaximumInterferenceRange(time) == false) {
                         if (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
                             minRuntimeTasks.add(queueInCore.poll());
                     } else { // BRUTE_FORCE
