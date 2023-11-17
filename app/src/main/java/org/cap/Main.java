@@ -110,6 +110,10 @@ public class Main {
             compareCase = ComparatorCase.TARGET_TASK;
         }
 
+        if(scheduleMethod == ScheduleSimulationMethod.BRUTE_FORCE) {
+            test_try_count = 1;
+        }
+
 
         CFSSimulator CFSSimulator = new CFSSimulator(scheduleMethod, compareCase, targetLatency, minimumGranularity, wakeupGranularity, schedule_try_count);
         Logger logger = LoggerUtility.getLogger();
@@ -162,7 +166,7 @@ public class Main {
             if(finalSimulationResult.schedulability == false)
                 system_schedulability = false;
             }
-            logger.info("Schedule execution count: " + totalTryCount);
+            logger.info("Schedule execution count (unique): " + totalTryCount);
         } else{
             SimulationResult finalSimulationResult = new SimulationResult();
             long totalTryCount = 0L;
@@ -181,7 +185,7 @@ public class Main {
                 CFSSimulator.findTaskbyID(testConf, taskID.intValue()).WCRT_by_simulator = (int) WCRT_by_simulator;
                 logger.info(String.format("Task ID with %3d (WCRT: %8d us, Period: %8d us, Schedulability: %5s)", taskID, WCRT_by_simulator, deadline, task_schedulability));
             }
-            logger.info("Schedule execution count: " + totalTryCount);
+            logger.info("Schedule execution count (unique): " + totalTryCount);
             if (system_schedulability) {
                 logger.info("All tasks are schedulable");
             } else {

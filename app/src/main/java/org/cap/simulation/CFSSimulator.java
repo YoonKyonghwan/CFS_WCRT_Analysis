@@ -21,8 +21,8 @@ public class CFSSimulator {
     private long triedScheduleCount = 0;
     private ScheduleCache scheduleCache;
     private long numOfTryToSchedule;
-    BasicTaskComparator comparator;
-    HashSet<String> finalScheduleHash; 
+    private BasicTaskComparator comparator;
+    private HashSet<String> finalScheduleHash;
 
     public CFSSimulator(ScheduleSimulationMethod method, ComparatorCase comparatorCase, int targetLatency, int minimumGranularity, int wakeupGranularity, long numOfTryToSchedule) throws NoSuchMethodException, SecurityException, ClassNotFoundException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         this.method = method;
@@ -112,6 +112,7 @@ public class CFSSimulator {
         ScheduleCacheData scheduleData = null;
         List<TaskStat> minRuntimeTasks = null;
         SimulationResult mergedResult = new SimulationResult(true, wcrtMap);
+        boolean resume = false;
 
         HashMap<Integer, Long> cloneWcrtMap = cloneHashMap(wcrtMap);
 
@@ -120,26 +121,31 @@ public class CFSSimulator {
             outerLoop:
             while (time < simulationTime && time >= 0) {
                 logger.finer("\nTime " + time + ":");
-                addJobs(cores, queues, simulationState.coreStates, time);
+                if (resume == false) {
+                    addJobs(cores, queues, simulationState.coreStates, time);
 
-                List<TaskStat> blockingTasks = getBlockingTasks(queues, simulationState);
-                if (blockingTasks.size() > 1) {
-                    String scheduleID = this.scheduleCache.pushScheduleData(simulationState.getSimulationScheduleID(), queues, cloneWcrtMap, simulationState, time, blockingTasks, coreIndex, this.comparator);
-                    int taskIndexToSelect = pickNextTaskToSchedule(simulationState, scheduleID);
-                    if(taskIndexToSelect == -1) {
-                        this.scheduleCache.popScheduleData();
-                        diverged = true;
-                        break outerLoop;
-                    } else {
-                        if (blockingTasks.get(taskIndexToSelect).stage == Stage.READ)
-                            simulationState.blockingPolicy = BlockingPolicy.READ;
-                        else
-                            simulationState.blockingPolicy = BlockingPolicy.WRITE;
-                        simulationState.blockingTaskId = blockingTasks.get(taskIndexToSelect).task.id;
+                    List<TaskStat> blockingTasks = getBlockingTasks(queues, simulationState);
+                    if (blockingTasks.size() > 1) {
+                        String scheduleID = this.scheduleCache.pushScheduleData(simulationState.getSimulationScheduleID(), queues, cloneWcrtMap, simulationState, time, blockingTasks, coreIndex, this.comparator);
+                        int taskIndexToSelect = pickNextTaskToSchedule(simulationState, scheduleID);
+                        if(taskIndexToSelect == -1) {
+                            this.scheduleCache.popScheduleData();
+                            diverged = true;
+                            break outerLoop;
+                        } else {
+                            if (blockingTasks.get(taskIndexToSelect).stage == Stage.READ)
+                                simulationState.blockingPolicy = BlockingPolicy.READ;
+                            else
+                                simulationState.blockingPolicy = BlockingPolicy.WRITE;
+                            simulationState.blockingTaskId = blockingTasks.get(taskIndexToSelect).task.id;
+                        }
                     }
-                }
 
-                simulationState.blockingPolicyReset = false;
+                    simulationState.blockingPolicyReset = false;
+                } else {
+                    resume = false;
+                }
+                
                 for (; coreIndex < cores.size(); coreIndex++) {
                     Queue<TaskStat> queue = queues.get(coreIndex);
                     CoreState coreState = simulationState.coreStates.get(coreIndex);
@@ -238,6 +244,8 @@ public class CFSSimulator {
                 time = scheduleData.getTime();
                 minRuntimeTasks = scheduleData.getMinRuntimeTasks();
                 coreIndex = scheduleData.getCoreIndex();
+                queues.get(coreIndex).addAll(minRuntimeTasks);
+                resume = true;
                 continue;
             }
         } while(this.scheduleCache.getScheduleStackSize() > 0);
