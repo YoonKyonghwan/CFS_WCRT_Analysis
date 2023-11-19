@@ -25,10 +25,15 @@ public class CFSSimulator {
     private HashSet<String> finalScheduleHash;
     private ArrayList<InterferenceRange> interferenceRangeList;
     private int maximumInterferenceTaskNum;
+    private boolean initialOrder;
 
-    public CFSSimulator(ScheduleSimulationMethod method, ComparatorCase comparatorCase, int targetLatency, int minimumGranularity, int wakeupGranularity, long numOfTryToSchedule) throws NoSuchMethodException, SecurityException, ClassNotFoundException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+    public CFSSimulator(ScheduleSimulationMethod method, ComparatorCase comparatorCase, int targetLatency,
+            int minimumGranularity, int wakeupGranularity, long numOfTryToSchedule, boolean initialOrder)
+            throws NoSuchMethodException, SecurityException, ClassNotFoundException, InstantiationException,
+            IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         this.method = method;
         this.comparatorCase = comparatorCase;
+        this.initialOrder = initialOrder;
 
         Class<?> clazz = Class
                     .forName(ComparatorCase.class.getPackageName() + "." + comparatorCase.getClassName());
@@ -116,6 +121,39 @@ public class CFSSimulator {
         }
     }
 
+    public List<Core>  setInitialOrderToCores(List<Core> cores, ArrayList<Integer> initialOrderList) {
+        int i = 0;
+        for (Core core : cores) {
+            for(Task task : core.tasks) {
+                task.initialPriority = initialOrderList.get(i).intValue();
+                i++;
+            }
+        }
+
+        return cores;
+    }
+    
+    private void permutation(ArrayList<ArrayList<Integer>> fullList, Stack<Integer> st, ArrayList<Boolean> check,  ArrayList<Integer> arr, int n, int r) {
+		if(st.size() == r){
+            ArrayList<Integer> toAdd = new ArrayList<Integer>();
+            for(Integer i : st) {
+                toAdd.add(Integer.valueOf(i));
+            }
+            fullList.add(toAdd);
+			return;
+		}
+
+		for(int i=0; i<n; i++){
+			if(!check.get(i)){
+				check.set(i, true);
+				st.push(arr.get(i));
+				permutation(fullList, st, check, arr, n, r);
+				st.pop();
+                check.set(i, false);
+			}
+		}
+	}
+
     public SimulationResult simulateCFS(List<Core> cores, int targetTaskID, long simulationTime)
             throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException,
             IllegalAccessException, IllegalArgumentException, InvocationTargetException {
@@ -125,7 +163,6 @@ public class CFSSimulator {
         SimulationResult finalSimulationResult;
         HashMap<Integer, Long> wcrtMap = initializeWCRTs(cores);
         List<Queue<TaskStat>> queues = initializeQueues(cores, targetTaskID);
-        CFSSimulationState simulationState = new CFSSimulationState(cores.size());
         long time = 0;
         this.triedScheduleCount = 0;
         this.scheduleCache = new ScheduleCache(this.method);
@@ -134,24 +171,65 @@ public class CFSSimulator {
             makeInterferenceRangeList(cores, simulationTime);
         }
 
-        simulationState.insertPeriodsAtStartTime(cores);
-        //simulationState.insertPeriodsIntoEventQueue(simulationTime, cores);
-        simulationState.setPreviousEventTime(time);
-        long previousTime = simulationState.getPreviousEventTime();
-        time = simulationState.peekNextEventTime();
-        simulationState.insertPeriodsInTimeRange(cores, previousTime, time);
-        time = simulationState.getNextEventTime();
 
         if(this.method != ScheduleSimulationMethod.RANDOM && this.method != ScheduleSimulationMethod.RANDOM_TARGET_TASK) {
             this.numOfTryToSchedule = 1;
-            finalSimulationResult = performSimulation(cores, queues, wcrtMap, simulationState, time, simulationTime, 0);
+            if (initialOrder == false) {
+                CFSSimulationState simulationState = new CFSSimulationState(cores.size());
+                simulationState.insertPeriodsAtStartTime(cores);
+                //simulationState.insertPeriodsIntoEventQueue(simulationTime, cores);
+                simulationState.setPreviousEventTime(time);
+                long previousTime = simulationState.getPreviousEventTime();
+                time = simulationState.peekNextEventTime();
+                simulationState.insertPeriodsInTimeRange(cores, previousTime, time);
+                time = simulationState.getNextEventTime();
+
+                finalSimulationResult = performSimulation(cores, queues, wcrtMap, simulationState, time, simulationTime, 0, false);
+            } else {
+                ArrayList<Integer> initialOrderList = new ArrayList<Integer>();
+                Stack<Integer> stack = new Stack<Integer>();
+                ArrayList<Boolean> check = new ArrayList<Boolean>();
+                ArrayList<ArrayList<Integer>> fullList = new ArrayList<ArrayList<Integer>>();
+                for(int  i = 0 ; i < wcrtMap.size() ; i++) {
+                    initialOrderList.add(i);
+                    check.add(false);
+                }
+                finalSimulationResult = new SimulationResult();
+                permutation(fullList, stack, check, initialOrderList, wcrtMap.size(), wcrtMap.size());
+                int i = 0;
+                for(ArrayList<Integer> listPriority : fullList) {
+                    setInitialOrderToCores(cores, listPriority);
+                    queues = initializeQueues(cores, targetTaskID);
+                    CFSSimulationState simulationState = new CFSSimulationState(cores.size());
+                    simulationState.insertPeriodsAtStartTime(cores);
+                    //simulationState.insertPeriodsIntoEventQueue(simulationTime, cores);
+                    simulationState.setPreviousEventTime(time);
+                    long previousTime = simulationState.getPreviousEventTime();
+                    time = simulationState.peekNextEventTime();
+                    simulationState.insertPeriodsInTimeRange(cores, previousTime, time);
+                    time = simulationState.getNextEventTime();
+                    SimulationResult simulResult = performSimulation(cores, queues, wcrtMap, simulationState, time, simulationTime, 0, false);
+                    finalSimulationResult = mergeToFinalResult(finalSimulationResult, simulResult);   
+                    i++;   
+                }
+                System.out.println(i);
+            }
         } else {
-            finalSimulationResult = performSimulation(cores, queues, wcrtMap, simulationState, time, simulationTime, 0);
+            CFSSimulationState simulationState = new CFSSimulationState(cores.size());
+            simulationState.insertPeriodsAtStartTime(cores);
+            //simulationState.insertPeriodsIntoEventQueue(simulationTime, cores);
+            simulationState.setPreviousEventTime(time);
+            long previousTime = simulationState.getPreviousEventTime();
+            time = simulationState.peekNextEventTime();
+            simulationState.insertPeriodsInTimeRange(cores, previousTime, time);
+            time = simulationState.getNextEventTime();
+            finalSimulationResult = performSimulation(cores, queues, wcrtMap, simulationState, time, simulationTime, 0, false);
             for(int i = 0 ; i < this.numOfTryToSchedule - 1 ; i++) {
                 SchedulePickResult pickResult = this.scheduleCache.pickScheduleData(this.comparator);
                 ScheduleCacheData pickData = pickResult.getScheduleData();
+                pickData.getQueues().get(pickData.getCoreIndex()).addAll(pickData.getMinRuntimeTasks());
                 SimulationResult simulResult = performSimulation(cores, pickData.getQueues(), wcrtMap,
-                        pickData.getSimulationState(), pickData.getTime(), simulationTime, pickData.getCoreIndex());
+                        pickData.getSimulationState(), pickData.getTime(), simulationTime, pickData.getCoreIndex(), true);
                 finalSimulationResult = mergeToFinalResult(finalSimulationResult, simulResult);                
             }
         }
@@ -163,28 +241,27 @@ public class CFSSimulator {
 
     private boolean checkTimeIsInMaximumInterferenceRange(long currentTime) {
         boolean located = false;
-        for(InterferenceRange range : this.interferenceRangeList) {
+        /*for(InterferenceRange range : this.interferenceRangeList) {
             if(range.particiatedTaskNum() == this.maximumInterferenceTaskNum) {
                 if(range.getStartTime() <= currentTime && currentTime < range.getEndTime()) {
                     located = true;
                     break;
                 }
             }
-        }
+        }*/
 
         // TODO: isabled for a while
         return true;
     }
 
     private SimulationResult performSimulation(List<Core> cores, List<Queue<TaskStat>> queues, HashMap<Integer, Long> wcrtMap,
-            CFSSimulationState simulationState, long time, long simulationTime, int coreIndex)
+            CFSSimulationState simulationState, long time, long simulationTime, int coreIndex, boolean resume)
             throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException,
             IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         boolean diverged = false;
         ScheduleCacheData scheduleData = null;
         List<TaskStat> minRuntimeTasks = null;
         SimulationResult mergedResult = new SimulationResult(true, wcrtMap);
-        boolean resume = false;
 
         HashMap<Integer, Long> cloneWcrtMap = cloneHashMap(wcrtMap);
 
@@ -286,7 +363,7 @@ public class CFSSimulator {
                 }
             } else {
                 String scheduleHashString = simulationState.getSimulationScheduleID() + "_" + simulationState.getSelectedDivergeIndex();
-                if (!this.finalScheduleHash.contains(scheduleHashString)) {
+                if (!this.finalScheduleHash.contains(scheduleHashString) || scheduleHashString.length() <= 3) {
                     this.finalScheduleHash.add(simulationState.getSimulationScheduleID() + "_" + simulationState.getSelectedDivergeIndex());
                     this.triedScheduleCount++;
 
@@ -597,10 +674,11 @@ public class CFSSimulator {
                     previousTask = null;
                     while (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime) {
                         TaskStat task = queueInCore.poll();
-                        minRuntimeTasks.add(task);
                         if(previousTask != null && taskComparator.compare(task, previousTask) != 0) {
+                            queueInCore.add(task);
                             break;
                         }
+                        minRuntimeTasks.add(task);
                         previousTask = task;
                     }
                 }
@@ -624,10 +702,11 @@ public class CFSSimulator {
                         previousTask = null;
                         while (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime) {
                             TaskStat task = queueInCore.poll();
-                            minRuntimeTasks.add(task);
                             if(previousTask != null && taskComparator.compare(task, previousTask) != 0) {
+                                queueInCore.add(task);
                                 break;
                             }
+                            minRuntimeTasks.add(task);
                             previousTask = task;
                         }
                     }
@@ -653,10 +732,11 @@ public class CFSSimulator {
                         previousTask = null;
                         while (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime) {
                             TaskStat task = queueInCore.poll();
-                            minRuntimeTasks.add(task);
                             if(previousTask != null && taskComparator.compare(task, previousTask) != 0) {
+                                queueInCore.add(task);
                                 break;
                             }
+                            minRuntimeTasks.add(task);
                             previousTask = task;
                         }
                     }

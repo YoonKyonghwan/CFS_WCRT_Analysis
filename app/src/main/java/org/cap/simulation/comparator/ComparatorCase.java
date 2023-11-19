@@ -7,7 +7,8 @@ public enum ComparatorCase {
     TARGET_TASK("TargetTaskBasedComparator"),
     RELEASE_TIME("ReleaseTimeComparator"),
     FIFO("FIFOComparator"),
-    UNORDERED("UnorderedComparator");
+    UNORDERED("UnorderedComparator"),
+    INITIAL_ORDER("InitialOrderBasedComparator");
 	
 	private final String value;
 	

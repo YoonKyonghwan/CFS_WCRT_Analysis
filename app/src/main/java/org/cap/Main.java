@@ -97,12 +97,14 @@ public class Main {
         int targetLatency = params.getInt("target_latency");
         int minimumGranularity = params.getInt("minimum_granularity");
         int wakeupGranularity = params.getInt("wakeup_granularity");
+        boolean initial_order = params.getBoolean("initial_order");
         LoggerUtility.initializeLogger(logger_option);
         LoggerUtility.addConsoleLogger();
                 
         // for brute-force method, unordered comparator is used.
         if ((scheduleMethod == ScheduleSimulationMethod.BRUTE_FORCE || scheduleMethod == ScheduleSimulationMethod.RANDOM) && 
-            (compareCase != ComparatorCase.RELEASE_TIME && compareCase != ComparatorCase.FIFO && compareCase != ComparatorCase.TARGET_TASK)) {
+            (compareCase != ComparatorCase.RELEASE_TIME && compareCase != ComparatorCase.FIFO && compareCase != ComparatorCase.TARGET_TASK  && 
+            compareCase != ComparatorCase.INITIAL_ORDER)) {
             compareCase = ComparatorCase.FIFO;
         }
 
@@ -115,7 +117,7 @@ public class Main {
         }
 
 
-        CFSSimulator CFSSimulator = new CFSSimulator(scheduleMethod, compareCase, targetLatency, minimumGranularity, wakeupGranularity, schedule_try_count);
+        CFSSimulator CFSSimulator = new CFSSimulator(scheduleMethod, compareCase, targetLatency, minimumGranularity, wakeupGranularity, schedule_try_count, initial_order);
         Logger logger = LoggerUtility.getLogger();
         boolean system_schedulability = true;
 
