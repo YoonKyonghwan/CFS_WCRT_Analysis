@@ -9,9 +9,9 @@ num_tasks=(3 6 9 12)
 utilizations=(0.2 0.4 0.6)
 num_sets=50
 
-schedule_simulation_method="random"   # "priority-queue"
-schedule_try_count=1000
-test_try_count=1000
+schedule_simulation_method="random" 
+schedule_try_count=10000
+test_try_count=1
 
 
 ./gradlew build

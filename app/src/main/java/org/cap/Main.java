@@ -81,7 +81,6 @@ public class Main {
                     maxPeriod = task.period;
             }
         }
-
         return maxPeriod;
     }
 
@@ -191,47 +190,4 @@ public class Main {
 
         return system_schedulability;
     }
-
-    // (future work)for shared contention
-    // private static void analyze_all_combinations_by_CFS_simulator(TestConfiguration testConf,
-    //         ScheduleSimulationMethod scheduleMethod, ComparatorCase compareCase) {
-    //     LoggerUtility.initializeLogger();
-    //     LoggerUtility.addConsoleLogger();
-
-    //     CFSSimulator CFSSimulator = new CFSSimulator(scheduleMethod, compareCase);
-
-    //     long startTime = System.nanoTime();
-    //     boolean schedulability = true;
-    //     List<List<Core>> possibleCores = CombinationUtility.generatePossibleCores(testConf.mappingInfo);
-    //     ExecutorService threadsForSimulation = Executors.newFixedThreadPool(maxNumThreads);
-    //     List<Future<SimulationResult>> results = new ArrayList<>();
-
-    //     for (List<Core> possibleCore : possibleCores) {
-    //         for (Integer taskID : testConf.idNameMap.keySet()) {
-    //             Future<SimulationResult> futureResult = threadsForSimulation
-    //                     .submit(() -> CFSSimulator.simulateCFS(possibleCore, taskID.intValue()));
-    //             results.add(futureResult);
-    //         }
-
-    //     }
-    //     for (Future<SimulationResult> future : results) {
-    //         try {
-    //             SimulationResult simulationResult = future.get();
-    //             if (!simulationResult.schedulability) {
-    //                 System.out.println("Not all tasks are schedulable");
-    //                 schedulability = false;
-    //                 break;
-    //             }
-    //         } catch (Exception e) {
-    //             e.printStackTrace();
-    //         }
-    //     }
-    //     if (schedulability)
-    //         System.out.println("All tasks are schedulable");
-
-    //     threadsForSimulation.shutdown();
-
-    //     long duration = (System.nanoTime() - startTime) / 1000;
-    //     System.out.println("Time consumption (CFS simulator): " + duration + " ms");
-    // }
 }
