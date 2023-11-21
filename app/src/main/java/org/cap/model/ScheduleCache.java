@@ -12,19 +12,14 @@ public class ScheduleCache {
     HashMap<String, ScheduleCacheData> scheduleMap;
     Stack<ScheduleCacheData> scheduleStateStack;
     long nextScheduleID;
+    ScheduleSimulationMethod method;
 
-    public ScheduleCache() {
+    public ScheduleCache(ScheduleSimulationMethod method) {
         this.scheduleMap = new HashMap<String, ScheduleCacheData>();
         this.scheduleStateStack = new Stack<ScheduleCacheData>();
         this.nextScheduleID = 0L;
+        this.method = method;
     }
-
-    // private long getNewScheduleID() {
-    //     long scheduleID;
-    //     scheduleID = this.nextScheduleID;
-    //     this.nextScheduleID++;
-    //     return scheduleID;
-    // }
 
     public String pushScheduleData(String parentScheduleID, List<Queue<TaskStat>> queues,
             HashMap<Integer, Long> wcrtMap,
@@ -82,31 +77,12 @@ public class ScheduleCache {
 
             // If all the schedule path is handled, the schedule cache of the prefix schedule is removed.
             if(this.scheduleMap.get(parentScheduleID).getSubScheduleSet().size() == this.scheduleMap.get(parentScheduleID).getMinRuntimeTasks().size()) {
-                this.scheduleMap.remove(parentScheduleID);
-            }
-        }
-    }
-
-    public String saveIntermediateScheduleData(String parentScheduleID, List<Core> cores, List<Queue<TaskStat>> queues, HashMap<Integer, Long> wcrtMap, 
-            CFSSimulationState simulationState, long time, List<TaskStat> minRuntimeTasks, int coreIndex) {
-        //long scheduleId = getNewScheduleID();
-        String scheduleId = makeScheduleId(parentScheduleID, simulationState.getSelectedDivergeIndex(), time, minRuntimeTasks.size(), coreIndex);
-        if(!this.scheduleMap.containsKey(scheduleId)) {
-            ScheduleCacheData scheduleData = new ScheduleCacheData(queues, wcrtMap, simulationState, time, minRuntimeTasks, coreIndex);
-            this.scheduleMap.put(scheduleId, scheduleData);
-
-            if(this.scheduleMap.containsKey(parentScheduleID)) {
-                this.scheduleMap.get(parentScheduleID).getSubScheduleSet().add(simulationState.getSelectedDivergeIndex());
-                assert this.scheduleMap.get(parentScheduleID).getSubScheduleSet().size() <= this.scheduleMap.get(parentScheduleID).getMinRuntimeTasks().size();
-
-                // If all the schedule path is handled, the schedule cache of the prefix schedule is removed.
-                if(this.scheduleMap.get(parentScheduleID).getSubScheduleSet().size() == this.scheduleMap.get(parentScheduleID).getMinRuntimeTasks().size()) {
+                if(this.method != ScheduleSimulationMethod.BRUTE_FORCE) {
                     this.scheduleMap.remove(parentScheduleID);
                 }
+                
             }
         }
-
-        return scheduleId;
     }
 
     public void saveFinalScheduledIndex(String parentScheduleID, CFSSimulationState simulationState) {
@@ -118,7 +94,9 @@ public class ScheduleCache {
             scheduleData.getSubScheduleSet().add(simulationState.getSelectedDivergeIndex());
 
             if(this.scheduleMap.get(parentScheduleID).getSubScheduleSet().size() == this.scheduleMap.get(parentScheduleID).getMinRuntimeTasks().size()) {
-                this.scheduleMap.remove(parentScheduleID);
+                if(this.method != ScheduleSimulationMethod.BRUTE_FORCE) {
+                    this.scheduleMap.remove(parentScheduleID);
+                }
             }
         }
      }
@@ -139,12 +117,12 @@ public class ScheduleCache {
             randomInDivergedPath = 0;
         }
 
-
         for(int i = 0; i < pickedData.getMinRuntimeTasks().size() ; i++) {
             if(!pickedData.getSubScheduleSet().contains(Integer.valueOf(i))) {
                 if(taskIndex == randomInDivergedPath) {
                     divergeIndex = i;
-                    scheduleData = pickedData; 
+                    scheduleData = pickedData;
+                    break;
                 }
                 taskIndex++;
             }
