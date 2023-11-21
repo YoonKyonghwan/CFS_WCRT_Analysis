@@ -21,6 +21,7 @@ This Java application is specifically designed for task scheduling simulation an
 Refer to "app/build.gradle.kts" for detailed dependency information.
 
 ### Python Libraries(only for additional analysis)
+
 '''
 pip install pandas matplotlib scikit-learn
 '''
@@ -28,12 +29,14 @@ pip install pandas matplotlib scikit-learn
 ## Basic Usage
 
 ### Generate Synthetic Dataset
-'''bash
+
+'''
 bash ./script/generate_taskset.sh
 '''
 
 ### Run the simulation and the WCRT analysis
-'''bash
+
+'''
 bash ./script/run_experiment.sh
 '''
 
