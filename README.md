@@ -22,23 +22,17 @@ Refer to "app/build.gradle.kts" for detailed dependency information.
 
 ### Python Libraries(only for additional analysis)
 
-'''
-pip install pandas matplotlib scikit-learn
-'''
+    pip install pandas matplotlib scikit-learn
 
 ## Basic Usage
 
 ### Generate Synthetic Dataset
 
-'''
-bash ./script/generate_taskset.sh
-'''
+    bash ./script/generate_taskset.sh
 
 ### Run the simulation and the WCRT analysis
 
-'''
-bash ./script/run_experiment.sh
-'''
+    bash ./script/run_experiment.sh
 
 ### Additional Analysis Tools
 
