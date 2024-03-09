@@ -55,3 +55,10 @@ run.jar
 script/analysis/venv/
 script/analysis/__pycache__/
 generated_taskset*
+dataset/FMTV_application/generated_FMTV_data/
+dataset/FMTV_application/generated_FMTV_json/
+scheduler_comparision/app/.vscode/
+scheduler_comparision/app/build/
+scheduler_comparision/app/application
+scheduler_comparision/app/*.nsys-rep
+scheduler_comparision/app/*.json 

@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<constraintsModel>
+    <eventChains name="EffectChain_1" stimulus="RunnableStart_Runnable_10ms_149?type=events.RunnableEvent" response="RunnableStart_Runnable_10ms_107?type=events.RunnableEvent">
+    <segments xsi:type="constraints:SubEventChain">
+        <eventChain name="Label_3423" stimulus="RunnableStart_Runnable_10ms_107?type=events.RunnableEvent" response="RunnableStart_Runnable_10ms_243?type=events.RunnableEvent"/>
+    </segments>
+    <segments xsi:type="constraints:SubEventChain">
+        <eventChain name="Label_3968" stimulus="RunnableStart_Runnable_10ms_243?type=events.RunnableEvent" response="RunnableStart_Runnable_10ms_272?type=events.RunnableEvent"/>
+    </segments>
+    <segments xsi:type="constraints:SubEventChain">
+        <eventChain name="Label_2276" stimulus="RunnableStart_Runnable_10ms_272?type=events.RunnableEvent" response="RunnableStart_Runnable_10ms_107?type=events.RunnableEvent"/>
+    </segments>
+    </eventChains>
+    <eventChains name="EffectChain_2" stimulus="RunnableStart_Runnable_100ms_7?type=events.RunnableEvent" response="RunnableStart_Runnable_2ms_8?type=events.RunnableEvent">
+    <segments xsi:type="constraints:SubEventChain">
+        <eventChain name="Label_4258" stimulus="RunnableStart_Runnable_100ms_7?type=events.RunnableEvent" response="RunnableStart_Runnable_10ms_19?type=events.RunnableEvent"/>
+    </segments>
+    <segments xsi:type="constraints:SubEventChain">
+        <eventChain name="Label_2197" stimulus="RunnableStart_Runnable_10ms_19?type=events.RunnableEvent" response="RunnableStart_Runnable_2ms_8?type=events.RunnableEvent"/>
+    </segments>
+    </eventChains>
+    <eventChains name="EffectChain_3" stimulus="RunnableStart_Runnable_sporadic_700us_800us_3?type=events.RunnableEvent" response="RunnableStart_Runnable_50ms_36?type=events.RunnableEvent">
+    <segments xsi:type="constraints:SubEventChain">
+        <eventChain name="Label_4576" stimulus="RunnableStart_Runnable_sporadic_700us_800us_3?type=events.RunnableEvent" response="RunnableStart_Runnable_2ms_3?type=events.RunnableEvent"/>
+    </segments>
+    <segments xsi:type="constraints:SubEventChain">
+        <eventChain name="Label_2197" stimulus="RunnableStart_Runnable_2ms_3?type=events.RunnableEvent" response="RunnableStart_Runnable_50ms_36?type=events.RunnableEvent"/>
+    </segments>
+    </eventChains>
+    <requirements xsi:type="constraints:ProcessRequirement" name="Deadline_Task_200ms" process="Task_200ms?type=sw.Task">
+    <limit xsi:type="constraints:TimeRequirementLimit" limitType="UpperLimit" metric="ResponseTime">
+        <limitValue value="200" unit="ms"/>
+    </limit>
+    </requirements>
+    <requirements xsi:type="constraints:ProcessRequirement" name="Deadline_Task_10ms" process="Task_10ms?type=sw.Task">
+    <limit xsi:type="constraints:TimeRequirementLimit" limitType="UpperLimit" metric="ResponseTime">
+        <limitValue value="10" unit="ms"/>
+    </limit>
+    </requirements>
+    <requirements xsi:type="constraints:ProcessRequirement" name="Deadline_Angle_Sync" process="Angle_Sync?type=sw.Task">
+    <limit xsi:type="constraints:TimeRequirementLimit" limitType="UpperLimit" metric="ResponseTime">
+        <limitValue value="6660" unit="us"/>
+    </limit>
+    </requirements>
+    <requirements xsi:type="constraints:ProcessRequirement" name="Deadline_Task_20ms" process="Task_20ms?type=sw.Task">
+    <limit xsi:type="constraints:TimeRequirementLimit" limitType="UpperLimit" metric="ResponseTime">
+        <limitValue value="20" unit="ms"/>
+    </limit>
+    </requirements>
+    <requirements xsi:type="constraints:ProcessRequirement" name="Deadline_Task_50ms" process="Task_50ms?type=sw.Task">
+    <limit xsi:type="constraints:TimeRequirementLimit" limitType="UpperLimit" metric="ResponseTime">
+        <limitValue value="50" unit="ms"/>
+    </limit>
+    </requirements>
+    <requirements xsi:type="constraints:ProcessRequirement" name="Deadline_ISR_9" process="ISR_9?type=sw.Task">
+    <limit xsi:type="constraints:TimeRequirementLimit" limitType="UpperLimit" metric="ResponseTime">
+        <limitValue value="6000" unit="us"/>
+    </limit>
+    </requirements>
+    <requirements xsi:type="constraints:ProcessRequirement" name="Deadline_ISR_8" process="ISR_8?type=sw.Task">
+    <limit xsi:type="constraints:TimeRequirementLimit" limitType="UpperLimit" metric="ResponseTime">
+        <limitValue value="1700" unit="us"/>
+    </limit>
+    </requirements>
+    <requirements xsi:type="constraints:ProcessRequirement" name="Deadline_ISR_7" process="ISR_7?type=sw.Task">
+    <limit xsi:type="constraints:TimeRequirementLimit" limitType="UpperLimit" metric="ResponseTime">
+        <limitValue value="4900" unit="us"/>
+    </limit>
+    </requirements>
+    <requirements xsi:type="constraints:ProcessRequirement" name="Deadline_Task_5ms" process="Task_5ms?type=sw.Task">
+    <limit xsi:type="constraints:TimeRequirementLimit" limitType="UpperLimit" metric="ResponseTime">
+        <limitValue value="5" unit="ms"/>
+    </limit>
+    </requirements>
+    <requirements xsi:type="constraints:ProcessRequirement" name="Deadline_ISR_2" process="ISR_2?type=sw.Task">
+    <limit xsi:type="constraints:TimeRequirementLimit" limitType="UpperLimit" metric="ResponseTime">
+        <limitValue value="9500" unit="us"/>
+    </limit>
+    </requirements>
+    <requirements xsi:type="constraints:ProcessRequirement" name="Deadline_Task_1ms" process="Task_1ms?type=sw.Task">
+    <limit xsi:type="constraints:TimeRequirementLimit" limitType="UpperLimit" metric="ResponseTime">
+        <limitValue value="1" unit="ms"/>
+    </limit>
+    </requirements>
+    <requirements xsi:type="constraints:ProcessRequirement" name="Deadline_ISR_1" process="ISR_1?type=sw.Task">
+    <limit xsi:type="constraints:TimeRequirementLimit" limitType="UpperLimit" metric="ResponseTime">
+        <limitValue value="9500" unit="us"/>
+    </limit>
+    </requirements>
+    <requirements xsi:type="constraints:ProcessRequirement" name="Deadline_Task_2ms" process="Task_2ms?type=sw.Task">
+    <limit xsi:type="constraints:TimeRequirementLimit" limitType="UpperLimit" metric="ResponseTime">
+        <limitValue value="2" unit="ms"/>
+    </limit>
+    </requirements>
+    <requirements xsi:type="constraints:ProcessRequirement" name="Deadline_Task_100ms" process="Task_100ms?type=sw.Task">
+    <limit xsi:type="constraints:TimeRequirementLimit" limitType="UpperLimit" metric="ResponseTime">
+        <limitValue value="100" unit="ms"/>
+    </limit>
+    </requirements>
+    <requirements xsi:type="constraints:ProcessRequirement" name="Deadline_ISR_6" process="ISR_6?type=sw.Task">
+    <limit xsi:type="constraints:TimeRequirementLimit" limitType="UpperLimit" metric="ResponseTime">
+        <limitValue value="1100" unit="us"/>
+    </limit>
+    </requirements>
+    <requirements xsi:type="constraints:ProcessRequirement" name="Deadline_ISR_5" process="ISR_5?type=sw.Task">
+    <limit xsi:type="constraints:TimeRequirementLimit" limitType="UpperLimit" metric="ResponseTime">
+        <limitValue value="900" unit="us"/>
+    </limit>
+    </requirements>
+    <requirements xsi:type="constraints:ProcessRequirement" name="Deadline_ISR_4" process="ISR_4?type=sw.Task">
+    <limit xsi:type="constraints:TimeRequirementLimit" limitType="UpperLimit" metric="ResponseTime">
+        <limitValue value="1500" unit="us"/>
+    </limit>
+    </requirements>
+    <requirements xsi:type="constraints:ProcessRequirement" name="Deadline_ISR_3" process="ISR_3?type=sw.Task">
+    <limit xsi:type="constraints:TimeRequirementLimit" limitType="UpperLimit" metric="ResponseTime">
+        <limitValue value="9500" unit="us"/>
+    </limit>
+    </requirements>
+    <requirements xsi:type="constraints:ProcessRequirement" name="Deadline_ISR_10" process="ISR_10?type=sw.Task">
+    <limit xsi:type="constraints:TimeRequirementLimit" limitType="UpperLimit" metric="ResponseTime">
+        <limitValue value="700" unit="us"/>
+    </limit>
+    </requirements>
+    <requirements xsi:type="constraints:ProcessRequirement" name="Deadline_Task_1000ms" process="Task_1000ms?type=sw.Task">
+    <limit xsi:type="constraints:TimeRequirementLimit" limitType="UpperLimit" metric="ResponseTime">
+        <limitValue value="1000" unit="ms"/>
+    </limit>
+    </requirements>
+    <requirements xsi:type="constraints:ProcessRequirement" name="Deadline_ISR_11" process="ISR_11?type=sw.Task">
+    <limit xsi:type="constraints:TimeRequirementLimit" limitType="UpperLimit" metric="ResponseTime">
+        <limitValue value="5000" unit="us"/>
+    </limit>
+    </requirements>
+</constraintsModel>

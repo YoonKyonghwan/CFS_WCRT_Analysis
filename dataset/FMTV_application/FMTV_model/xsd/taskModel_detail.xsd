@@ -1,0 +1,427 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<xs:schema attributeFormDefault="unqualified" elementFormDefault="qualified" xmlns:xs="http://www.w3.org/2001/XMLSchema">
+  <xs:element name="swModel">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" name="tasks">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="callGraph">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="graphEntries">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element maxOccurs="unbounded" name="calls">
+                            <xs:complexType>
+                              <xs:attribute name="runnable" type="xs:string" use="required" />
+                            </xs:complexType>
+                          </xs:element>
+                        </xs:sequence>
+                        <xs:attribute name="name" type="xs:string" use="required" />
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+            <xs:attribute name="name" type="xs:string" use="required" />
+            <xs:attribute name="priority" type="xs:unsignedByte" use="optional" />
+            <xs:attribute name="stimuli" type="xs:string" use="required" />
+            <xs:attribute name="preemption" type="xs:string" use="required" />
+            <xs:attribute name="multipleTaskActivationLimit" type="xs:unsignedByte" use="required" />
+          </xs:complexType>
+        </xs:element>
+        <xs:element maxOccurs="unbounded" name="runnables">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element maxOccurs="unbounded" name="runnableItems">
+                <xs:complexType>
+                  <xs:sequence minOccurs="0">
+                    <xs:element name="deviation">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="lowerBound">
+                            <xs:complexType>
+                              <xs:attribute name="value" type="xs:unsignedInt" use="required" />
+                            </xs:complexType>
+                          </xs:element>
+                          <xs:element name="upperBound">
+                            <xs:complexType>
+                              <xs:attribute name="value" type="xs:unsignedInt" use="required" />
+                            </xs:complexType>
+                          </xs:element>
+                          <xs:element name="distribution">
+                            <xs:complexType>
+                              <xs:sequence>
+                                <xs:element name="mean">
+                                  <xs:complexType>
+                                    <xs:attribute name="value" type="xs:unsignedInt" use="required" />
+                                  </xs:complexType>
+                                </xs:element>
+                              </xs:sequence>
+                              <xs:attribute name="pRemainPromille" type="xs:float" use="required" />
+                            </xs:complexType>
+                          </xs:element>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                  <xs:attribute name="data" type="xs:string" use="optional" />
+                  <xs:attribute name="access" type="xs:string" use="optional" />
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+            <xs:attribute name="name" type="xs:string" use="required" />
+            <xs:attribute name="activation" type="xs:string" use="required" />
+          </xs:complexType>
+        </xs:element>
+        <xs:element maxOccurs="unbounded" name="labels">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="size">
+                <xs:complexType>
+                  <xs:attribute name="numberBits" type="xs:unsignedShort" use="required" />
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+            <xs:attribute name="name" type="xs:string" use="required" />
+            <xs:attribute name="constant" type="xs:boolean" use="optional" />
+          </xs:complexType>
+        </xs:element>
+        <xs:element maxOccurs="unbounded" name="activations">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="0" maxOccurs="unbounded" name="customProperties">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="value">
+                      <xs:complexType>
+                        <xs:attribute name="value" type="xs:string" use="required" />
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                  <xs:attribute name="key" type="xs:string" use="required" />
+                </xs:complexType>
+              </xs:element>
+              <xs:element minOccurs="0" name="min">
+                <xs:complexType>
+                  <xs:attribute name="value" type="xs:unsignedShort" use="required" />
+                  <xs:attribute name="unit" type="xs:string" use="required" />
+                </xs:complexType>
+              </xs:element>
+              <xs:element minOccurs="0" name="max">
+                <xs:complexType>
+                  <xs:attribute name="value" type="xs:unsignedShort" use="required" />
+                  <xs:attribute name="unit" type="xs:string" use="required" />
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+            <xs:attribute name="name" type="xs:string" use="required" />
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="hwModel">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="coreTypes">
+          <xs:complexType>
+            <xs:attribute name="name" type="xs:string" use="required" />
+            <xs:attribute name="bitWidth" type="xs:unsignedByte" use="required" />
+            <xs:attribute name="instructionsPerCycle" type="xs:unsignedByte" use="required" />
+          </xs:complexType>
+        </xs:element>
+        <xs:element maxOccurs="unbounded" name="memoryTypes">
+          <xs:complexType>
+            <xs:attribute name="name" type="xs:string" use="required" />
+            <xs:attribute name="xAccessPattern" type="xs:string" use="required" />
+            <xs:attribute name="type" type="xs:string" use="required" />
+            <xs:attribute name="size" type="xs:unsignedInt" use="required" />
+          </xs:complexType>
+        </xs:element>
+        <xs:element maxOccurs="unbounded" name="networkTypes">
+          <xs:complexType>
+            <xs:attribute name="name" type="xs:string" use="required" />
+            <xs:attribute name="bitWidth" type="xs:unsignedByte" use="optional" />
+            <xs:attribute name="busType" type="xs:string" use="optional" />
+          </xs:complexType>
+        </xs:element>
+        <xs:element maxOccurs="unbounded" name="accessPaths">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="latencies">
+                <xs:complexType>
+                  <xs:attribute name="accessType" type="xs:string" use="required" />
+                  <xs:attribute name="transferSize" type="xs:unsignedByte" use="required" />
+                  <xs:attribute name="quartz" type="xs:string" use="required" />
+                  <xs:attribute name="value" type="xs:unsignedByte" use="required" />
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+            <xs:attribute name="name" type="xs:string" use="required" />
+            <xs:attribute name="source" type="xs:string" use="required" />
+            <xs:attribute name="target" type="xs:string" use="required" />
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="system">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="ecus">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="microcontrollers">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element maxOccurs="unbounded" name="memories">
+                            <xs:complexType>
+                              <xs:sequence>
+                                <xs:element maxOccurs="unbounded" name="ports">
+                                  <xs:complexType>
+                                    <xs:attribute name="name" type="xs:string" use="required" />
+                                    <xs:attribute name="network" type="xs:string" use="required" />
+                                    <xs:attribute name="bitWidth" type="xs:unsignedByte" use="required" />
+                                    <xs:attribute name="direction" type="xs:string" use="required" />
+                                    <xs:attribute name="writeCycles" type="xs:unsignedByte" use="required" />
+                                    <xs:attribute name="readCycles" type="xs:unsignedByte" use="required" />
+                                  </xs:complexType>
+                                </xs:element>
+                              </xs:sequence>
+                              <xs:attribute name="name" type="xs:string" use="required" />
+                              <xs:attribute name="type" type="xs:string" use="required" />
+                            </xs:complexType>
+                          </xs:element>
+                          <xs:element name="networks">
+                            <xs:complexType>
+                              <xs:sequence>
+                                <xs:element name="prescaler">
+                                  <xs:complexType>
+                                    <xs:attribute name="name" type="xs:string" use="required" />
+                                    <xs:attribute name="clockRatio" type="xs:decimal" use="required" />
+                                    <xs:attribute name="quartz" type="xs:string" use="required" />
+                                  </xs:complexType>
+                                </xs:element>
+                              </xs:sequence>
+                              <xs:attribute name="name" type="xs:string" use="required" />
+                              <xs:attribute name="type" type="xs:string" use="required" />
+                            </xs:complexType>
+                          </xs:element>
+                          <xs:element name="quartzes">
+                            <xs:complexType>
+                              <xs:attribute name="name" type="xs:string" use="required" />
+                              <xs:attribute name="frequency" type="xs:unsignedInt" use="required" />
+                            </xs:complexType>
+                          </xs:element>
+                          <xs:element maxOccurs="unbounded" name="cores">
+                            <xs:complexType>
+                              <xs:sequence>
+                                <xs:element name="networks">
+                                  <xs:complexType>
+                                    <xs:attribute name="name" type="xs:string" use="required" />
+                                    <xs:attribute name="type" type="xs:string" use="required" />
+                                  </xs:complexType>
+                                </xs:element>
+                                <xs:element maxOccurs="unbounded" name="ports">
+                                  <xs:complexType>
+                                    <xs:attribute name="name" type="xs:string" use="required" />
+                                    <xs:attribute name="network" type="xs:string" use="required" />
+                                    <xs:attribute name="isMaster" type="xs:boolean" use="required" />
+                                    <xs:attribute name="bitWidth" type="xs:unsignedByte" use="required" />
+                                    <xs:attribute name="direction" type="xs:string" use="required" />
+                                    <xs:attribute name="writeCycles" type="xs:unsignedByte" use="required" />
+                                    <xs:attribute name="readCycles" type="xs:unsignedByte" use="required" />
+                                  </xs:complexType>
+                                </xs:element>
+                                <xs:element name="prescaler">
+                                  <xs:complexType>
+                                    <xs:attribute name="name" type="xs:string" use="required" />
+                                    <xs:attribute name="clockRatio" type="xs:decimal" use="required" />
+                                    <xs:attribute name="quartz" type="xs:string" use="required" />
+                                  </xs:complexType>
+                                </xs:element>
+                              </xs:sequence>
+                              <xs:attribute name="name" type="xs:string" use="required" />
+                              <xs:attribute name="coreType" type="xs:string" use="required" />
+                            </xs:complexType>
+                          </xs:element>
+                        </xs:sequence>
+                        <xs:attribute name="name" type="xs:string" use="required" />
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                  <xs:attribute name="name" type="xs:string" use="required" />
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+            <xs:attribute name="name" type="xs:string" use="required" />
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="osModel">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="operatingSystems">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element maxOccurs="unbounded" name="taskSchedulers">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="schedulingUnit">
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="delay">
+                            <xs:complexType>
+                              <xs:attribute name="unit" type="xs:string" use="required" />
+                            </xs:complexType>
+                          </xs:element>
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="schedulingAlgorithm" />
+                  </xs:sequence>
+                  <xs:attribute name="name" type="xs:string" use="required" />
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+            <xs:attribute name="name" type="xs:string" use="required" />
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="stimuliModel">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" name="stimuli">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element minOccurs="0" name="stimulusDeviation">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="lowerBound">
+                      <xs:complexType>
+                        <xs:attribute name="value" type="xs:unsignedShort" use="required" />
+                        <xs:attribute name="unit" type="xs:string" use="required" />
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="upperBound">
+                      <xs:complexType>
+                        <xs:attribute name="value" type="xs:unsignedShort" use="required" />
+                        <xs:attribute name="unit" type="xs:string" use="required" />
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="distribution" />
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+              <xs:element minOccurs="0" name="offset">
+                <xs:complexType>
+                  <xs:attribute name="unit" type="xs:string" use="required" />
+                </xs:complexType>
+              </xs:element>
+              <xs:element minOccurs="0" name="recurrence">
+                <xs:complexType>
+                  <xs:attribute name="value" type="xs:unsignedShort" use="required" />
+                  <xs:attribute name="unit" type="xs:string" use="required" />
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+            <xs:attribute name="name" type="xs:string" use="required" />
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="constraintsModel">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" name="eventChains">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element maxOccurs="unbounded" name="segments">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="eventChain">
+                      <xs:complexType>
+                        <xs:attribute name="name" type="xs:string" use="required" />
+                        <xs:attribute name="stimulus" type="xs:string" use="required" />
+                        <xs:attribute name="response" type="xs:string" use="required" />
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+            <xs:attribute name="name" type="xs:string" use="required" />
+            <xs:attribute name="stimulus" type="xs:string" use="required" />
+            <xs:attribute name="response" type="xs:string" use="required" />
+          </xs:complexType>
+        </xs:element>
+        <xs:element maxOccurs="unbounded" name="requirements">
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="limit">
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="limitValue">
+                      <xs:complexType>
+                        <xs:attribute name="value" type="xs:unsignedShort" use="required" />
+                        <xs:attribute name="unit" type="xs:string" use="required" />
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                  <xs:attribute name="limitType" type="xs:string" use="required" />
+                  <xs:attribute name="metric" type="xs:string" use="required" />
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+            <xs:attribute name="name" type="xs:string" use="required" />
+            <xs:attribute name="process" type="xs:string" use="required" />
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="eventModel">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" name="events">
+          <xs:complexType>
+            <xs:attribute name="name" type="xs:string" use="required" />
+            <xs:attribute name="eventType" type="xs:string" use="required" />
+            <xs:attribute name="entity" type="xs:string" use="required" />
+            <xs:attribute name="description" type="xs:string" use="optional" />
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+    </xs:complexType>
+  </xs:element>
+  <xs:element name="mappingModel">
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element maxOccurs="unbounded" name="processAllocation">
+          <xs:complexType>
+            <xs:attribute name="process" type="xs:string" use="required" />
+            <xs:attribute name="scheduler" type="xs:string" use="required" />
+          </xs:complexType>
+        </xs:element>
+        <xs:element maxOccurs="unbounded" name="coreAllocation">
+          <xs:complexType>
+            <xs:attribute name="scheduler" type="xs:string" use="required" />
+            <xs:attribute name="core" type="xs:string" use="required" />
+          </xs:complexType>
+        </xs:element>
+        <xs:element maxOccurs="unbounded" name="mapping">
+          <xs:complexType>
+            <xs:attribute name="mem" type="xs:string" use="required" />
+            <xs:attribute name="abstractElement" type="xs:string" use="required" />
+          </xs:complexType>
+        </xs:element>
+      </xs:sequence>
+      <xs:attribute name="addressMappingType" type="xs:string" use="required" />
+    </xs:complexType>
+  </xs:element>
+</xs:schema>
