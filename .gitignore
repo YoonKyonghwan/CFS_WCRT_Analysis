@@ -57,6 +57,7 @@ script/analysis/__pycache__/
 generated_taskset*
 dataset/FMTV_application/generated_FMTV_data/
 dataset/FMTV_application/generated_FMTV_json/
+dataset/FMTV_application/datastructure/__pycache__/
 scheduler_comparision/app/.vscode/
 scheduler_comparision/app/build/
 scheduler_comparision/app/application
