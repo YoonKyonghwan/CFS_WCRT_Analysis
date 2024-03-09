@@ -1,6 +1,5 @@
 #include "util.h"
 
-
 void setTaskInfo(json_object *jobj, Task_Info *task){
     task->name = json_object_get_string(json_object_object_get(jobj, "task_name"));
     task->core_index = json_object_get_int(json_object_object_get(jobj, "core_index"));
@@ -69,12 +68,20 @@ void saveResultToJson(int num_tasks, Task_Info *tasks, char *result_file_name){
         }
         unsigned long long avg_response_time_ns = total_response_time_ns / count_valid_response_time;
 
+        long long deadline_ns = 0;
+        if (tasks[i].isPeriodic){
+            deadline_ns = tasks[i].period_ns;
+        }else{
+            deadline_ns = tasks[i].low_interarrival_time_ns;
+        }
+        json_object_object_add(task_result, "task_name", json_object_new_string(tasks[i].name));
+        json_object_object_add(task_result, "deadline_ns", json_object_new_int64(deadline_ns));
         json_object_object_add(task_result, "wcrt_ns", json_object_new_int64(tasks[i].wcrt_ns));
         json_object_object_add(task_result, "avg_response_time_ns", json_object_new_int64(avg_response_time_ns));
         json_object_object_add(task_result, "response_time_ns", task_reponsetime_ns);
         json_object_array_add(tasks_result, task_result);
     }
-    json_object_to_file(result_file_name, tasks_result);
+    json_object_to_file_ext(result_file_name, tasks_result, JSON_C_TO_STRING_PRETTY);
 
     return;
 }
@@ -100,8 +107,8 @@ void setTaskAttribute(pthread_attr_t *threadAttr, Task_Info *task){
         exit(1);
     }
 
-    // set schedule policy
-    setSchedPolicy(threadAttr, task);
+    // set schedule policy and priority
+    setSchedPolicyPriority(threadAttr, task);
 
     // set mapping to core
     setCoreMapping(task, threadAttr);
@@ -126,15 +133,13 @@ void setCoreMapping(Task_Info *task, pthread_attr_t *threadAttr) {
 }
 
 
-void setSchedPolicy(pthread_attr_t *threadAttr, Task_Info *task){
-    //ref : https://gist.github.com/sutyum/430ab9f7ff3cb6f4bf85344e0910c739
+void setSchedPolicyPriority(pthread_attr_t *threadAttr, Task_Info *task){
     struct sched_param schedparam;
     switch (task->sched_policy) {
+        // Configurations in the thread function for CFS or EDF
         case CFS:
-            if (pthread_attr_setschedpolicy(threadAttr, SCHED_OTHER)){
-                printf("Fail to set schedule policy.\n");
-                exit(1);
-            }
+            break;
+        case EDF:
             break;
         case FIFO: 
             //set sched_policy
@@ -161,9 +166,6 @@ void setSchedPolicy(pthread_attr_t *threadAttr, Task_Info *task){
                 printf("Fail to set scheduling priority.\n");
                 exit(1);
             }
-            break;
-        case EDF:
-            // config in thread function
             break;
         case RM:
             //set sched_policy

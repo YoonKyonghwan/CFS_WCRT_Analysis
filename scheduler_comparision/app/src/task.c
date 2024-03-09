@@ -6,39 +6,40 @@ extern pthread_barrier_t barrier;
 
 void* phased_task_function(void* arg) {
     Task_Info *task = (Task_Info*)arg;
-
-    pid_t tid = gettid();
-    int sched_policy = sched_getscheduler(tid);
-    printf(" phased_task_function: sched_policy : %d\n", sched_policy);
-
-    struct sched_param param;
-    int ret = sched_getparam(tid, &param);
-    printf(" phased_task_function: priority : %d\n", param.sched_priority);
-
-    // Wait for all threads to reach the barrier    
-    pthread_barrier_wait(&barrier);
-
     struct timespec global_start, global_end, next_trigger_time;
+    clock_gettime(CLOCK_MONOTONIC, &global_start);
+    PUSH_PROFILE(task->name)
+
+
+    if (!task->isRTTask){
+        setpriority(PRIO_PROCESS, syscall(SYS_gettid), 1); //lower non-rt task's nice-value
+    }
+    // pid_t tid = gettid();
+    // int sched_policy = sched_getscheduler(tid);
+    // struct sched_param param;
+    // int ret = sched_getparam(tid, &param);
+    // printf(" %s: sched_policy : %d priority : %d\n", task->name, sched_policy, param.sched_priority);
+
     int iteration_index = 0;
     long long responsed_ns = 0;
     
     pthread_mutex_t period_mutex = PTHREAD_MUTEX_INITIALIZER;
     pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
 
+    // Wait for all threads to reach the barrier    
+    pthread_barrier_wait(&barrier);
     pthread_mutex_lock(&period_mutex); // to control period
 
     while (1) {
         setNextTriggerTime(&next_trigger_time, task); // to control period
-        clock_gettime(CLOCK_MONOTONIC, &global_start);
         
-        PUSH_PROFILE("total")
         if (task->phased_read_time_ns > 0){
             PUSH_PROFILE("read")
             memoryAccess(task->phased_read_time_ns);
             POP_PROFILE()
         }
 
-        PUSH_PROFILE("body")
+        PUSH_PROFILE("execution")
         busyWait(task->phased_execution_time_ns[iteration_index]); // Todo
         POP_PROFILE()
 
@@ -59,12 +60,17 @@ void* phased_task_function(void* arg) {
         
         iteration_index = (iteration_index + 1) % task->num_samples;
         pthread_cond_timedwait(&cond, &period_mutex, &next_trigger_time);
+        clock_gettime(CLOCK_MONOTONIC, &global_start);
+        PUSH_PROFILE(task->name)
+
     }
 
     pthread_mutex_unlock(&period_mutex); // to control period
 
     return NULL;
 }
+
+
 
 
 void setNextTriggerTime(struct timespec *next_trigger_time, Task_Info *task){

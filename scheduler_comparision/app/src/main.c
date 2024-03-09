@@ -2,7 +2,7 @@
 
 pthread_barrier_t barrier;
 pthread_mutex_t mutex_memory_access = PTHREAD_MUTEX_INITIALIZER;
-short simulation_period_sec = 1; // seconds
+short simulation_period_sec = 2; // seconds
 
 int main(int argc, char* argv[]){
     if (argc != 4){
@@ -28,6 +28,8 @@ int main(int argc, char* argv[]){
         setTaskInfo(task_info_json, &tasks[i]);
         if(tasks[i].isRTTask){
             tasks[i].sched_policy = atoi(argv[1]);
+        }else{
+            tasks[i].sched_policy = CFS;
         }
         task_info_json = NULL;
     }
@@ -38,7 +40,7 @@ int main(int argc, char* argv[]){
     // set priority of RT task in "task.c"
     pthread_attr_t threadAttr[num_tasks];
     pthread_t threads[num_tasks];
-    pthread_barrier_init(&barrier, NULL, num_tasks); // to start all threads at the same time
+    pthread_barrier_init(&barrier, NULL, num_tasks+1); // to start all threads at the same time
     for (int i = 0; i < num_tasks; i++) {
         setTaskAttribute(&threadAttr[i], &tasks[i]);
         if (pthread_create(&threads[i], &threadAttr[i], phased_task_function, (void*)&tasks[i])){
@@ -46,27 +48,24 @@ int main(int argc, char* argv[]){
             exit(1);
         }
     }
-    
-    // Create thread1 and thread2 with their respective parameters
-    for (int i = 0; i < num_tasks; i++) {
-    }
+    pthread_barrier_wait(&barrier);
 
     printf("Start to run application. The application will complete after %d seconds.\n", 3);
     usleep(simulation_period_sec * 1000000); // seconds to microseconds
 
-    printf("Terminate tasks\n\n");
+    printf("Terminate tasks\n");
     for (int i = 0; i < num_tasks; i++) {
         pthread_cancel(threads[i]);
     }
     pthread_barrier_destroy(&barrier);
 
     printf("Save the result to %s\n", result_file_name);
-    // saveResultToJson(num_tasks, tasks, result_file_name);
+    saveResultToJson(num_tasks, tasks, result_file_name);
 
     for (int i = 0; i < num_tasks; i++){
         freeTaskInfo(&tasks[i]);
     }
     
-    printf("Done\n");
+    printf("Done\n\n\n");
     return 0;
 }
