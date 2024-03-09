@@ -12,9 +12,8 @@ set_start=$1
 set_end=$2
 
 schedule_simulation_method="random"   # "priority-queue"
-schedule_try_count=1000
-test_try_count=1000
-
+schedule_try_count=1
+test_try_count=10000
 
 # ./gradlew build
 # mv ./app/build/libs/run.jar ./run.jar

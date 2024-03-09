@@ -1,9 +1,6 @@
 package org.cap.simulation;
 
 import java.util.List;
-// import java.util.concurrent.ExecutorService;
-// import java.util.concurrent.Executors;
-
 import org.cap.model.Core;
 import org.cap.model.NiceToWeight;
 import org.cap.model.Task;
@@ -12,7 +9,6 @@ public class CFSAnalyzer {
     private List<Core> cores;
     private int targetLatency; 
 
-    // private static final int max_num_threads = 8;
     public CFSAnalyzer(List<Core> cores, int targetLatency) {
         this.cores = cores;
         double minWeight = 88761; //max_weight = 88761
@@ -37,7 +33,6 @@ public class CFSAnalyzer {
         }
     }
 
-
     /* 
     * Theorem1 in the paper.
     */
@@ -54,7 +49,6 @@ public class CFSAnalyzer {
                     R_cur += interference;
                 }
             }
-
             if (task_i.period < R_cur) {
                 task_i.WCRT_by_proposed = R_cur;
                 task_i.isSchedulable_by_proposed = false;
@@ -71,7 +65,7 @@ public class CFSAnalyzer {
     }
 
     /*
-     * Lemma4 in the paper.
+     * Corollary2 in the paper.
      */
     private long getInterference(Task task_j, int R_prev, Core core, Task task_i) {
         // int C_i = (int) task_i.bodyTime;
@@ -81,7 +75,6 @@ public class CFSAnalyzer {
         double w_i = task_i.weight;
         long k_j = Math.floorDiv(R_prev, T_j)+1;
         long lastRequestTime = (k_j-1) * T_j; // (R_prev / T_j) * T_j
-        // int remainWorkload = getRemainWorkload(lastRequestTime, C_i, task_i.id, core);
         int remainWorkload = C_i;
         if (lastRequestTime > 0){
             remainWorkload = getRemainWorkload(lastRequestTime, task_i, core);
@@ -95,7 +88,7 @@ public class CFSAnalyzer {
     }
 
     /*
-     * Lemma3 in the paper.
+     * Lemma6 in the paper.
      * \alpha =  L \cdot \frac{w_j}{w_i + w_{min}}, \quad
      * \beta =  \Delta_{i}^{t_{s(j,q)}} \cdot \frac{w_j}{w_i},  \quad
      * \gamma = L \cdot \frac{w_j}{w_i + w_j} 
@@ -114,7 +107,7 @@ public class CFSAnalyzer {
 
 
     /*
-     * Lemma6 in the paper.
+     * Lemma7 in the paper.
      */
     private int getRemainWorkload(long lastRequestTime, Task task_i, Core core) {
         int max_min_task_i_processed = 0;
@@ -129,7 +122,6 @@ public class CFSAnalyzer {
                     continue;
                 }else{
                     int min_task_i_processed = (int) (Math.floorDiv(lastRequestTime, T_k) * C_k * w_i / w_k) - (int) (this.targetLatency * w_i / (w_i + w_k));
-                    // int min_task_i_processed = (int) (Math.floorDiv(lastRequestTime, T_k) * C_k * w_i / w_k) ;
                     if (min_task_i_processed > max_min_task_i_processed){
                         max_min_task_i_processed = min_task_i_processed;
                     }
@@ -153,5 +145,4 @@ public class CFSAnalyzer {
         }
         return true;
     }
-
 }

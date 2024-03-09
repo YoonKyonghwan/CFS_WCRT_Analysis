@@ -95,7 +95,7 @@ public class JsonTaskCreator {
             task.readTime = 0;
             task.writeTime = 0;  // task.writeTime = generateBlockingTime();
 
-            task.period = setPeriod_v2(task);
+            task.period = setPeriod(task);
             task.bodyTime = (int) Math.ceil(task.period * task_utilization_list.get(task_index-1));
             task.nice = (int) Math.round(Math.random() * 19);   //randomly sampled from [0, 19]
             task.index = cores.get(coreIndex).tasks.size();
@@ -116,7 +116,6 @@ public class JsonTaskCreator {
         return testConf;
     }
 
-
     private int setPeriod(Task task){
         int period = (int) (Math.round(Math.random() * 1000)); //ms
         if (period < 100){
@@ -130,17 +129,6 @@ public class JsonTaskCreator {
         }
         return period*1000; //us
     }
-
-    private int setPeriod_v2(Task task){
-        int period = (int) (Math.round(Math.random() * 1000)); //ms
-        if (period < 100){
-            period = 100; // min period is 10ms
-        }else{
-            period = (int) Math.ceil(period / 100.0) * 100;
-        }
-        return period*1000; //us
-    }
-    
 
     private void saveToFile(TestConfiguration testConf, int numCores, int numTasks, double utilization, int tasksetIndex, String generatedFilesSaveDir) {
         Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().setPrettyPrinting().create();
