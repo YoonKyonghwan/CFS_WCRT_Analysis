@@ -5,7 +5,7 @@ SIM_PERIOD_SEC=60
 SCHEDULERS=("CFS" "FIFO" "RR" "RM")
 RESULT_DIR="./exp_results"
 APPLICATION_PATH="./application"
-ENABLE_NSYS=1
+ENABLE_NSYS=0
 
 # If the result directory exists, remove it
 if [ -d "${RESULT_DIR}" ]; then
@@ -13,8 +13,7 @@ if [ -d "${RESULT_DIR}" ]; then
 fi
 mkdir "${RESULT_DIR}"
 
-
-for PHASED_FLAG in ("" "-phased"); do
+for PHASED_FLAG in "" "-phased"; do
     for SCHEDULER in "${SCHEDULERS[@]}"; do
         OUTPUT_FILE="${SCHEDULER}${PHASED_FLAG}_result.json"
         case "${SCHEDULER}" in
