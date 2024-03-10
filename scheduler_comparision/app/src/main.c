@@ -1,7 +1,7 @@
 #include "util.h"
 
 short simulation_period_sec = 3; // seconds
-bool isPhasedTask = true;
+bool isPhasedTask = false;
 
 pthread_barrier_t barrier;
 pthread_mutex_t mutex_memory_access = PTHREAD_MUTEX_INITIALIZER;
@@ -16,6 +16,10 @@ int main(int argc, char* argv[]){
     printSchedPolicy(atoi(argv[1]));
     char *json_file_name = argv[2];
     char *result_file_name = argv[3];
+    if (argv[4] == "-phased"){
+        printf("Use the phased task model\n");
+        isPhasedTask = true;
+    }
     
     printf("Read Tasks_info from %s\n", json_file_name);
     json_object *tasks_info_json = json_object_from_file(json_file_name);
