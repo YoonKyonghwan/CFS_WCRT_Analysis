@@ -2,7 +2,7 @@
 #include "util.h"
 
 extern pthread_mutex_t mutex_memory_access;
-extern pthread_barrier_t barrier;
+// extern pthread_barrier_t barrier;
 extern bool isPhasedTask;
 
 void* task_function(void* arg) {
@@ -23,7 +23,7 @@ void* task_function(void* arg) {
     clock_gettime(CLOCK_MONOTONIC, &global_start);
 
     // Wait for all threads to reach the barrier    
-    pthread_barrier_wait(&barrier);
+    // pthread_barrier_wait(&barrier);
     pthread_mutex_lock(&period_mutex); // to control period
 
     while (1) {

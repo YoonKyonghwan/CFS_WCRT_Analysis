@@ -66,7 +66,10 @@ void saveResultToJson(int num_tasks, Task_Info *tasks, char *result_file_name){
                 count_valid_response_time++;
             }
         }
-        unsigned long long avg_response_time_ns = total_response_time_ns / count_valid_response_time;
+        unsigned long long avg_response_time_ns = 0;
+        if (count_valid_response_time != 0){
+            avg_response_time_ns= total_response_time_ns / count_valid_response_time;
+        }
 
         long long deadline_ns = 0;
         if (tasks[i].isPeriodic){
@@ -77,6 +80,7 @@ void saveResultToJson(int num_tasks, Task_Info *tasks, char *result_file_name){
         json_object_object_add(task_result, "task_name", json_object_new_string(tasks[i].name));
         json_object_object_add(task_result, "deadline_ns", json_object_new_int64(deadline_ns));
         json_object_object_add(task_result, "wcrt_ns", json_object_new_int64(tasks[i].wcrt_ns));
+        json_object_object_add(task_result, "wcet_ns", json_object_new_int64(tasks[i].wcet_ns));
         json_object_object_add(task_result, "avg_response_time_ns", json_object_new_int64(avg_response_time_ns));
         json_object_object_add(task_result, "response_time_ns", task_reponsetime_ns);
         json_object_array_add(tasks_result, task_result);
@@ -169,7 +173,7 @@ void setSchedPolicyPriority(pthread_attr_t *threadAttr, Task_Info *task){
             break;
         case RM:
             //set sched_policy
-            if (pthread_attr_setschedpolicy(threadAttr, SCHED_RR)){
+            if (pthread_attr_setschedpolicy(threadAttr, SCHED_FIFO)){
                 printf("Fail to set schedule policy.\n");
                 exit(1);
             }
