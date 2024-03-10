@@ -1,8 +1,10 @@
 #include "util.h"
 
+short simulation_period_sec = 3; // seconds
+bool isPhasedTask = true;
+
 pthread_barrier_t barrier;
 pthread_mutex_t mutex_memory_access = PTHREAD_MUTEX_INITIALIZER;
-short simulation_period_sec = 2; // seconds
 
 int main(int argc, char* argv[]){
     if (argc != 4){
@@ -10,6 +12,7 @@ int main(int argc, char* argv[]){
         exit(1);
     }
 
+    // parse arguments
     printSchedPolicy(atoi(argv[1]));
     char *json_file_name = argv[2];
     char *result_file_name = argv[3];
@@ -43,14 +46,15 @@ int main(int argc, char* argv[]){
     pthread_barrier_init(&barrier, NULL, num_tasks+1); // to start all threads at the same time
     for (int i = 0; i < num_tasks; i++) {
         setTaskAttribute(&threadAttr[i], &tasks[i]);
-        if (pthread_create(&threads[i], &threadAttr[i], phased_task_function, (void*)&tasks[i])){
+        if (pthread_create(&threads[i], &threadAttr[i], task_function, (void*)&tasks[i])){
             printf("Fail to create thread %d\n", i);
             exit(1);
         }
+        printf(" (Init) %s\n", tasks[i].name);
     }
     pthread_barrier_wait(&barrier);
 
-    printf("Start to run application. The application will complete after %d seconds.\n", 3);
+    printf("Start to run application.\n The experiment will complete after %d seconds.\n", simulation_period_sec);
     usleep(simulation_period_sec * 1000000); // seconds to microseconds
 
     printf("Terminate tasks\n");
@@ -66,6 +70,6 @@ int main(int argc, char* argv[]){
         freeTaskInfo(&tasks[i]);
     }
     
-    printf("Done\n\n\n");
+    printf("The experiment is complete.\n\n\n");
     return 0;
 }

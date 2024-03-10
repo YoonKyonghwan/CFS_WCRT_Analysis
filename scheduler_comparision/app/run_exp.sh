@@ -1,6 +1,6 @@
 #!/bin/bash
 
-INPUT_FILE="task_info.json"
+INPUT_FILE=$1
 SCHEDULERS=("CFS" "FIFO" "RR" "RM")
 RESULT_DIR="./exp_results"
 APPLICATION_PATH="./application"
@@ -16,18 +16,10 @@ for SCHEDULER in "${SCHEDULERS[@]}"
 do
     OUTPUT_FILE="${SCHEDULER}_result.json"
     case "${SCHEDULER}" in
-        "CFS")
-            SCHED_INDEX=0
-            ;;
-        "FIFO")
-            SCHED_INDEX=1
-            ;;
-        "RR")
-            SCHED_INDEX=2
-            ;;
-        "RM")
-            SCHED_INDEX=4
-            ;;
+        "CFS") SCHED_INDEX=0 ;;
+        "FIFO") SCHED_INDEX=1 ;;
+        "RR") SCHED_INDEX=2 ;;
+        "RM") SCHED_INDEX=4 ;;
         *)
             echo "Unknown scheduler: ${SCHEDULER}"
             exit 1

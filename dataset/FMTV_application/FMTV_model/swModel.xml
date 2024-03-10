@@ -153,7 +153,7 @@
       </graphEntries>
     </callGraph>
   </tasks>
-  <tasks name="ISR_1" stimuli="sporadic_9500us_10500us_ISR_1?type=stimuli.Sporadic" preemption="preemptive" multipleTaskActivationLimit="1">
+  <tasks name="ISR_1" priority="11" stimuli="sporadic_9500us_10500us_ISR_1?type=stimuli.Sporadic" preemption="preemptive" multipleTaskActivationLimit="1">
     <callGraph>
       <graphEntries type="sw:CallSequence" name="CS_ISR_1">
         <calls type="sw:TaskRunnableCall" runnable="Runnable_sporadic_9500us_10500us_1?type=sw.Runnable"/>

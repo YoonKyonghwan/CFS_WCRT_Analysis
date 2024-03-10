@@ -53,7 +53,11 @@ typedef struct {
     
 } Task_Info;
 
-void *phased_task_function(void *arg);
+void *task_function(void *arg);
+
+void runRunnable(int read_ns, int execution_ns, int write_ns);
 void memoryAccess(int time_ns);
-void setNextTriggerTime(struct timespec *next_trigger_time, Task_Info *task);
 void busyWait(int wait_time_ns);
+
+void setNextTriggerTime(struct timespec *next_trigger_time, Task_Info *task);
+void checkResponseTime(Task_Info *task, int iteration_index, struct timespec global_start, struct timespec global_end);
