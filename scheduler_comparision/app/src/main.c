@@ -1,22 +1,27 @@
 #include "util.h"
 
-short simulation_period_sec = 3; // seconds
 bool isPhasedTask = false;
 
 pthread_barrier_t barrier;
 pthread_mutex_t mutex_memory_access = PTHREAD_MUTEX_INITIALIZER;
 
 int main(int argc, char* argv[]){
-    if (argc != 4){
-        printf("Usage: %s <sched_type> <tasks_info.json> <result.json>\n", argv[0]);
+    if (!(argc == 5 || argc == 6)) {
+        printf("Usage: %s <sched_policy> <simulation_period_sec> <input_file_name> <result_file_name> [-phased]\n", argv[0]);
+        printf("  <sched_policy>: 0 for CFS, 1 for FIFO, 2 for RR, 3 for EDF, 4 for RM\n");
+        printf("  <simulation_period_sec>: the period of the simulation in seconds\n");
+        printf("  <input_file_name>: the name of the json file that contains the task information\n");
+        printf("  <result_file_name>: the name of the json file to save the result\n");
+        printf("  [-phased]: use the phased task model\n");
         exit(1);
     }
 
     // parse arguments
     printSchedPolicy(atoi(argv[1]));
-    char *json_file_name = argv[2];
-    char *result_file_name = argv[3];
-    if (argv[4] == "-phased"){
+    int simulation_period_sec = atoi(argv[2]);
+    char *json_file_name = argv[3];
+    char *result_file_name = argv[4];
+    if (argv[5] == "-phased"){
         printf("Use the phased task model\n");
         isPhasedTask = true;
     }

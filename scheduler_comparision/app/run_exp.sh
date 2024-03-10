@@ -1,6 +1,7 @@
 #!/bin/bash
 
-INPUT_FILE=$1
+INPUT_FILE="../../dataset/FMTV_application/generated_FMTV_json/tasks_info.json"
+SIM_PERIOD_SEC=60
 SCHEDULERS=("CFS" "FIFO" "RR" "RM")
 RESULT_DIR="./exp_results"
 APPLICATION_PATH="./application"
@@ -27,15 +28,14 @@ for PHASED_FLAG in ("" "-phased"); do
                 ;;
         esac
 
+        cmd="${APPLICATION_PATH} ${SCHED_INDEX} ${SIM_PERIOD_SEC} ${INPUT_FILE} ${RESULT_DIR}/${OUTPUT_FILE} ${PHASED_FLAG}"
         if [ ${ENABLE_NSYS} -eq 0 ]; then
-            cmd="sudo ${APPLICATION_PATH} ${SCHED_INDEX} ${INPUT_FILE} ${RESULT_DIR}/${OUTPUT_FILE} ${PHASED_FLAG}"
-            echo "command : ${cmd}"
-            ${cmd}
+            echo "command : sudo ${cmd}"
+            sudo ${cmd}
         else
-            nsys_cmd="sudo nsys profile -t osrt,nvtx --force-overwrite=true --run-as=root \
-            --output=${RESULT_DIR}/${SCHEDULER} ${APPLICATION_PATH} ${SCHED_INDEX} ${INPUT_FILE} ${RESULT_DIR}/${OUTPUT_FILE} ${PHASED_FLAG}"
-            echo "nsys command : ${nsys_cmd}"
-            ${nsys_cmd}
+            nsys_cmd="nsys profile -t osrt,nvtx --force-overwrite=true --run-as=root --output=${RESULT_DIR}/${SCHEDULER} ${cmd}"
+            echo "command : ${nsys_cmd}"
+            sudo ${nsys_cmd}
         fi
     done
 done
