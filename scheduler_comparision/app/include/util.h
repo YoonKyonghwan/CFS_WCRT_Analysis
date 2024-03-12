@@ -22,6 +22,6 @@ void saveResultToJson(int num_tasks, Task_Info *tasks, char *result_file_name);
 
 void setTaskAttribute(pthread_attr_t *threadAttr, Task_Info *task);
 void setCoreMapping(Task_Info *task, pthread_attr_t *threadAttr);
-void setSchedPolicyPriority(pthread_attr_t *threadAttr, Task_Info *task);
+// void setSchedPolicyPriority(pthread_attr_t *threadAttr, Task_Info *task);
 void printSchedPolicy(int policy);
 

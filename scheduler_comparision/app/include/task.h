@@ -59,5 +59,8 @@ void runRunnable(int read_ns, int execution_ns, int write_ns);
 void memoryAccess(int time_ns);
 void busyWait(int wait_time_ns);
 
-void setNextTriggerTime(struct timespec *next_trigger_time, Task_Info *task);
+void setSchedPolicyPriority(Task_Info *task);
+
+long long getInterarrivalTime(Task_Info *task);
+void setNextTriggerTime(struct timespec *next_trigger_time, long long interarrival_time_ns);
 void checkResponseTime(Task_Info *task, int iteration_index, struct timespec global_start, struct timespec global_end);

@@ -78,6 +78,7 @@ void saveResultToJson(int num_tasks, Task_Info *tasks, char *result_file_name){
             deadline_ns = tasks[i].low_interarrival_time_ns;
         }
         json_object_object_add(task_result, "task_name", json_object_new_string(tasks[i].name));
+        json_object_object_add(task_result, "core_index", json_object_new_int(tasks[i].core_index));
         json_object_object_add(task_result, "deadline_ns", json_object_new_int64(deadline_ns));
         json_object_object_add(task_result, "wcrt_ns", json_object_new_int64(tasks[i].wcrt_ns));
         json_object_object_add(task_result, "wcet_ns", json_object_new_int64(tasks[i].wcet_ns));
@@ -112,7 +113,7 @@ void setTaskAttribute(pthread_attr_t *threadAttr, Task_Info *task){
     }
 
     // set schedule policy and priority
-    setSchedPolicyPriority(threadAttr, task);
+    // setSchedPolicyPriority(threadAttr, task);
 
     // set mapping to core
     setCoreMapping(task, threadAttr);
@@ -137,59 +138,59 @@ void setCoreMapping(Task_Info *task, pthread_attr_t *threadAttr) {
 }
 
 
-void setSchedPolicyPriority(pthread_attr_t *threadAttr, Task_Info *task){
-    struct sched_param schedparam;
-    switch (task->sched_policy) {
-        // Configurations in the thread function for CFS or EDF
-        case CFS:
-            break;
-        case EDF:
-            break;
-        case FIFO: 
-            //set sched_policy
-            if (pthread_attr_setschedpolicy(threadAttr, SCHED_FIFO)){
-                printf("Fail to set schedule policy.\n");
-                exit(1);
-            }
-            //set priority
-            schedparam.sched_priority = sched_get_priority_max(SCHED_FIFO);
-            if (pthread_attr_setschedparam(threadAttr, &schedparam)){
-                printf("Fail to set scheduling priority.\n");
-                exit(1);
-            }
-            break;
-        case RR:
-            //set sched_policy
-            if (pthread_attr_setschedpolicy(threadAttr, SCHED_RR)){
-                printf("Fail to set schedule policy.\n");
-                exit(1);
-            }
-            //set priority
-            schedparam.sched_priority = sched_get_priority_max(SCHED_RR);
-            if (pthread_attr_setschedparam(threadAttr, &schedparam)){
-                printf("Fail to set scheduling priority.\n");
-                exit(1);
-            }
-            break;
-        case RM:
-            //set sched_policy
-            if (pthread_attr_setschedpolicy(threadAttr, SCHED_FIFO)){
-                printf("Fail to set schedule policy.\n");
-                exit(1);
-            }
-            //set priority
-            schedparam.sched_priority = task->priority;
-            if (pthread_attr_setschedparam(threadAttr, &schedparam)){
-                printf("Fail to set scheduling priority.\n");
-                exit(1);
-            }
-            break;
-        default:
-            printf("Check the supported scheduler type.\n");
-            exit(1);
-    }
-    return;
-}
+// void setSchedPolicyPriority(pthread_attr_t *threadAttr, Task_Info *task){
+//     struct sched_param schedparam;
+//     switch (task->sched_policy) {
+//         // Configurations in the thread function for CFS or EDF
+//         case CFS:
+//             break;
+//         case EDF:
+//             break;
+//         case FIFO: 
+//             //set sched_policy
+//             if (pthread_attr_setschedpolicy(threadAttr, SCHED_FIFO)){
+//                 printf("Fail to set schedule policy.\n");
+//                 exit(1);
+//             }
+//             //set priority
+//             schedparam.sched_priority = sched_get_priority_max(SCHED_FIFO);
+//             if (pthread_attr_setschedparam(threadAttr, &schedparam)){
+//                 printf("Fail to set scheduling priority.\n");
+//                 exit(1);
+//             }
+//             break;
+//         case RR:
+//             //set sched_policy
+//             if (pthread_attr_setschedpolicy(threadAttr, SCHED_RR)){
+//                 printf("Fail to set schedule policy.\n");
+//                 exit(1);
+//             }
+//             //set priority
+//             schedparam.sched_priority = sched_get_priority_max(SCHED_RR);
+//             if (pthread_attr_setschedparam(threadAttr, &schedparam)){
+//                 printf("Fail to set scheduling priority.\n");
+//                 exit(1);
+//             }
+//             break;
+//         case RM:
+//             //set sched_policy
+//             if (pthread_attr_setschedpolicy(threadAttr, SCHED_FIFO)){
+//                 printf("Fail to set schedule policy.\n");
+//                 exit(1);
+//             }
+//             //set priority
+//             schedparam.sched_priority = task->priority;
+//             if (pthread_attr_setschedparam(threadAttr, &schedparam)){
+//                 printf("Fail to set scheduling priority.\n");
+//                 exit(1);
+//             }
+//             break;
+//         default:
+//             printf("Check the supported scheduler type.\n");
+//             exit(1);
+//     }
+//     return;
+// }
 
 void printSchedPolicy(int policy){
     switch (policy){

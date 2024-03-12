@@ -1,12 +1,13 @@
 #!/bin/bash
 
-INPUT_FILE="../../dataset/FMTV_application/generated_FMTV_json/tasks_info.json"
-SIM_PERIOD_SEC=60
-SCHEDULERS=("CFS" "FIFO" "RR" "RM")
-# SCHEDULERS=("CFS")
+# INPUT_FILE="../../dataset/FMTV_application/generated_FMTV_json/tasks_info.json"
+INPUT_FILE="tasks_info.json"
+SIM_PERIOD_SEC=1
+# SCHEDULERS=("CFS" "FIFO" "RR" "RM" "EDF")
+SCHEDULERS=("EDF")
 RESULT_DIR="./exp_results"
 APPLICATION_PATH="./application"
-ENABLE_NSYS=0
+ENABLE_NSYS=1
 
 # If the result is not exist, create the directory
 if [ ! -d ${RESULT_DIR} ]; then
