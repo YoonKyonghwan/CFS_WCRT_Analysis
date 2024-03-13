@@ -69,12 +69,12 @@ void setSchedPolicyPriority(Task_Info *task){
     struct sched_attr attr;
     memset(&attr, 0, sizeof(attr));
     attr.size = sizeof(struct sched_attr);
-    attr.sched_flags = 0;
-    attr.sched_nice = 0;
-    attr.sched_priority = 0;
-    attr.sched_runtime = 0;
-    attr.sched_deadline = 0;
-    attr.sched_period = 0;
+    // attr.sched_flags = 0;
+    // attr.sched_nice = 0;
+    // attr.sched_priority = 0;
+    // attr.sched_runtime = 0;
+    // attr.sched_deadline = 0;
+    // attr.sched_period = 0;
 
     switch (task->sched_policy) {
         // Configurations in the thread function for CFS or EDF
@@ -90,9 +90,15 @@ void setSchedPolicyPriority(Task_Info *task){
             break;
         case EDF:
             attr.sched_policy = SCHED_DEADLINE;
-            attr.sched_runtime = (task->wcet_ns / 1000);  //us
-            attr.sched_deadline = (task->period_ns / 1000); //us
-            attr.sched_period =   (task->period_ns / 1000); //us
+            attr.sched_runtime = max(task->wcet_ns, 1024);  //ns
+            if (task->isPeriodic){
+                attr.sched_deadline = max(task->period_ns, 100 * 1000); //ns
+                attr.sched_period = max(task->period_ns, 100 * 1000); //ns
+            }else{
+                attr.sched_deadline = max(task->low_interarrival_time_ns, 100 * 1000); //ns
+                attr.sched_period = max(task->low_interarrival_time_ns, 100 * 1000); //ns
+            }
+            printf("name: %s, deadline: %lld, period %lld, runtime %lld\n", task->name, attr.sched_deadline, attr.sched_period, attr.sched_runtime);
             break;
         case FIFO: 
             attr.sched_policy = SCHED_FIFO;
@@ -122,6 +128,11 @@ void setSchedPolicyPriority(Task_Info *task){
         }
     }
     return;
+}
+
+
+int sched_setattr(pid_t pid, const struct sched_attr *attr, unsigned int flags) {
+	return syscall(__NR_sched_setattr, pid, attr, flags);
 }
 
 

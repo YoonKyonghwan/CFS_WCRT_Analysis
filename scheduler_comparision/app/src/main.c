@@ -3,7 +3,7 @@
 bool isPhasedTask = false;
 
 pthread_barrier_t barrier;
-pthread_mutex_t mutex_memory_access = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t mutex_memory_access;
 struct timespec global_start_time;
 
 
@@ -49,6 +49,8 @@ int main(int argc, char* argv[]){
     }
     tasks_info_json = NULL;
 
+    initMutex(&mutex_memory_access, PTHREAD_PRIO_INHERIT); //PTHREAD_PRIO_PROTECT;
+
     printf("Initialize and create tasks\n");
     // set core mapping and scheduler policy
     // set priority of RT task in "task.c"
@@ -57,9 +59,16 @@ int main(int argc, char* argv[]){
     pthread_barrier_init(&barrier, NULL, num_tasks+1); // to start all threads at the same time
     for (int i = 0; i < num_tasks; i++) {
         setTaskAttribute(&threadAttr[i], &tasks[i]);
-        if (pthread_create(&threads[i], &threadAttr[i], task_function, (void*)&tasks[i])){
-            printf("Fail to create thread %d\n", i);
-            exit(1);
+        if (tasks[i].sched_policy == EDF){
+            if (pthread_create(&threads[i], NULL, task_function, (void*)&tasks[i])){
+                printf("Fail to create thread %d\n", i);
+                exit(1);
+            }
+        }else{
+            if (pthread_create(&threads[i], &threadAttr[i], task_function, (void*)&tasks[i])){
+                printf("Fail to create thread %d\n", i);
+                exit(1);
+            }
         }
     }
     
@@ -72,13 +81,18 @@ int main(int argc, char* argv[]){
 
     printf("Terminate tasks\n");
     for (int i = 0; i < num_tasks; i++) {
-        pthread_cancel(threads[i]);
+        if(pthread_cancel(threads[i])){
+            printf("Fail to cancel thread %d\n", i);
+            exit(1);
+        }
     }
     pthread_barrier_destroy(&barrier);
 
     printf("Save the result to %s\n", result_file_name);
     saveResultToJson(num_tasks, tasks, result_file_name);
 
+    // free memory
+    printf("Free Memory\n");
     for (int i = 0; i < num_tasks; i++){
         freeTaskInfo(&tasks[i]);
     }

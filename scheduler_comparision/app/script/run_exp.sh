@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# INPUT_FILE="../../dataset/FMTV_application/generated_FMTV_json/tasks_info.json"
-INPUT_FILE="tasks_info.json"
+INPUT_FILE="../../dataset/FMTV_application/generated_FMTV_json/tasks_info.json"
+# INPUT_FILE="tasks_info.json"
 SIM_PERIOD_SEC=1
 # SCHEDULERS=("CFS" "FIFO" "RR" "RM" "EDF")
 SCHEDULERS=("EDF")
@@ -23,6 +23,7 @@ for PHASED_FLAG in ""; do
             "CFS") SCHED_INDEX=0 ;;
             "FIFO") SCHED_INDEX=1 ;;
             "RR") SCHED_INDEX=2 ;;
+            "EDF") SCHED_INDEX=3 ;;
             "RM") SCHED_INDEX=4 ;;
             *)
                 echo "Unknown scheduler: ${SCHEDULER}"

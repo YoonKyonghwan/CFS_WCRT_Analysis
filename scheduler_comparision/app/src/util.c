@@ -215,3 +215,22 @@ void printSchedPolicy(int policy){
     }
     return;
 }
+
+void initMutex(pthread_mutex_t *mutex_memory_access, int mutex_protocol){
+    pthread_mutexattr_t mutexAttr;
+    if (pthread_mutexattr_init(&mutexAttr))
+    {
+        printf("Fail to initialize mutex attribute\n");
+        exit(1);
+    }
+    if (pthread_mutexattr_setprotocol(&mutexAttr, mutex_protocol))
+    {
+        printf("Fail to set mutex protocol\n");
+        exit(1);
+    }
+    if (pthread_mutex_init(mutex_memory_access, &mutexAttr))
+    {
+        printf("Fail to initialize mutex\n");
+        exit(1);
+    }
+}

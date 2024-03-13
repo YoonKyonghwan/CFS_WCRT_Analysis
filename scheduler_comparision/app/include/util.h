@@ -25,3 +25,5 @@ void setCoreMapping(Task_Info *task, pthread_attr_t *threadAttr);
 // void setSchedPolicyPriority(pthread_attr_t *threadAttr, Task_Info *task);
 void printSchedPolicy(int policy);
 
+void initMutex(pthread_mutex_t *mutex_memory_access, int mutex_protocol);
+
