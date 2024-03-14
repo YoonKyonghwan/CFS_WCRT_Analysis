@@ -1,15 +1,9 @@
 #include "task.h"
 #include "util.h"
 
-extern pthread_mutex_t mutex_memory_access;
-extern pthread_barrier_t barrier;
-extern bool isPhasedTask;
-extern struct timespec global_start_time;
 
 void* task_function(void* arg) {
     Task_Info *task = (Task_Info*)arg;
-
-    setSchedPolicyPriority(task);
 
     // initialize variables
     pthread_mutex_t period_mutex = PTHREAD_MUTEX_INITIALIZER;
@@ -25,20 +19,22 @@ void* task_function(void* arg) {
 
     // Wait for all threads to reach the barrier    
     pthread_barrier_wait(&barrier);
+    setSchedPolicyPriority(task);
 
-    PUSH_PROFILE(task->name) // for total(read + execution + write)
     current_trigger_time = global_start_time;
     next_trigger_time = global_start_time;
 
-    while (1) {
+    while (terminate == false) {
         interarrival_time = getInterarrivalTime(task);
         setNextTriggerTime(&next_trigger_time, interarrival_time);
-
+        
+        PUSH_PROFILE(task->name) // for total(read + execution + write)
         if (isPhasedTask){
             runRunnable(task->phased_read_time_ns, task->phased_execution_time_ns[iteration_index], task->phased_write_time_ns);
         }else{
             for (int i = 0; i < task->num_runnables; i++){
                 runRunnable(task->runnables_read_time_ns[i], task->runnables_execution_time_ns[i][iteration_index], task->runnables_write_time_ns[i]);
+                
             }
         }
 
@@ -47,15 +43,15 @@ void* task_function(void* arg) {
         checkResponseTime(task, iteration_index, current_trigger_time, global_end);
         
         iteration_index = (iteration_index + 1) % task->num_samples;
-
-        pthread_cond_timedwait(&cond, &period_mutex, &next_trigger_time);
-        PUSH_PROFILE(task->name) // for total(read + execution + write)
+        if(task->isRTTask && task->sched_policy == EDF) {
+            sched_yield();
+        } else {
+            pthread_cond_timedwait(&cond, &period_mutex, &next_trigger_time);
+        } 
+        //usleep((int)(timeDiff(global_end, next_trigger_time)/1000));
         current_trigger_time = next_trigger_time;
     }
-
-    clock_gettime(CLOCK_REALTIME, &global_end);
-    POP_PROFILE() // for total(read + execution + write)
-    checkResponseTime(task, iteration_index, current_trigger_time, global_end);
+    printf("%s task termintated\n", task->name);
 
     pthread_mutex_unlock(&period_mutex); // to control period
 
@@ -69,36 +65,30 @@ void setSchedPolicyPriority(Task_Info *task){
     struct sched_attr attr;
     memset(&attr, 0, sizeof(attr));
     attr.size = sizeof(struct sched_attr);
-    // attr.sched_flags = 0;
-    // attr.sched_nice = 0;
-    // attr.sched_priority = 0;
-    // attr.sched_runtime = 0;
-    // attr.sched_deadline = 0;
-    // attr.sched_period = 0;
 
     switch (task->sched_policy) {
         // Configurations in the thread function for CFS or EDF
         case CFS:
             //lower non-rt task's nice-value
-            if (!task->isRTTask){
-                setpriority(PRIO_PROCESS, syscall(SYS_gettid), 19);
-            }else{
-                if (!task->isPeriodic){
-                    setpriority(PRIO_PROCESS, syscall(SYS_gettid), -19);
-                }
-            }
+            // if (!task->isRTTask){
+            //     setpriority(PRIO_PROCESS, syscall(SYS_gettid), 19);
+            // }else{
+            //     if (!task->isPeriodic){
+            //         setpriority(PRIO_PROCESS, syscall(SYS_gettid), -19);
+            //     }
+            // }
             break;
         case EDF:
             attr.sched_policy = SCHED_DEADLINE;
-            attr.sched_runtime = max(task->wcet_ns, 1024);  //ns
             if (task->isPeriodic){
-                attr.sched_deadline = max(task->period_ns, 100 * 1000); //ns
-                attr.sched_period = max(task->period_ns, 100 * 1000); //ns
+                attr.sched_deadline = task->period_ns; //ns
+                attr.sched_period = task->period_ns; //ns
             }else{
-                attr.sched_deadline = max(task->low_interarrival_time_ns, 100 * 1000); //ns
-                attr.sched_period = max(task->low_interarrival_time_ns, 100 * 1000); //ns
+                attr.sched_deadline = task->low_interarrival_time_ns; //ns
+                attr.sched_period = task->low_interarrival_time_ns; //ns
             }
-            printf("name: %s, deadline: %lld, period %lld, runtime %lld\n", task->name, attr.sched_deadline, attr.sched_period, attr.sched_runtime);
+            int margin = ((int)attr.sched_period / 10);
+            attr.sched_runtime = task->wcet_ns + margin;  //ns
             break;
         case FIFO: 
             attr.sched_policy = SCHED_FIFO;
@@ -136,8 +126,8 @@ int sched_setattr(pid_t pid, const struct sched_attr *attr, unsigned int flags) 
 }
 
 
-void checkResponseTime(Task_Info *task, int iteration_index, struct timespec global_start, struct timespec global_end){
-    long long responsed_ns = (global_end.tv_sec - global_start.tv_sec) * 1000000000LL + (global_end.tv_nsec - global_start.tv_nsec);
+void checkResponseTime(Task_Info *task, int iteration_index, struct timespec start_time, struct timespec end_time){
+    long long responsed_ns = (end_time.tv_sec - start_time.tv_sec) * 1000000000LL + (end_time.tv_nsec - start_time.tv_nsec);
     task->response_time_ns[iteration_index] = responsed_ns;
     if (responsed_ns > task->wcrt_ns){
         task->wcrt_ns = responsed_ns;

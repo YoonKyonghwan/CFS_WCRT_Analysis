@@ -29,6 +29,12 @@
 
 #define max(x, y) (x) > (y) ? (x) : (y)
 
+extern pthread_barrier_t barrier;
+extern pthread_mutex_t mutex_memory_access;
+extern struct timespec global_start_time;
+extern bool terminate;
+extern bool isPhasedTask;
+
 typedef struct {
     char *name;
     char core_index;
@@ -90,3 +96,4 @@ int sched_setattr(pid_t pid, const struct sched_attr *attr, unsigned int flags);
 long long getInterarrivalTime(Task_Info *task);
 void setNextTriggerTime(struct timespec *next_trigger_time, long long interarrival_time_ns);
 void checkResponseTime(Task_Info *task, int iteration_index, struct timespec global_start, struct timespec global_end);
+long long timeDiff(struct timespec time_start, struct timespec time_end);

@@ -1,11 +1,11 @@
 #include "util.h"
 
-bool isPhasedTask = false;
 
 pthread_barrier_t barrier;
-pthread_mutex_t mutex_memory_access;
+pthread_mutex_t mutex_memory_access = PTHREAD_MUTEX_INITIALIZER;
 struct timespec global_start_time;
-
+bool terminate = false;
+bool isPhasedTask = false;
 
 int main(int argc, char* argv[]){
     if (!(argc == 5 || argc == 6)) {
@@ -23,9 +23,13 @@ int main(int argc, char* argv[]){
     int simulation_period_sec = atoi(argv[2]);
     char *json_file_name = argv[3];
     char *result_file_name = argv[4];
-    if (argv[5] == "-phased"){
-        printf("Use the phased task model\n");
-        isPhasedTask = true;
+    if (argc == 6){
+        if (strcmp(argv[5], "-phased") == 0){
+            isPhasedTask = true;
+            printf("Use the phased task model\n");
+        }
+    }else{
+        printf("Use the non-phased task model\n");
     }
     
     printf("Read Tasks_info from %s\n", json_file_name);
@@ -49,7 +53,8 @@ int main(int argc, char* argv[]){
     }
     tasks_info_json = NULL;
 
-    initMutex(&mutex_memory_access, PTHREAD_PRIO_INHERIT); //PTHREAD_PRIO_PROTECT;
+    // initMutex(&mutex_memory_access, PTHREAD_PRIO_INHERIT); //PTHREAD_PRIO_PROTECT;
+    // initMutex(&mutex_memory_access, PTHREAD_PRIO_NONE); //PTHREAD_PRIO_PROTECT;
 
     printf("Initialize and create tasks\n");
     // set core mapping and scheduler policy
@@ -72,20 +77,27 @@ int main(int argc, char* argv[]){
         }
     }
     
-    usleep(10000); // microseconds
+    sleep(1); // wait for all threads to be ready
     clock_gettime(CLOCK_REALTIME, &global_start_time);
     pthread_barrier_wait(&barrier);
 
     printf("Start to run application.\n The experiment will complete after %d seconds.\n", simulation_period_sec);
     usleep(simulation_period_sec * 1000000); // seconds to microseconds
 
+
+    terminate = true;
+    // for (int i = 0; i < num_tasks; i++) {
+    //     if(pthread_cancel(threads[i])){
+    //         printf("Fail to cancel thread %d\n", i);
+    //         exit(1);
+    //     }
+    // }
+
     printf("Terminate tasks\n");
     for (int i = 0; i < num_tasks; i++) {
-        if(pthread_cancel(threads[i])){
-            printf("Fail to cancel thread %d\n", i);
-            exit(1);
-        }
+        pthread_join(threads[i], NULL);
     }
+
     pthread_barrier_destroy(&barrier);
 
     printf("Save the result to %s\n", result_file_name);
@@ -97,6 +109,6 @@ int main(int argc, char* argv[]){
         freeTaskInfo(&tasks[i]);
     }
     
-    printf("The experiment is complete.\n\n\n");
+    printf("The experiment is complete.\n");
     return 0;
 }
