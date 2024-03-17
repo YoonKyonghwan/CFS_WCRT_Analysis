@@ -77,7 +77,7 @@ void setTaskInfo(json_object *jobj, Task_Info *task){
 }
 
 
-long long setNiceValueByPeriod(long long period){
+long long setNiceValueByDeadline(long long period){
     int nice_value = -19;
     long long period_inc = min_period;
     while(period_inc > period && nice_value < 19){

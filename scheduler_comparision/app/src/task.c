@@ -1,6 +1,7 @@
 #include "task.h"
 #include "util.h"
 
+int init_sleep_ns = 1000000; // 1ms sleep to make sure that all threads are ready to start
 
 void* task_function(void* arg) {
     Task_Info *task = (Task_Info*)arg;
@@ -22,7 +23,7 @@ void* task_function(void* arg) {
     pthread_barrier_wait(&barrier);
     setSchedPolicyPriority(task);
     // sleep 0.1 sec to make sure that all threads are ready to start
-    struct timespec init_sleep_time = {0, 10000000}; // 10 ms
+    struct timespec init_sleep_time = {0, init_sleep_ns}; // 1 ms
     nanosleep(&init_sleep_time, NULL);
     MARKER("after barrier")
 
@@ -183,7 +184,7 @@ int sched_setattr(pid_t pid, const struct sched_attr *attr, unsigned int flags) 
 void checkResponseTime(Task_Info *task, int iteration_index, struct timespec start_time, struct timespec end_time){
     long long responsed_ns = (end_time.tv_sec - start_time.tv_sec) * 1000000000LL + (end_time.tv_nsec - start_time.tv_nsec);
     if (iteration_index == 0){
-        responsed_ns -= 10000000; // 10ms for initial sleep
+        responsed_ns -= init_sleep_ns; // 1ms for initial sleep
     }
     task->response_time_ns[iteration_index] = responsed_ns;
     // task->start_time_ns[iteration_index] = (start_time.tv_sec * 1000000000LL ) + start_time.tv_nsec;

@@ -56,9 +56,9 @@ int main(int argc, char* argv[]){
     if (atoi(argv[1]) == CFS){
         for (int i = 0; i < num_tasks; i++){
             if (tasks[i].isPeriodic){
-                tasks[i].nice_value = setNiceValueByPeriod(tasks[i].period_ns);
+                tasks[i].nice_value = setNiceValueByDeadline(tasks[i].period_ns);
             }else{
-                tasks[i].nice_value = setNiceValueByPeriod(tasks[i].low_interarrival_time_ns);
+                tasks[i].nice_value = setNiceValueByDeadline(tasks[i].low_interarrival_time_ns);
             }
         }
     }
