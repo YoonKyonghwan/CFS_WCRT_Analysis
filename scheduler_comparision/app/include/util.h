@@ -19,6 +19,7 @@ enum SCHEDULER_TYPE {
 void setTaskInfo(json_object *jobj, Task_Info *task);
 void freeTaskInfo(Task_Info *task);
 void saveResultToJson(int num_tasks, Task_Info *tasks, char *result_file_name);
+long long setNiceValueByPeriod(long long period);
 
 void setTaskAttribute(pthread_attr_t *threadAttr, Task_Info *task);
 void setCoreMapping(Task_Info *task, pthread_attr_t *threadAttr);

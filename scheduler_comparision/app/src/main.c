@@ -1,6 +1,5 @@
 #include "util.h"
 
-
 pthread_barrier_t barrier;
 pthread_mutex_t mutex_memory_access = PTHREAD_MUTEX_INITIALIZER;
 struct timespec global_start_time;
@@ -53,6 +52,17 @@ int main(int argc, char* argv[]){
     }
     tasks_info_json = NULL;
 
+    // set nice value
+    if (atoi(argv[1]) == CFS){
+        for (int i = 0; i < num_tasks; i++){
+            if (tasks[i].isPeriodic){
+                tasks[i].nice_value = setNiceValueByPeriod(tasks[i].period_ns);
+            }else{
+                tasks[i].nice_value = setNiceValueByPeriod(tasks[i].low_interarrival_time_ns);
+            }
+        }
+    }
+
     // initMutex(&mutex_memory_access, PTHREAD_PRIO_INHERIT); //PTHREAD_PRIO_PROTECT;
     // initMutex(&mutex_memory_access, PTHREAD_PRIO_NONE); //PTHREAD_PRIO_PROTECT;
 
@@ -79,36 +89,35 @@ int main(int argc, char* argv[]){
     
     sleep(1); // wait for all threads to be ready
     clock_gettime(CLOCK_REALTIME, &global_start_time);
+    printf("global_start_time: %ld.%09ld\n", global_start_time.tv_sec, global_start_time.tv_nsec);
     pthread_barrier_wait(&barrier);
 
     printf("Start to run application.\n The experiment will complete after %d seconds.\n", simulation_period_sec);
     usleep(simulation_period_sec * 1000000); // seconds to microseconds
 
 
-    terminate = true;
-    // for (int i = 0; i < num_tasks; i++) {
-    //     if(pthread_cancel(threads[i])){
-    //         printf("Fail to cancel thread %d\n", i);
-    //         exit(1);
-    //     }
-    // }
-
     printf("Terminate tasks\n");
+    // terminate = true;
+    // for (int i = 0; i < num_tasks; i++) {
+    //     pthread_join(threads[i], NULL);
+    // }
     for (int i = 0; i < num_tasks; i++) {
-        pthread_join(threads[i], NULL);
+        if(pthread_cancel(threads[i])){
+            printf("Fail to cancel thread %d\n", i);
+            exit(1);
+        }
     }
-
     pthread_barrier_destroy(&barrier);
+
 
     printf("Save the result to %s\n", result_file_name);
     saveResultToJson(num_tasks, tasks, result_file_name);
 
     // free memory
-    printf("Free Memory\n");
+    printf("Free Memory of Tasks_info\n");
     for (int i = 0; i < num_tasks; i++){
         freeTaskInfo(&tasks[i]);
     }
-    
     printf("The experiment is complete.\n");
     return 0;
 }
