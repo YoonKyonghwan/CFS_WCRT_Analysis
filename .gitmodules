@@ -1,0 +1,3 @@
+[submodule "task_generation"]
+	path = task_generation
+	url = https://github.com/YoonKyonghwan/task_generation.git
