@@ -2,7 +2,7 @@
 
 long long min_period = LLONG_MAX;
 
-void setTaskInfo(json_object *jobj, Task_Info *task){
+void setTaskInfo_fmtv(json_object *jobj, Task_Info *task){
     task->name = json_object_get_string(json_object_object_get(jobj, "task_name"));
     task->core_index = json_object_get_int(json_object_object_get(jobj, "core_index"));
     task->priority = json_object_get_int(json_object_object_get(jobj, "priority"));
@@ -147,7 +147,7 @@ void freeTaskInfo(Task_Info *task){
 }
 
 
-void setTaskAttribute(pthread_attr_t *threadAttr, Task_Info *task){
+void setCoreMapping(pthread_attr_t *threadAttr, Task_Info *task){
     // initialize thread attribute
     if (pthread_attr_init(threadAttr)){
         printf("Fail to initialize thread attribute.\n");
@@ -157,8 +157,13 @@ void setTaskAttribute(pthread_attr_t *threadAttr, Task_Info *task){
     // set schedule policy and priority
     // setSchedPolicyPriority(threadAttr, task);
 
-    // set mapping to core
-    setCoreMapping(task, threadAttr);
+    cpu_set_t cpuset;
+    CPU_ZERO(&cpuset);
+    CPU_SET(task->core_index, &cpuset);
+    if (pthread_attr_setaffinity_np(threadAttr, sizeof(cpu_set_t), &cpuset) != 0){
+        perror("pthread_attr_setaffinity_np");
+        exit(1);
+    }
 
     if (pthread_attr_setinheritsched(threadAttr, PTHREAD_EXPLICIT_SCHED)){
         printf("Fail to set inherit scheduler attribute.\n");
@@ -168,16 +173,6 @@ void setTaskAttribute(pthread_attr_t *threadAttr, Task_Info *task){
     return;
 }
 
-
-void setCoreMapping(Task_Info *task, pthread_attr_t *threadAttr) {
-    cpu_set_t cpuset;
-    CPU_ZERO(&cpuset);
-    CPU_SET(task->core_index, &cpuset);
-    if (pthread_attr_setaffinity_np(threadAttr, sizeof(cpu_set_t), &cpuset) != 0){
-        perror("pthread_attr_setaffinity_np");
-        exit(1);
-    }
-}
 
 
 // void setSchedPolicyPriority(pthread_attr_t *threadAttr, Task_Info *task){

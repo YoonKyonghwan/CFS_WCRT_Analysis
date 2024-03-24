@@ -3,7 +3,7 @@
 
 int INIT_SLEEP_NS = 500000; // 100us sleep to make sure that all threads are ready to start
 
-void* task_function(void* arg) {
+void* task_function_fmtv(void* arg) {
     Task_Info *task = (Task_Info*)arg;
 
     // initialize variables
@@ -65,7 +65,7 @@ void* task_function(void* arg) {
     return NULL;
 }
 
-// void* task_function(void* arg) {
+// void* task_function_fmtv(void* arg) {
 //     Task_Info *task = (Task_Info*)arg;
 
 //     // initialize variables
@@ -117,6 +117,62 @@ void* task_function(void* arg) {
 //     printf("%s task termintated\n", task->name);
 //     return NULL;
 // }
+
+
+void* task_function_unnifest(void* arg) {
+    Task_Info *task = (Task_Info*)arg;
+
+    // initialize variables
+    PUSH_PROFILE("init")
+    pthread_mutex_t period_mutex = PTHREAD_MUTEX_INITIALIZER;
+    pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+    int iteration_index = 0;
+    struct timespec current_trigger_time, job_end, next_trigger_time;
+    struct timespec init_sleep_time = {0, INIT_SLEEP_NS}; 
+    long long sleep_time = 0LL;
+    long long interarrival_time = 0LL;
+
+    printf(" (Init) %s \n", task->name);
+    pthread_mutex_lock(&period_mutex); // to control period
+    POP_PROFILE()
+
+    // Wait for all threads to reach the barrier    
+    pthread_barrier_wait(&barrier);
+    setSchedPolicyPriority(task);
+    // sleep 0.1 sec to make sure that all threads are ready to start
+    nanosleep(&init_sleep_time, NULL);
+
+    // check the global_start_time
+    if (global_start_time.tv_sec == 0 && global_start_time.tv_nsec == 0){
+        MARKER("global_start_time")
+        clock_gettime(CLOCK_REALTIME, &global_start_time);
+    }
+    current_trigger_time = global_start_time;
+    next_trigger_time = global_start_time;
+
+    while (terminate == false) {
+        PUSH_PROFILE(task->name) // for total(read + execution + write)
+        busyWait(task->body_time_ns);
+        clock_gettime(CLOCK_REALTIME, &job_end);
+        POP_PROFILE() // for total(read + execution + write)
+        checkResponseTime(task, iteration_index, current_trigger_time, job_end);
+
+        interarrival_time = task->period_ns;
+        if (interarrival_time > task->response_time_ns[iteration_index]) {
+            setNextTriggerTime(&next_trigger_time, interarrival_time);
+            pthread_cond_timedwait(&cond, &period_mutex, &next_trigger_time); //wait until next_trigger_time
+        }else{
+            clock_gettime(CLOCK_REALTIME, &next_trigger_time);
+        }
+        current_trigger_time = next_trigger_time;
+        iteration_index = (iteration_index + 1) % task->num_samples;
+    }
+    pthread_mutex_unlock(&period_mutex); // to control period
+
+    printf("%s task termintated\n", task->name);
+    return NULL;
+}
+
 
 
 void convert_nsTime_timespec(long long nsTime, struct timespec *time){

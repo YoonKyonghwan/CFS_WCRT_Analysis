@@ -16,13 +16,12 @@ enum SCHEDULER_TYPE {
     RM
 };
 
-void setTaskInfo(json_object *jobj, Task_Info *task);
+void setTaskInfo_fmtv(json_object *jobj, Task_Info *task);
 void freeTaskInfo(Task_Info *task);
 void saveResultToJson(int num_tasks, Task_Info *tasks, char *result_file_name);
 long long setNiceValueByDeadline(long long period);
 
-void setTaskAttribute(pthread_attr_t *threadAttr, Task_Info *task);
-void setCoreMapping(Task_Info *task, pthread_attr_t *threadAttr);
+void setCoreMapping(pthread_attr_t *threadAttr, Task_Info *task);
 // void setSchedPolicyPriority(pthread_attr_t *threadAttr, Task_Info *task);
 void printSchedPolicy(int policy);
 
