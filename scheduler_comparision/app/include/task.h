@@ -53,9 +53,9 @@ typedef struct {
     int phased_write_time_ns;
     int *phased_execution_time_ns;
 
-    int *runnables_read_time_ns;
-    int **runnables_execution_time_ns;
-    int *runnables_write_time_ns;
+    // int *runnables_read_time_ns;
+    // int **runnables_execution_time_ns;
+    // int *runnables_write_time_ns;
 
     int num_samples;
     int num_runnables;

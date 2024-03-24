@@ -12,18 +12,26 @@ void setTaskInfo(json_object *jobj, Task_Info *task){
     task->period_ns = json_object_get_int64(json_object_object_get(jobj, "period_ns"));
     task->low_interarrival_time_ns = json_object_get_int(json_object_object_get(jobj, "lower_bound_ns"));
     task->upper_interarrival_time_ns = json_object_get_int(json_object_object_get(jobj, "upper_bound_ns"));
+
+
+    task->num_samples = json_object_array_length(json_object_object_get(jobj, "phased_execution"));
+    // task->num_runnables = json_object_array_length(json_object_object_get(jobj, "time_ns"));
+    
     if (task->isPeriodic){
         if (task->period_ns < min_period){
             min_period = task->period_ns;
         }
+        task->random_interarrival_time_ns = NULL;
     }else{
         if (task->low_interarrival_time_ns < min_period){
             min_period = task->low_interarrival_time_ns;
         }
+        task->random_interarrival_time_ns = (long long*)malloc(task->num_samples * sizeof(long long));
+        json_object *inter_arrival_time_ns = json_object_object_get(jobj, "inter_arrival_time_ns");
+        for (int i = 0; i < task->num_samples; i++){
+            task->random_interarrival_time_ns[i] = json_object_get_int64(json_object_array_get_idx(inter_arrival_time_ns, i));
+        }
     }
-
-    task->num_samples = json_object_array_length(json_object_object_get(jobj, "phased_execution"));
-    task->num_runnables = json_object_array_length(json_object_object_get(jobj, "time_ns"));
 
     task->phased_read_time_ns = json_object_get_int(json_object_object_get(jobj, "phased_read"));
     task->phased_write_time_ns = json_object_get_int(json_object_object_get(jobj, "phased_write"));
@@ -36,30 +44,21 @@ void setTaskInfo(json_object *jobj, Task_Info *task){
             max_execution = task->phased_execution_time_ns[i];
         }
     }
-    if (!task->isPeriodic){
-        task->random_interarrival_time_ns = (long long*)malloc(task->num_samples * sizeof(long long));
-        json_object *inter_arrival_time_ns = json_object_object_get(jobj, "inter_arrival_time_ns");
-        for (int i = 0; i < task->num_samples; i++){
-            task->random_interarrival_time_ns[i] = json_object_get_int64(json_object_array_get_idx(inter_arrival_time_ns, i));
-        }
-    }else{
-        task->random_interarrival_time_ns = NULL;
-    }
 
-    task->runnables_read_time_ns = (int*)malloc(task->num_runnables * sizeof(int));
-    task->runnables_write_time_ns = (int*)malloc(task->num_runnables * sizeof(int));
-    task->runnables_execution_time_ns = (int**)malloc(task->num_runnables * sizeof(int*));
-    json_object *runnables_info = json_object_object_get(jobj, "time_ns");
-    for (int i = 0; i < task->num_runnables; i++){
-        json_object *runnable = json_object_array_get_idx(runnables_info, i);
-        task->runnables_read_time_ns[i] = json_object_get_int(json_object_object_get(runnable, "read"));
-        task->runnables_write_time_ns[i] = json_object_get_int(json_object_object_get(runnable, "write"));
-        task->runnables_execution_time_ns[i] = (int*)malloc(task->num_samples * sizeof(int));
-        json_object *execution = json_object_object_get(runnable, "execution");
-        for (int j = 0; j < task->num_samples; j++){
-            task->runnables_execution_time_ns[i][j] = json_object_get_int(json_object_array_get_idx(execution, j));
-        }
-    }
+    // task->runnables_read_time_ns = (int*)malloc(task->num_runnables * sizeof(int));
+    // task->runnables_write_time_ns = (int*)malloc(task->num_runnables * sizeof(int));
+    // task->runnables_execution_time_ns = (int**)malloc(task->num_runnables * sizeof(int*));
+    // json_object *runnables_info = json_object_object_get(jobj, "time_ns");
+    // for (int i = 0; i < task->num_runnables; i++){
+    //     json_object *runnable = json_object_array_get_idx(runnables_info, i);
+    //     task->runnables_read_time_ns[i] = json_object_get_int(json_object_object_get(runnable, "read"));
+    //     task->runnables_write_time_ns[i] = json_object_get_int(json_object_object_get(runnable, "write"));
+    //     task->runnables_execution_time_ns[i] = (int*)malloc(task->num_samples * sizeof(int));
+    //     json_object *execution = json_object_object_get(runnable, "execution");
+    //     for (int j = 0; j < task->num_samples; j++){
+    //         task->runnables_execution_time_ns[i][j] = json_object_get_int(json_object_array_get_idx(execution, j));
+    //     }
+    // }
 
     task->wcet_ns = max_execution;
     // task->wcet_ns = task->phased_read_time_ns + max_execution + task->phased_write_time_ns;
@@ -80,10 +79,11 @@ void setTaskInfo(json_object *jobj, Task_Info *task){
 long long setNiceValueByDeadline(long long period){
     int nice_value = -19;
     long long period_inc = min_period;
-    while(period_inc > period && nice_value < 19){
+    while(period_inc < period && nice_value < 19){
         period_inc = (period_inc * 5) / 4;
         nice_value++;
     }
+    // printf("nice_value: %d period : %lld\n", nice_value, period);
     return nice_value;
 }
 
@@ -136,13 +136,13 @@ void saveResultToJson(int num_tasks, Task_Info *tasks, char *result_file_name){
 
 void freeTaskInfo(Task_Info *task){
     free(task->phased_execution_time_ns);
-    free(task->runnables_read_time_ns);
-    free(task->runnables_write_time_ns);
+    // free(task->runnables_read_time_ns);
+    // free(task->runnables_write_time_ns);
     free(task->response_time_ns);
-    for (int i = 0; i < task->num_runnables; i++){
-        free(task->runnables_execution_time_ns[i]);
-    }
-    free(task->runnables_execution_time_ns);
+    // for (int i = 0; i < task->num_runnables; i++){
+    //     free(task->runnables_execution_time_ns[i]);
+    // }
+    // free(task->runnables_execution_time_ns);
     return;
 }
 

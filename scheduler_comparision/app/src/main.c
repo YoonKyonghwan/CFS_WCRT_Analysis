@@ -2,7 +2,7 @@
 
 pthread_barrier_t barrier;
 pthread_mutex_t mutex_memory_access = PTHREAD_MUTEX_INITIALIZER;
-struct timespec global_start_time;
+struct timespec global_start_time = {0, 0};
 bool terminate = false;
 bool isPhasedTask = false;
 
@@ -87,14 +87,14 @@ int main(int argc, char* argv[]){
         }
     }
     
-    sleep(1); // wait for all threads to be ready
-    clock_gettime(CLOCK_REALTIME, &global_start_time);
-    printf("global_start_time: %ld.%09ld\n", global_start_time.tv_sec, global_start_time.tv_nsec);
+    usleep(1000); // wait for all threads to be ready (1ms)
+    // clock_gettime(CLOCK_REALTIME, &global_start_time);
     pthread_barrier_wait(&barrier);
+    MARKER("After barrier")
+    // printf("global_start_time: %ld.%09ld\n", global_start_time.tv_sec, global_start_time.tv_nsec);
 
     printf("Start to run application.\n The experiment will complete after %d seconds.\n", simulation_period_sec);
-    usleep(simulation_period_sec * 1000000); // seconds to microseconds
-
+    sleep(simulation_period_sec); // seconds
 
     printf("Terminate tasks\n");
     // terminate = true;
