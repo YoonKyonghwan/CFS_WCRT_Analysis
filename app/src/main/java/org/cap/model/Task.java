@@ -54,9 +54,9 @@ public class Task {
     public boolean isTargetTask;
 
     // Execution time with Concurrent Execution Interference
-    public int WCRT_by_proposed;
+    public long WCRT_by_proposed;
     public boolean isSchedulable_by_proposed;
-    public int WCRT_by_simulator;
+    public long WCRT_by_simulator;
     public boolean isSchedulable_by_simulator;
 
     private boolean initialized = false;

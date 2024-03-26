@@ -8,8 +8,10 @@ import org.cap.model.Task;
 public class CFSAnalyzer {
     private List<Core> cores;
     private int targetLatency; 
+    private int min_granularity;
+    private double w_0 = 1024.0;
 
-    public CFSAnalyzer(List<Core> cores, int targetLatency) {
+    public CFSAnalyzer(List<Core> cores, int targetLatency, int min_granularity) {
         this.cores = cores;
         double minWeight = 88761; //max_weight = 88761
         for (Core core: this.cores) {
@@ -23,6 +25,7 @@ public class CFSAnalyzer {
             core.minWeight = minWeight;
         }
         this.targetLatency = targetLatency;
+        this.min_granularity = min_granularity;
     }
 
     public void analyze() {
@@ -39,23 +42,22 @@ public class CFSAnalyzer {
     private void computeWCRTwithIntraCoreInterference(Task task_i, Core core) {
         int C_i = (int) task_i.bodyTime;
 
-        int R_prev = C_i;
-        int R_cur = 0;
+        long R_prev = C_i;
+        long R_cur = 0;
         while(true){
             R_cur = C_i;
             for (Task task_j : core.tasks) {
                 if (task_i.id != task_j.id) {
-                    long interference = getInterference(task_j, R_prev, core, task_i);
-                    R_cur += interference;
+                    R_cur += getInterference(task_j, R_prev, core, task_i);
                 }
             }
-            if (task_i.period < R_cur) {
-                task_i.WCRT_by_proposed = R_cur;
-                task_i.isSchedulable_by_proposed = false;
-                break;
-            }else if (R_prev == R_cur){
+            if (R_prev == R_cur){
                 task_i.WCRT_by_proposed = R_cur;
                 task_i.isSchedulable_by_proposed = true;
+                break;
+            }else if (task_i.period < R_cur) {
+                task_i.WCRT_by_proposed = R_cur;
+                task_i.isSchedulable_by_proposed = false;
                 break;
             }else{
                 R_prev = R_cur;
@@ -65,75 +67,111 @@ public class CFSAnalyzer {
     }
 
     /*
-     * Corollary2 in the paper.
+     * Theorem1 in the paper.
      */
-    private long getInterference(Task task_j, int R_prev, Core core, Task task_i) {
-        // int C_i = (int) task_i.bodyTime;
+    private long getInterference(Task task_j, long R_prev, Core core, Task task_i) {
         long T_j = task_j.period;
         int C_j = (int) task_j.bodyTime;
         int C_i = (int) task_i.bodyTime;
+        int k_j = (int) Math.floorDiv(R_prev, T_j);
+        long interference = k_j * C_j;
+
         double w_i = task_i.weight;
-        long k_j = Math.floorDiv(R_prev, T_j)+1;
-        long lastRequestTime = (k_j-1) * T_j; // (R_prev / T_j) * T_j
+        long lastRequestTime = k_j * T_j; // floor(R_prev / T_j) * T_j
         int remainWorkload = C_i;
         if (lastRequestTime > 0){
             remainWorkload = getRemainWorkload(lastRequestTime, task_i, core);
         }
         long S_j = 0;
         if(remainWorkload != 0){
-            S_j = getS_j(task_j, C_j, remainWorkload, w_i, k_j, core.minWeight);
+            S_j = getInterferenceOfLastJob(task_j, remainWorkload, w_i, k_j, core.minWeight);
         }
+        interference += S_j;
 
-        return ((k_j - 1) * C_j) + S_j;
+        return interference;
     }
 
+    
     /*
      * Lemma6 in the paper.
-     * \alpha =  L \cdot \frac{w_j}{w_i + w_{min}}, \quad
-     * \beta =  \Delta_{i}^{t_{s(j,q)}} \cdot \frac{w_j}{w_i},  \quad
-     * \gamma = L \cdot \frac{w_j}{w_i + w_j} 
      */
-    private long getS_j(Task task_j, int C_j, int remainWorkload, double w_i, long k_j, double minWeight) {
+    private long getInterferenceOfLastJob(Task task_j, int remainWorkload, double w_i, int k_j, double minWeight) {
+        int C_j = (int) task_j.bodyTime;
         double w_j = task_j.weight;
-        int alpha = (int) (this.targetLatency * w_j / (w_i + minWeight));
-        int beta = (int) (remainWorkload * w_j / w_i);
-        int gamma = (int) (this.targetLatency * w_j / (w_i + w_j));
-        if (k_j == 1) {
-            return (int) Math.min(beta + gamma, C_j);
+        int alpha = (int) Math.max(this.targetLatency * w_i / (w_i + minWeight), this.min_granularity);
+        int gamma = (int) Math.max(this.targetLatency * w_j / (w_i + w_j), this.min_granularity);
+        if (k_j == 0) { // if the number of jobs of task_j is 1
+            return (int) Math.min(remainWorkload * w_j / w_i + gamma, C_j);
         }else{
-            return (int) Math.min(alpha + beta + gamma, C_j);
+            return (int) Math.min((alpha + remainWorkload) * w_j / w_i + gamma, C_j);
         }
     }
 
 
     /*
-     * Lemma7 in the paper.
+     * Corollary 3 in the paper.
      */
     private int getRemainWorkload(long lastRequestTime, Task task_i, Core core) {
-        int max_min_task_i_processed = 0;
         int C_i = (int) task_i.bodyTime;
+
+        int usage_bound_1 = getUsageBound_1(lastRequestTime, task_i, core);
+        int usage_bound_2 = getUsageBound_2(lastRequestTime, task_i, core);
+        int final_usage_bound = Math.max(usage_bound_1, usage_bound_2);
+
+        if(final_usage_bound > C_i){
+            return 0;
+        }else{
+            return C_i - final_usage_bound;
+        }
+    }
+
+
+    /*
+     * Lemma 8 in the paper.
+     */
+    private int getUsageBound_2(long lastRequestTime, Task task_i, Core core){
+        long eta = 0;
+        for (Task task_j : core.tasks) {
+            if (task_i.id != task_j.id) {
+                long T_j = task_j.period;
+                int C_j = (int) task_j.bodyTime;
+                eta += ((Math.floorDiv(lastRequestTime, T_j) * C_j) + (lastRequestTime % T_j));
+            }
+        }
+        return (int) (lastRequestTime - eta);
+    }
+
+
+    /*
+     * Lemma 7 in the paper.
+     */
+    private int getUsageBound_1(long lastRequestTime, Task task_i, Core core){        
+        long T_x = 0;
+        int C_x = 0;
+        double w_x = 0;
         double w_i = task_i.weight;
+        double max_objective = 0;
+        // argmax (Equation 29)
         for (Task task_k : core.tasks) {
             if (task_i.id != task_k.id) {
-                long T_k = task_k.period;
-                double w_k = task_k.weight;
-                int C_k = (int) task_k.bodyTime;
-                if (T_k > lastRequestTime){
-                    continue;
-                }else{
-                    int min_task_i_processed = (int) (Math.floorDiv(lastRequestTime, T_k) * C_k * w_i / w_k) - (int) (this.targetLatency * w_i / (w_i + w_k));
-                    if (min_task_i_processed > max_min_task_i_processed){
-                        max_min_task_i_processed = min_task_i_processed;
-                    }
+                long T_y = task_k.period;
+                int C_y = (int) task_k.bodyTime;
+                double w_y = task_k.weight;
+                double objective = Math.floorDiv(lastRequestTime, T_y) * C_y * (this.w_0 / w_y);
+                if (objective > max_objective) {
+                    max_objective = objective;
+                    T_x = T_y;
+                    C_x = C_y;
+                    w_x = w_y;
                 }
             }
         }
-        if(max_min_task_i_processed > C_i){
-            return 0;
-        }else{
-            return (int) C_i - max_min_task_i_processed;
-        }
+
+        int beta = Math.max((int) (this.targetLatency * (w_x / (w_i + w_x))), this.min_granularity);
+        int zeta = (int) ((Math.floorDiv(lastRequestTime, T_x) * C_x - beta) * (w_i / w_x));
+        return zeta;
     }
+
 
     public boolean checkSystemSchedulability() {
         for (Core core : this.cores) {

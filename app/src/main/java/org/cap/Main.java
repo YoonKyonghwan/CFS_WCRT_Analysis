@@ -55,7 +55,7 @@ public class Main {
             
             // analyze by proposed
             startTime = System.nanoTime();
-            CFSAnalyzer analyzer = new CFSAnalyzer(testConf.mappingInfo, params.getInt("target_latency"));
+            CFSAnalyzer analyzer = new CFSAnalyzer(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"));
             analyzer.analyze(); // without parallel
             boolean proposed_schedulability = analyzer.checkSystemSchedulability();
             long proposed_timeConsumption = (System.nanoTime() - startTime) / 1000L;

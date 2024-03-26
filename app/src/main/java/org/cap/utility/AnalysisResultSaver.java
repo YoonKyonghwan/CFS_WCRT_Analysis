@@ -98,9 +98,9 @@ public class AnalysisResultSaver {
                     int id = task.id;
                     int deadline = (int) task.period;
                     String name = testConf.idNameMap.get(task.id);
-                    int WCRT_by_simulator = task.WCRT_by_simulator;
+                    int WCRT_by_simulator = (int) task.WCRT_by_simulator;
                     boolean isSchedulable_by_simulator = task.isSchedulable_by_simulator;
-                    int WCRT_by_proposed = task.WCRT_by_proposed;
+                    int WCRT_by_proposed = (int) task.WCRT_by_proposed;
                     boolean isSchedulable_by_proposed = task.isSchedulable_by_proposed;
 
                     // Prepare data to be written to the CSV file
