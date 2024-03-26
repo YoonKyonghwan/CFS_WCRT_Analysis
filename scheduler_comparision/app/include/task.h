@@ -52,10 +52,11 @@ typedef struct {
     int phased_read_time_ns;
     int phased_write_time_ns;
     int *phased_execution_time_ns;
+    long long body_time_ns;
 
-    int *runnables_read_time_ns;
-    int **runnables_execution_time_ns;
-    int *runnables_write_time_ns;
+    // int *runnables_read_time_ns;
+    // int **runnables_execution_time_ns;
+    // int *runnables_write_time_ns;
 
     int num_samples;
     int num_runnables;
@@ -91,7 +92,8 @@ struct sched_attr {
 };
 
 
-void *task_function(void *arg);
+void *task_function_fmtv(void *arg);
+void* task_function_unnifest(void* arg);
 
 void runRunnable(int read_ns, int execution_ns, int write_ns);
 void memoryAccess(int time_ns);
