@@ -15,6 +15,7 @@ public class CFSSimulator {
     private static final Logger logger = LoggerUtility.getLogger();
     ScheduleSimulationMethod method;
     ComparatorCase comparatorCase;
+    private long schedulePeriod = 4 * 1000 * 1000L; 
     private long targetLatency;
     private long minimumGranularity = 1 * 1000L;
     private long wakeupGranularity = 3 * 1000 * 1000L;
@@ -632,6 +633,8 @@ public class CFSSimulator {
         long totalWeight = queueInCore.stream().mapToLong(t -> t.task.weight).sum() + task.task.weight;
         coreState.remainingRuntime = (int) Math.max(this.targetLatency * task.task.weight / totalWeight,
                 this.minimumGranularity);
+        coreState.remainingRuntime = (int) ((coreState.remainingRuntime / this.schedulePeriod) * this.schedulePeriod + this.schedulePeriod); 
+
         coreState.remainingRuntime = Math.min(coreState.remainingRuntime, (int) (task.readTimeInNanoSeconds + task.bodyTimeInNanoSeconds + task.writeTimeInNanoSeconds));
         coreState.isRunning = true;
     }
