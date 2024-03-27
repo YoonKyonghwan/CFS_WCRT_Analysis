@@ -124,16 +124,18 @@ void* task_function_unnifest(void* arg) {
 
     // initialize variables
     PUSH_PROFILE("init")
-    pthread_mutex_t period_mutex = PTHREAD_MUTEX_INITIALIZER;
-    pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
+    LockMemory();
+    // pthread_mutex_t period_mutex = PTHREAD_MUTEX_INITIALIZER;
+    // pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
     int iteration_index = 0;
     struct timespec current_trigger_time, job_end, next_trigger_time;
     struct timespec init_sleep_time = {0, INIT_SLEEP_NS}; 
     long long sleep_time = 0LL;
     long long interarrival_time = 0LL;
+    long long real_wcet_ns = 0;
 
     printf(" (Init) %s \n", task->name);
-    pthread_mutex_lock(&period_mutex); // to control period
+    // pthread_mutex_lock(&period_mutex); // to control period
     POP_PROFILE()
 
     // Wait for all threads to reach the barrier    
@@ -150,26 +152,33 @@ void* task_function_unnifest(void* arg) {
     current_trigger_time = global_start_time;
     next_trigger_time = global_start_time;
 
+    int count = 0;
+    int execution_time=0;
     while (terminate == false) {
         PUSH_PROFILE(task->name) // for total(read + execution + write)
-        busyWait(task->body_time_ns);
+        execution_time = busyWait(task->body_time_ns);
+        if (execution_time > real_wcet_ns){
+            real_wcet_ns = execution_time;
+        }
         clock_gettime(CLOCK_REALTIME, &job_end);
         POP_PROFILE() // for total(read + execution + write)
         checkResponseTime(task, iteration_index, current_trigger_time, job_end);
+        count++;
 
         interarrival_time = task->period_ns;
         if (interarrival_time > task->response_time_ns[iteration_index]) {
             setNextTriggerTime(&next_trigger_time, interarrival_time);
-            pthread_cond_timedwait(&cond, &period_mutex, &next_trigger_time); //wait until next_trigger_time
+            // pthread_cond_timedwait(&cond, &period_mutex, &next_trigger_time); //wait until next_trigger_time
+            clock_nanosleep(CLOCK_REALTIME, TIMER_ABSTIME, &next_trigger_time, NULL);
         }else{
             clock_gettime(CLOCK_REALTIME, &next_trigger_time);
         }
         current_trigger_time = next_trigger_time;
         iteration_index = (iteration_index + 1) % task->num_samples;
     }
-    pthread_mutex_unlock(&period_mutex); // to control period
-
-    printf("%s task termintated\n", task->name);
+    // pthread_mutex_unlock(&period_mutex); // to control period
+    task->wcet_ns = real_wcet_ns;
+    printf("%s(wcet %lld) task termintated : count= %d\n", task->name, real_wcet_ns, count);
     return NULL;
 }
 
@@ -249,9 +258,6 @@ void checkResponseTime(Task_Info *task, int iteration_index, struct timespec sta
         task->response_time_ns[iteration_index] = responsed_ns;
         // task->start_time_ns[iteration_index] = (start_time.tv_sec * 1000000000LL ) + start_time.tv_nsec;
         // task->end_time_ns[iteration_index] = (end_time.tv_sec * 1000000000LL ) + end_time.tv_nsec;
-        if (responsed_ns > task->wcrt_ns){
-            task->wcrt_ns = responsed_ns;
-        }
     }
     return;
 }
@@ -313,14 +319,34 @@ void memoryAccess(int time_ns) {
 }
 
 
-void busyWait(int wait_time_ns){
+// void busyWait(int wait_time_ns){
+//     struct timespec start, end;
+//     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
+//     long long elapsed_ns = 0;
+//     while (elapsed_ns < wait_time_ns) {
+//         clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end);
+//         elapsed_ns = (end.tv_sec - start.tv_sec) * 1000000000LL + (end.tv_nsec - start.tv_nsec);
+//     }
+//     //for loop
+// }
+
+long long busyWait(int wait_time_ns){
     struct timespec start, end;
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
     long long elapsed_ns = 0;
     while (elapsed_ns < wait_time_ns) {
+        for (int i = 0; i < 1000; i++) {
+            //waste time
+        }
         clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end);
         elapsed_ns = (end.tv_sec - start.tv_sec) * 1000000000LL + (end.tv_nsec - start.tv_nsec);
     }
-    //for loop
+    return elapsed_ns;
 }
-
+void LockMemory() {
+    int ret = mlockall(MCL_CURRENT | MCL_FUTURE);
+    if (ret != 0) {
+        printf("mlockall failed\n");
+        exit(1);
+    }
+}

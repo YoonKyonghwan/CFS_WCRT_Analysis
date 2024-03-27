@@ -87,6 +87,41 @@ long long setNiceValueByDeadline(long long period){
     return nice_value;
 }
 
+void updateRealWCET(json_object *org_info, Task_Info *tasks, int num_tasks, char* result_file_name){
+    json_object *tasks_ids = json_object_object_get(org_info, "idNameMap");
+    json_object *mapping_info = json_object_object_get(org_info, "mappingInfo");
+    int num_cores = json_object_array_length(mapping_info);
+    
+    for (int i = 0; i < num_cores; i++){
+        json_object *core_info = json_object_array_get_idx(mapping_info, i);
+        json_object *tasks_info = json_object_object_get(core_info, "tasks");
+        int num_tasks_core = json_object_array_length(tasks_info);
+        for (int j = 0; j < num_tasks_core; j++){
+            json_object *task_info = json_object_array_get_idx(tasks_info, j);
+            int task_id = json_object_get_int(json_object_object_get(task_info, "id"));
+            char *task_id_str = (char*)malloc(3);
+            sprintf(task_id_str, "%d", task_id);
+            char *task_name = json_object_get_string(json_object_object_get(tasks_ids, task_id_str));
+            int wcet = getWCETByName(task_name, tasks, num_tasks);
+
+            //update wcet
+            json_object_set_int(json_object_object_get(task_info, "bodyTime"), (wcet/1000) + 1);
+        }
+    }
+    json_object_to_file_ext(result_file_name, org_info, JSON_C_TO_STRING_PRETTY);
+
+    return;
+}
+
+int getWCETByName(char* task, Task_Info *tasks, int num_tasks){
+    for (int i = 0; i < num_tasks; i++){
+        if (strcmp(task, tasks[i].name) == 0){
+            return tasks[i].wcet_ns;
+        }
+    }
+    return -1;
+}
+
 
 void saveResultToJson(int num_tasks, Task_Info *tasks, char *result_file_name){
     json_object *tasks_result = json_object_new_array();
@@ -96,6 +131,7 @@ void saveResultToJson(int num_tasks, Task_Info *tasks, char *result_file_name){
         json_object *task_start_time_ns = json_object_new_array();
         json_object *task_end_time_ns = json_object_new_array();
         unsigned long long total_response_time_ns = 0;
+        long long wcrt_ns = 0;
         int count_valid_response_time = 0;
         for (int j = 0; j < tasks[i].num_samples; j++) {
             if (tasks[i].response_time_ns[j] != 0){
@@ -104,12 +140,16 @@ void saveResultToJson(int num_tasks, Task_Info *tasks, char *result_file_name){
                 count_valid_response_time++;
                 // json_object_array_add(task_start_time_ns, json_object_new_int64(tasks[i].start_time_ns[j]));
                 // json_object_array_add(task_end_time_ns, json_object_new_int64(tasks[i].end_time_ns[j]));
+                if (tasks[i].response_time_ns[j] > wcrt_ns){
+                    wcrt_ns = tasks[i].response_time_ns[j];
+                }
             }
         }
         unsigned long long avg_response_time_ns = 0;
         if (count_valid_response_time != 0){
             avg_response_time_ns= total_response_time_ns / count_valid_response_time;
         }
+        tasks[i].wcrt_ns = wcrt_ns;
 
         long long deadline_ns = 0;
         if (tasks[i].isPeriodic){

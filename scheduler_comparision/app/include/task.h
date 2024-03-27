@@ -11,6 +11,7 @@
 #include <stdbool.h>
 #include <sys/syscall.h> // for syscall(SYS_gettid)
 #include <sys/resource.h> // for setpriority
+#include <sys/mman.h> // for mlockall
 #include <linux/types.h>
 #include <limits.h>
 
@@ -27,7 +28,6 @@
 #define MARKER(name) 
 #endif
 
-#define max(x, y) (x) > (y) ? (x) : (y)
 #define min(x, y) (x) < (y) ? (x) : (y)
 
 extern pthread_barrier_t barrier;
@@ -95,9 +95,10 @@ struct sched_attr {
 void *task_function_fmtv(void *arg);
 void* task_function_unnifest(void* arg);
 
+void LockMemory();
 void runRunnable(int read_ns, int execution_ns, int write_ns);
 void memoryAccess(int time_ns);
-void busyWait(int wait_time_ns);
+long long busyWait(int wait_time_ns);
 
 void setSchedPolicyPriority(Task_Info *task);
 int sched_setattr(pid_t pid, const struct sched_attr *attr, unsigned int flags);

@@ -69,7 +69,7 @@ int main(int argc, char* argv[]){
             }
         }
 
-        // initMutex(&mutex_memory_access, PTHREAD_PRIO_INHERIT); //PTHREAD_PRIO_PROTECT;
+        initMutex(&mutex_memory_access, PTHREAD_PRIO_INHERIT); //PTHREAD_PRIO_PROTECT;
         // initMutex(&mutex_memory_access, PTHREAD_PRIO_NONE); //PTHREAD_PRIO_PROTECT;
 
         printf("Initialize and create tasks\n");
@@ -101,16 +101,16 @@ int main(int argc, char* argv[]){
         sleep(simulation_period_sec); // seconds
 
         printf("Terminate tasks\n");
-        // terminate = true;
-        // for (int i = 0; i < num_tasks; i++) {
-        //     pthread_join(threads[i], NULL);
-        // }
+        terminate = true;
         for (int i = 0; i < num_tasks; i++) {
-            if(pthread_cancel(threads[i])){
-                printf("Fail to cancel thread %d\n", i);
-                exit(1);
-            }
+            pthread_join(threads[i], NULL);
         }
+        // for (int i = 0; i < num_tasks; i++) {
+        //     if(pthread_cancel(threads[i])){
+        //         printf("Fail to cancel thread %d\n", i);
+        //         exit(1);
+        //     }
+        // }
         pthread_barrier_destroy(&barrier);
 
 
@@ -126,6 +126,8 @@ int main(int argc, char* argv[]){
         printf("Use the uunifest data type\n");
         json_object *tasks_ids = json_object_object_get(tasks_info_json, "idNameMap");
         json_object *mapping_info = json_object_object_get(tasks_info_json, "mappingInfo");
+
+
         int num_cores = json_object_array_length(mapping_info);
         int num_tasks = 0;
         for (int i = 0; i < num_cores; i++){
@@ -202,17 +204,24 @@ int main(int argc, char* argv[]){
         sleep(simulation_period_sec); // seconds
 
         printf("Terminate tasks\n");
+        terminate = true;
         for (int i = 0; i < num_tasks; i++) {
-            if(pthread_cancel(threads[i])){
-                printf("Fail to cancel thread %d\n", i);
-                exit(1);
-            }
+            pthread_join(threads[i], NULL);
         }
+        // for (int i = 0; i < num_tasks; i++) {
+        //     if(pthread_cancel(threads[i])){
+        //         printf("Fail to cancel thread %d\n", i);
+        //         exit(1);
+        //     }
+        // }
         pthread_barrier_destroy(&barrier);
 
 
         printf("Save the result to %s\n", result_file_name);
         saveResultToJson(num_tasks, tasks, result_file_name);
+        updateRealWCET(tasks_info_json, tasks, num_tasks, "update_real_wcet.json");
+        
+
 
         // free memory
         printf("Free Memory of Tasks_info\n");
