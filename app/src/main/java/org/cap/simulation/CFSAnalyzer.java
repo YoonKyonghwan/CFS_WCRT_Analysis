@@ -10,6 +10,7 @@ public class CFSAnalyzer {
     private int targetLatency; 
     private int min_granularity;
     private double w_0 = 1024.0;
+    private int jiffy_us = 1000; // 1ms
 
     public CFSAnalyzer(List<Core> cores, int targetLatency, int min_granularity) {
         this.cores = cores;
@@ -99,7 +100,9 @@ public class CFSAnalyzer {
         int C_j = (int) task_j.bodyTime;
         double w_j = task_j.weight;
         int alpha = (int) Math.max(this.targetLatency * w_i / (w_i + minWeight), this.min_granularity);
+        alpha = adjustTimeScliceWithJiffy(alpha);
         int gamma = (int) Math.max(this.targetLatency * w_j / (w_i + w_j), this.min_granularity);
+        gamma = adjustTimeScliceWithJiffy(gamma);
         if (k_j == 0) { // if the number of jobs of task_j is 1
             return (int) Math.min(remainWorkload * w_j / w_i + gamma, C_j);
         }else{
@@ -127,17 +130,22 @@ public class CFSAnalyzer {
 
 
     /*
-     * Lemma 8 in the paper.
+     * Lemma 8~9 in the paper.
      */
     private int getUsageBound_2(long lastRequestTime, Task task_i, Core core){
-        long eta = 0;
+        long total_workload = 0;
         for (Task task_j : core.tasks) {
             if (task_i.id != task_j.id) {
                 long T_j = task_j.period;
                 int C_j = (int) task_j.bodyTime;
-                eta += ((Math.floorDiv(lastRequestTime, T_j) * C_j) + (lastRequestTime % T_j));
+                long psi = Math.floorDiv(lastRequestTime, T_j) * C_j;
+                if (lastRequestTime % T_j != 0){
+                    psi += (C_j % (lastRequestTime % T_j));
+                }
+                total_workload += psi;
             }
         }
+        long eta = Math.min(total_workload, lastRequestTime);
         return (int) (lastRequestTime - eta);
     }
 
@@ -168,8 +176,16 @@ public class CFSAnalyzer {
         }
 
         int beta = Math.max((int) (this.targetLatency * (w_x / (w_i + w_x))), this.min_granularity);
+        beta = adjustTimeScliceWithJiffy(beta);
         int zeta = (int) ((Math.floorDiv(lastRequestTime, T_x) * C_x - beta) * (w_i / w_x));
         return zeta;
+    }
+
+    /*
+     * Definition 3 in the paper.
+     */
+    private int adjustTimeScliceWithJiffy(int time_slice){
+        return (Math.floorDiv(time_slice, this.jiffy_us) + 1) * this.jiffy_us;
     }
 
 
