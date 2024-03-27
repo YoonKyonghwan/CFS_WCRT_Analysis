@@ -107,5 +107,3 @@ long long getInterarrivalTime(Task_Info *task, int iteration_index);
 void setNextTriggerTime(struct timespec *next_trigger_time, long long interarrival_time_ns);
 void checkResponseTime(Task_Info *task, int iteration_index, struct timespec global_start, struct timespec global_end);
 long long timeDiff(struct timespec time_start, struct timespec time_end);
-
-void convert_nsTime_timespec(long long nsTime, struct timespec *time);

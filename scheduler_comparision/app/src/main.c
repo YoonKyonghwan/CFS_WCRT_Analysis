@@ -69,7 +69,7 @@ int main(int argc, char* argv[]){
             }
         }
 
-        initMutex(&mutex_memory_access, PTHREAD_PRIO_INHERIT); //PTHREAD_PRIO_PROTECT;
+        // initMutex(&mutex_memory_access, PTHREAD_PRIO_INHERIT); //PTHREAD_PRIO_PROTECT;
         // initMutex(&mutex_memory_access, PTHREAD_PRIO_NONE); //PTHREAD_PRIO_PROTECT;
 
         printf("Initialize and create tasks\n");
@@ -126,7 +126,6 @@ int main(int argc, char* argv[]){
         printf("Use the uunifest data type\n");
         json_object *tasks_ids = json_object_object_get(tasks_info_json, "idNameMap");
         json_object *mapping_info = json_object_object_get(tasks_info_json, "mappingInfo");
-
 
         int num_cores = json_object_array_length(mapping_info);
         int num_tasks = 0;
