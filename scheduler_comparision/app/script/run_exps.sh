@@ -1,14 +1,13 @@
 #!/bin/bash
 
-INPUT_DIR="../../dataset"
+INPUT_DIR="./generated_taskset_new_100_20240328_30ms"
 RESULT_DIR="./exp_results"
 
-# INPUT_FILE="1cores_6tasks_0.6utilization_89.json"
 DATA_TYPE="uunifest" # "uunifest" or "fmtv"
-SIM_PERIOD_SEC=10
+SIM_PERIOD_SEC=60
 SCHEDULER="CFS"
 APPLICATION_PATH="./application"
-ENABLE_NSYS=1
+ENABLE_NSYS=0
 
 num_cores=(1)
 num_tasks=(3 6 9 12)
