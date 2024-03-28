@@ -52,13 +52,14 @@ public class CFSAnalyzer {
                     R_cur += getInterference(task_j, R_prev, core, task_i);
                 }
             }
-            if (R_prev == R_cur){
-                task_i.WCRT_by_proposed = R_cur;
-                task_i.isSchedulable_by_proposed = true;
-                break;
-            }else if (task_i.period < R_cur) {
+
+            if (task_i.period < R_cur) {
                 task_i.WCRT_by_proposed = R_cur;
                 task_i.isSchedulable_by_proposed = false;
+                break;
+            }else if (R_prev == R_cur){
+                task_i.WCRT_by_proposed = R_cur;
+                task_i.isSchedulable_by_proposed = true;
                 break;
             }else{
                 R_prev = R_cur;
@@ -139,9 +140,7 @@ public class CFSAnalyzer {
                 long T_j = task_j.period;
                 int C_j = (int) task_j.bodyTime;
                 long psi = Math.floorDiv(lastRequestTime, T_j) * C_j;
-                if (lastRequestTime % T_j != 0){
-                    psi += (C_j % (lastRequestTime % T_j));
-                }
+                psi += Math.min(C_j, lastRequestTime % T_j);
                 total_workload += psi;
             }
         }

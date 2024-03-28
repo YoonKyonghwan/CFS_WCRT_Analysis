@@ -103,9 +103,13 @@ public class AnalysisResultSaver {
                     int WCRT_by_proposed = (int) task.WCRT_by_proposed;
                     boolean isSchedulable_by_proposed = task.isSchedulable_by_proposed;
 
+                    boolean isSchedulable_by_FIFO = task.isSchedulable_by_FIFO;
+                    boolean isSchedulable_by_RR = task.isSchedulable_by_RR;
+                    boolean isSchedulable_by_RM = task.isSchedulable_by_RM;
+
                     // Prepare data to be written to the CSV file
-                    dataToWrite = String.format("%d,%d,%s,%d,%b,%d,%b\n",
-                            id, deadline, name, WCRT_by_simulator, isSchedulable_by_simulator, WCRT_by_proposed, isSchedulable_by_proposed);
+                    dataToWrite = String.format("%d,%d,%s,%d,%d,%b,%b,%b,%b,%b\n",
+                            id, deadline, name, WCRT_by_simulator, WCRT_by_proposed, isSchedulable_by_simulator, isSchedulable_by_proposed, isSchedulable_by_FIFO, isSchedulable_by_RR, isSchedulable_by_RM);
                     
                     writer.write(dataToWrite);
                 }

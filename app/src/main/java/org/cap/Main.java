@@ -7,6 +7,9 @@ import org.cap.model.Task;
 import org.cap.model.TestConfiguration;
 import org.cap.simulation.CFSAnalyzer;
 import org.cap.simulation.CFSSimulator;
+import org.cap.simulation.FIFOAnalyzer;
+import org.cap.simulation.RMAnalyzer;
+import org.cap.simulation.RRAnalyzer;
 import org.cap.simulation.comparator.ComparatorCase;
 import org.cap.utility.AnalysisResultSaver;
 import org.cap.utility.ArgParser;
@@ -56,10 +59,16 @@ public class Main {
             // analyze by proposed
             startTime = System.nanoTime();
             CFSAnalyzer analyzer = new CFSAnalyzer(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"));
-            analyzer.analyze(); // without parallel
+            analyzer.analyze(); 
+            
             boolean proposed_schedulability = analyzer.checkSystemSchedulability();
             long proposed_timeConsumption = (System.nanoTime() - startTime) / 1000L;
             // System.out.println("Time consumption (Analysis): " + proposed_timeConsumption + " us");
+            
+            // to compare with other scheduler
+            FIFOAnalyzer fifoAnalyzer = new FIFOAnalyzer(testConf.mappingInfo);
+            RRAnalyzer rrAnalyzer = new RRAnalyzer(testConf.mappingInfo, params.getInt("time_slice"));
+            RMAnalyzer rmAnalyzer = new RMAnalyzer(testConf.mappingInfo);
 
             // save analysis results into file
             AnalysisResultSaver analysisResultSaver = new AnalysisResultSaver();

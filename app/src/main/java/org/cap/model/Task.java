@@ -58,6 +58,9 @@ public class Task {
     public boolean isSchedulable_by_proposed;
     public long WCRT_by_simulator;
     public boolean isSchedulable_by_simulator;
+    public boolean isSchedulable_by_FIFO;
+    public boolean isSchedulable_by_RR;
+    public boolean isSchedulable_by_RM;
 
     private boolean initialized = false;
 
