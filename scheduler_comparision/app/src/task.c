@@ -30,10 +30,10 @@ void* task_function_unnifest(void* arg) {
     nanosleep(&init_sleep_time, NULL);
 
     // check the global_start_time
-    if (global_start_time.tv_sec == 0 && global_start_time.tv_nsec == 0){
-        MARKER("global_start_time")
-        clock_gettime(CLOCK_MONOTONIC, &global_start_time);
-    }
+    // if (global_start_time.tv_sec == 0 && global_start_time.tv_nsec == 0){
+    //     MARKER("global_start_time")
+    //     clock_gettime(CLOCK_MONOTONIC, &global_start_time);
+    // }
     current_trigger_time = global_start_time;
     next_trigger_time = global_start_time;
 

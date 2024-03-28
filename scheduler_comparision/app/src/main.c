@@ -193,8 +193,8 @@ int main(int argc, char* argv[]){
             }
         }
 
-        usleep(1000); // wait for all threads to be ready (1ms)
-        // clock_gettime(CLOCK_REALTIME, &global_start_time);
+        sleep(1); // wait for all threads to be ready (1sec)
+        clock_gettime(CLOCK_MONOTONIC, &global_start_time);
         pthread_barrier_wait(&barrier);
         MARKER("After barrier")
         // printf("global_start_time: %ld.%09ld\n", global_start_time.tv_sec, global_start_time.tv_nsec);
