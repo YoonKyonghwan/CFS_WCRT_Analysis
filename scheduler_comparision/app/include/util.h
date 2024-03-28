@@ -27,4 +27,4 @@ void printSchedPolicy(int policy);
 
 void initMutex(pthread_mutex_t *mutex_memory_access, int mutex_protocol);
 int getWCETByName(char* task, Task_Info *tasks, int num_tasks);
-void updateRealWCET(json_object *org_info, Task_Info *tasks, int num_tasks, char* result_file_name);
+void updateRealWCET(char* input_file_name, Task_Info *tasks, int num_tasks);

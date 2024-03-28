@@ -1,19 +1,16 @@
 #include "task.h"
 #include "util.h"
 
-int INIT_SLEEP_NS = 500000; // 100us sleep to make sure that all threads are ready to start
-
 void* task_function_unnifest(void* arg) {
     Task_Info *task = (Task_Info*)arg;
 
     // initialize variables
     PUSH_PROFILE("init")
-    LockMemory();
+    // LockMemory();
     // pthread_mutex_t period_mutex = PTHREAD_MUTEX_INITIALIZER;
     // pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
     int iteration_index = 0;
     struct timespec current_trigger_time, job_end, next_trigger_time;
-    struct timespec init_sleep_time = {0, INIT_SLEEP_NS}; 
     long long sleep_time = 0LL;
     long long interarrival_time = 0LL;
     long long real_wcet_ns = 0;
@@ -26,26 +23,18 @@ void* task_function_unnifest(void* arg) {
 
     // Wait for all threads to reach the barrier    
     pthread_barrier_wait(&barrier);
-    // sleep 0.1 sec to make sure that all threads are ready to start
-    nanosleep(&init_sleep_time, NULL);
 
-    // check the global_start_time
-    // if (global_start_time.tv_sec == 0 && global_start_time.tv_nsec == 0){
-    //     MARKER("global_start_time")
-    //     clock_gettime(CLOCK_MONOTONIC, &global_start_time);
-    // }
     current_trigger_time = global_start_time;
     next_trigger_time = global_start_time;
 
     while (terminate == false) {
         clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start_execution_time);
-        PUSH_PROFILE(task->name) // for total(read + execution + write)
-        real_execution_time = busyWait(task->body_time_ns);
+        PUSH_PROFILE(task->name) 
+        busyWait(task->body_time_ns);
         clock_gettime(CLOCK_MONOTONIC, &job_end);
-        POP_PROFILE() // for total(read + execution + write)
+        POP_PROFILE() 
         checkResponseTime(task, iteration_index, current_trigger_time, job_end);
         clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end_execution_time);
-
         real_execution_time = timeDiff(start_execution_time, end_execution_time);
         if (real_execution_time > real_wcet_ns){
             real_wcet_ns = real_execution_time;
@@ -238,7 +227,6 @@ void* task_function_fmtv(void* arg) {
     pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
     int iteration_index = 0;
     struct timespec current_trigger_time, job_end, next_trigger_time;
-    struct timespec init_sleep_time = {0, INIT_SLEEP_NS}; 
     long long sleep_time = 0LL;
     long long interarrival_time = 0LL;
 
@@ -249,8 +237,6 @@ void* task_function_fmtv(void* arg) {
 
     // Wait for all threads to reach the barrier    
     pthread_barrier_wait(&barrier);
-    // sleep 0.1 sec to make sure that all threads are ready to start
-    nanosleep(&init_sleep_time, NULL);
 
     // check the global_start_time
     if (global_start_time.tv_sec == 0 && global_start_time.tv_nsec == 0){

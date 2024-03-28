@@ -15,7 +15,7 @@
 #include <linux/types.h>
 #include <limits.h>
 
-#define USE_NVTX
+// #define USE_NVTX
 
 #ifdef USE_NVTX
 #include <nvtx3/nvToolsExt.h>

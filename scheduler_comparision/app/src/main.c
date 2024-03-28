@@ -171,9 +171,6 @@ int main(int argc, char* argv[]){
                 task_index++;
             }
         }        
-        // for (int i=0 ; i < num_tasks; i++){
-        //     printf("Task %d: %s, core_index: %d, sched_policy: %d, nice_value: %d, isRTTask: %d, isPeriodic: %d, period_ns: %lld, phased_read_time_ns: %d, phased_write_time_ns: %d, body_time_ns: %lld, num_samples: %d, num_runnables: %d, wcet_ns: %lld\n", i, tasks[i].name, tasks[i].core_index, tasks[i].sched_policy, tasks[i].nice_value, tasks[i].isRTTask, tasks[i].isPeriodic, tasks[i].period_ns, tasks[i].phased_read_time_ns, tasks[i].phased_write_time_ns, tasks[i].body_time_ns, tasks[i].num_samples, tasks[i].num_runnables, tasks[i].wcet_ns);
-        // }
 
         printf("Initialize and create tasks\n");
         pthread_attr_t threadAttr[num_tasks];
@@ -218,10 +215,8 @@ int main(int argc, char* argv[]){
 
         printf("Save the result to %s\n", result_file_name);
         saveResultToJson(num_tasks, tasks, result_file_name);
-        updateRealWCET(tasks_info_json, tasks, num_tasks, "update_real_wcet.json");
+        updateRealWCET(json_file_name, tasks, num_tasks);
         
-
-
         // free memory
         printf("Free Memory of Tasks_info\n");
         for (int i = 0; i < num_tasks; i++){

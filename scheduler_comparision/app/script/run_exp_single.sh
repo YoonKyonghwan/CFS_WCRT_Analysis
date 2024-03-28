@@ -3,9 +3,9 @@
 # INPUT_FILE="../../dataset/FMTV_application/generated_FMTV_json/tasks_info.json"
 # INPUT_FILE="tasks_info_long.json"
 # DATA_TYPE="fmtv" # "uunifest" or "fmtv"
-INPUT_FILE="tasks_uunifast.json"
+INPUT_FILE="1cores_6tasks_0.6utilization_89.json"
 DATA_TYPE="uunifest" # "uunifest" or "fmtv"
-SIM_PERIOD_SEC=2
+SIM_PERIOD_SEC=10
 # SCHEDULERS=("CFS" "FIFO" "RR" "RM")
 SCHEDULERS=("CFS")
 RESULT_DIR="./exp_results"

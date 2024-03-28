@@ -75,19 +75,18 @@ void setTaskInfo_fmtv(json_object *jobj, Task_Info *task){
     return;
 }
 
-
 long long setNiceValueByDeadline(long long period){
-    int nice_value = -19;
+    int nice_value = -20;
     long long period_inc = min_period;
     while(period_inc < period && nice_value < 19){
         period_inc = (period_inc * 5) / 4;
         nice_value++;
     }
-    // printf("nice_value: %d period : %lld\n", nice_value, period);
     return nice_value;
 }
 
-void updateRealWCET(json_object *org_info, Task_Info *tasks, int num_tasks, char* result_file_name){
+void updateRealWCET(char* input_file_name, Task_Info *tasks, int num_tasks){
+    json_object *org_info = json_object_from_file(input_file_name);
     json_object *tasks_ids = json_object_object_get(org_info, "idNameMap");
     json_object *mapping_info = json_object_object_get(org_info, "mappingInfo");
     int num_cores = json_object_array_length(mapping_info);
@@ -103,12 +102,11 @@ void updateRealWCET(json_object *org_info, Task_Info *tasks, int num_tasks, char
             sprintf(task_id_str, "%d", task_id);
             char *task_name = json_object_get_string(json_object_object_get(tasks_ids, task_id_str));
             int wcet = getWCETByName(task_name, tasks, num_tasks);
-
             //update wcet
             json_object_set_int(json_object_object_get(task_info, "bodyTime"), (wcet/1000) + 1);
         }
     }
-    json_object_to_file_ext(result_file_name, org_info, JSON_C_TO_STRING_PRETTY);
+    json_object_to_file_ext(input_file_name, org_info, JSON_C_TO_STRING_PRETTY);
 
     return;
 }
