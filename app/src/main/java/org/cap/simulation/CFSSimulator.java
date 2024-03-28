@@ -15,7 +15,7 @@ public class CFSSimulator {
     private static final Logger logger = LoggerUtility.getLogger();
     ScheduleSimulationMethod method;
     ComparatorCase comparatorCase;
-    private long schedulePeriod = 4 * 1000 * 1000L; 
+    private long schedulePeriod; 
     private long targetLatency;
     private long minimumGranularity = 1 * 1000L;
     private long wakeupGranularity = 3 * 1000 * 1000L;
@@ -29,12 +29,13 @@ public class CFSSimulator {
     private boolean initialOrder;
 
     public CFSSimulator(ScheduleSimulationMethod method, ComparatorCase comparatorCase, int targetLatency,
-            int minimumGranularity, int wakeupGranularity, long numOfTryToSchedule, boolean initialOrder)
+            int minimumGranularity, int wakeupGranularity, long numOfTryToSchedule, boolean initialOrder, int scheduling_tick_us)
             throws NoSuchMethodException, SecurityException, ClassNotFoundException, InstantiationException,
             IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         this.method = method;
         this.comparatorCase = comparatorCase;
         this.initialOrder = initialOrder;
+        this.schedulePeriod = scheduling_tick_us * 1000L;
 
         Class<?> clazz = Class
                     .forName(ComparatorCase.class.getPackageName() + "." + comparatorCase.getClassName());
@@ -305,9 +306,9 @@ public class CFSSimulator {
                         task = coreState.currentTask;
                         executeTask(task, queue, cloneWcrtMap, simulationState, coreState, time, coreIndex);
                         updateMinimumVirtualRuntime(coreState, queue);
-                        if(queue.size() == 0) {
-                            coreState.minimumVirtualRuntime = task.virtualRuntime;
-                        }
+                        // if(queue.size() == 0) {
+                        //     coreState.minimumVirtualRuntime = task.virtualRuntime;
+                        // }
                     }
                     if(coreState.isRunning == false) {
                         task = null;

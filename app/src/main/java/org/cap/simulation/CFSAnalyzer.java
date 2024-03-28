@@ -10,10 +10,14 @@ public class CFSAnalyzer {
     private int targetLatency; 
     private int min_granularity;
     private double w_0 = 1024.0;
-    private int jiffy_us = 1000; // 1ms
+    private int jiffy_us = 1000; // default 1ms
 
-    public CFSAnalyzer(List<Core> cores, int targetLatency, int min_granularity) {
+    public CFSAnalyzer(List<Core> cores, int targetLatency, int min_granularity, int jiffy_us) {
         this.cores = cores;
+        this.targetLatency = targetLatency;
+        this.min_granularity = min_granularity;
+        this.jiffy_us = jiffy_us;
+
         double minWeight = 88761; //max_weight = 88761
         for (Core core: this.cores) {
             for (Task task: core.tasks) {
@@ -25,8 +29,6 @@ public class CFSAnalyzer {
             }
             core.minWeight = minWeight;
         }
-        this.targetLatency = targetLatency;
-        this.min_granularity = min_granularity;
     }
 
     public void analyze() {

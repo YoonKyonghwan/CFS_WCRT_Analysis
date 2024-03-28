@@ -13,7 +13,8 @@ import org.cap.model.TestConfiguration;
 
 public class AnalysisResultSaver {
     public void saveResultSummary(String resultDir, String taskInfoPath, boolean simulator_schedulability,
-            long simulator_timeConsumption, boolean proposed_schedulability, long proposed_timeConsumption) {
+            long simulator_timeConsumption, boolean proposed_schedulability, long proposed_timeConsumption,
+            boolean FIFO_schedulability, boolean RR_schedulability, boolean RM_schedulability) {
 
         // Parse information from the filename
         String inputFileName = new File(taskInfoPath).getName();
@@ -44,15 +45,19 @@ public class AnalysisResultSaver {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(resultFileName, true))) {
             if (shouldWriteHeaders) {
                 // If the file didn't exist before, write the headers first
-                String header = "numCores,numTasks,utilization,tasksetIndex,simulator_schedulability,simulator_timeConsumption(us),proposed_schedulability,proposed_timeConsumption(us)\n";
+                String header = "numCores,numTasks,utilization," + 
+                "tasksetIndex,simulator_schedulability," +
+                "simulator_timeConsumption(us),proposed_schedulability,proposed_timeConsumption(us)"+
+                "FIFO_schedulability,RR_schedulability,RM_schedulability\n";
                 writer.write(header);
             }
 
             // Prepare data to be written to the CSV file
-            String dataToWrite = String.format("%s,%s,%s,%s,%s,%d,%s,%d\n",
+            String dataToWrite = String.format("%s,%s,%s,%s,%s,%d,%s,%d,%b,%b,%b\n",
                     numCores, numTasks, utilization, tasksetIndex,
                     simulator_schedulability, simulator_timeConsumption,
-                    proposed_schedulability, proposed_timeConsumption);
+                    proposed_schedulability, proposed_timeConsumption,
+                    FIFO_schedulability, RR_schedulability, RM_schedulability);
             writer.write(dataToWrite);
             // System.out.println("Results saved to " + resultFileName);
         } catch (IOException e) {
@@ -88,7 +93,7 @@ public class AnalysisResultSaver {
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(resultFileName, true))) {
             // write the header first
-            String header = "id,deadline,name,WCRT_by_simulator,simulator_schedulability,WCRT_by_proposed,proposed_schedulability\n";
+            String header = "id,deadline,name,WCRT_by_simulator,simulator_schedulability,WCRT_by_proposed,proposed_schedulability,FIFO_schedulability,RR_schedulability,RM_schedulability\n";
             writer.write(header);
 
             // write the result for each task

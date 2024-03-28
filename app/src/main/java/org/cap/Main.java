@@ -5,11 +5,12 @@ import org.cap.model.ScheduleSimulationMethod;
 import org.cap.model.SimulationResult;
 import org.cap.model.Task;
 import org.cap.model.TestConfiguration;
-import org.cap.simulation.CFSAnalyzer;
-import org.cap.simulation.CFSSimulator;
-import org.cap.simulation.FIFOAnalyzer;
-import org.cap.simulation.RMAnalyzer;
-import org.cap.simulation.RRAnalyzer;
+// import org.cap.simulation.CFSAnalyzer;
+// import org.cap.simulation.CFSSimulator;
+// import org.cap.simulation.FIFOAnalyzer;
+// import org.cap.simulation.RMAnalyzer;
+// import org.cap.simulation.RRAnalyzer;
+import org.cap.simulation.*;
 import org.cap.simulation.comparator.ComparatorCase;
 import org.cap.utility.AnalysisResultSaver;
 import org.cap.utility.ArgParser;
@@ -58,7 +59,7 @@ public class Main {
             
             // analyze by proposed
             startTime = System.nanoTime();
-            CFSAnalyzer analyzer = new CFSAnalyzer(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"));
+            CFSAnalyzer analyzer = new CFSAnalyzer(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
             analyzer.analyze(); 
             
             boolean proposed_schedulability = analyzer.checkSystemSchedulability();
@@ -67,17 +68,17 @@ public class Main {
             
             // to compare with other scheduler
             FIFOAnalyzer fifoAnalyzer = new FIFOAnalyzer(testConf.mappingInfo);
-            RRAnalyzer rrAnalyzer = new RRAnalyzer(testConf.mappingInfo, params.getInt("time_slice"));
+            RRAnalyzer rrAnalyzer = new RRAnalyzer(testConf.mappingInfo, params.getInt("sched_RR_timeslice"));
             RMAnalyzer rmAnalyzer = new RMAnalyzer(testConf.mappingInfo);
 
             // save analysis results into file
             AnalysisResultSaver analysisResultSaver = new AnalysisResultSaver();
-            // (for testing purpose) if taskInfoPath is "tasks.json", then change taskInfoPath
-            if (taskInfoPath.equals("tasks.json")) {
-                taskInfoPath ="app/src/main/resources/generated_taskset/1cores_3tasks_0.5utilization_0.json";
-            }
-            analysisResultSaver.saveResultSummary(resultDir, taskInfoPath, simulator_schedulability, simulator_timeConsumption,
-                    proposed_schedulability, proposed_timeConsumption);
+            analysisResultSaver.saveResultSummary(
+                    resultDir, taskInfoPath, 
+                    simulator_schedulability, simulator_timeConsumption,
+                    proposed_schedulability, proposed_timeConsumption, 
+                    fifoAnalyzer.checkSchedulability(), rrAnalyzer.checkSchedulability(), rmAnalyzer.checkSchedulability()
+                    );
             analysisResultSaver.saveDetailedResult(resultDir, taskInfoPath, testConf);
         }
     }
@@ -105,6 +106,7 @@ public class Main {
         int targetLatency = params.getInt("target_latency");
         int minimumGranularity = params.getInt("minimum_granularity");
         int wakeupGranularity = params.getInt("wakeup_granularity");
+        int scheduling_tick_us = params.getInt("jiffy");
         boolean initial_order = params.getBoolean("initial_order");
         LoggerUtility.initializeLogger(logger_option);
         LoggerUtility.addConsoleLogger();
@@ -125,7 +127,7 @@ public class Main {
         }
 
 
-        CFSSimulator CFSSimulator = new CFSSimulator(scheduleMethod, compareCase, targetLatency, minimumGranularity, wakeupGranularity, schedule_try_count, initial_order);
+        CFSSimulator CFSSimulator = new CFSSimulator(scheduleMethod, compareCase, targetLatency, minimumGranularity, wakeupGranularity, schedule_try_count, initial_order, scheduling_tick_us);
         Logger logger = LoggerUtility.getLogger();
         boolean system_schedulability = true;
 

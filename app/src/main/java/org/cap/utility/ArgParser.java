@@ -96,6 +96,18 @@ public class ArgParser {
                 .setDefault(1)
                 .nargs("?")
                 .help("The minimum granularity");
+        parser.addArgument("--jiffy", "-jf")
+                .dest("jiffy")
+                .type(Integer.class)
+                .setDefault(1000)
+                .nargs("?")
+                .help("jiffy(us)");
+        parser.addArgument("--sched_RR_timeslice", "-rrts")
+                .dest("sched_RR_timeslice")
+                .type(Integer.class)
+                .setDefault(100000)
+                .nargs("?")
+                .help("sched_RR_timeslice(us)");
         parser.addArgument("--wakeup_granularity", "-wg")
                 .dest("wakeup_granularity")
                 .type(Integer.class)

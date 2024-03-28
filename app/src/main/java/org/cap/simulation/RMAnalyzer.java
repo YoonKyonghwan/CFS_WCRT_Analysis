@@ -38,4 +38,15 @@ public class RMAnalyzer {
             }
         }
     }
+
+    public boolean checkSchedulability() {
+        for (Core core: this.cores) {
+            for (Task task: core.tasks) {
+                if (!task.isSchedulable_by_RM) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 }

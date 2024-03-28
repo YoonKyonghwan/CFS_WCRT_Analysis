@@ -37,4 +37,15 @@ public class RRAnalyzer {
     private int adjustTimeScliceWithJiffy(int time_slice){
         return (Math.floorDiv(time_slice, this.jiffy_us) + 1) * this.jiffy_us;
     }
+
+    public boolean checkSchedulability() {
+        for (Core core: this.cores) {
+            for (Task task: core.tasks) {
+                if (!task.isSchedulable_by_RR) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 }

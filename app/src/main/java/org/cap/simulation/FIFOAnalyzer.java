@@ -26,4 +26,15 @@ public class FIFOAnalyzer {
             }
         }
     }
+
+    public boolean checkSchedulability() {
+        for (Core core: this.cores) {
+            for (Task task: core.tasks) {
+                if (!task.isSchedulable_by_FIFO) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
 }
