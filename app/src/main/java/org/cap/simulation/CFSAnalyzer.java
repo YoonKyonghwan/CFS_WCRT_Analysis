@@ -106,11 +106,13 @@ public class CFSAnalyzer {
         alpha = adjustTimeScliceWithJiffy(alpha);
         int gamma = (int) Math.max(this.targetLatency * w_j / (w_i + w_j), this.min_granularity);
         gamma = adjustTimeScliceWithJiffy(gamma);
-        if (k_j == 0) { // if the number of jobs of task_j is 1
-            return (int) Math.min(remainWorkload * w_j / w_i + gamma, C_j);
-        }else{
-            return (int) Math.min((alpha + remainWorkload) * w_j / w_i + gamma, C_j);
-        }
+        // if (k_j == 0) { // if the number of jobs of task_j is 1
+        //     return (int) Math.min(remainWorkload * w_j / w_i + gamma, C_j);
+        // }else{
+        //     return (int) Math.min((alpha + remainWorkload) * w_j / w_i + gamma, C_j);
+        // }
+        return (int) Math.min((alpha + remainWorkload) * w_j / w_i + gamma, C_j);
+        
     }
 
 
