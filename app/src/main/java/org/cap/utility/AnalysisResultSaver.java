@@ -47,7 +47,7 @@ public class AnalysisResultSaver {
                 // If the file didn't exist before, write the headers first
                 String header = "numCores,numTasks,utilization," + 
                 "tasksetIndex,simulator_schedulability," +
-                "simulator_timeConsumption(us),proposed_schedulability,proposed_timeConsumption(us)"+
+                "simulator_timeConsumption(us),proposed_schedulability,proposed_timeConsumption(us),"+
                 "FIFO_schedulability,RR_schedulability,RM_schedulability\n";
                 writer.write(header);
             }
@@ -93,7 +93,8 @@ public class AnalysisResultSaver {
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(resultFileName, true))) {
             // write the header first
-            String header = "id,deadline,name,WCRT_by_simulator,simulator_schedulability,WCRT_by_proposed,proposed_schedulability,FIFO_schedulability,RR_schedulability,RM_schedulability\n";
+            String header = "id,deadline,WCET,name,WCRT_by_simulator,WCRT_by_proposed,WCRT_by_FIFO,WCRT_by_RR,WCRT_by_RM," +
+             "simulator_schedulability,proposed_schedulability,FIFO_schedulability,RR_schedulability,RM_schedulability\n";
             writer.write(header);
 
             // write the result for each task
@@ -106,6 +107,10 @@ public class AnalysisResultSaver {
                     int WCRT_by_simulator = (int) task.WCRT_by_simulator;
                     boolean isSchedulable_by_simulator = task.isSchedulable_by_simulator;
                     int WCRT_by_proposed = (int) task.WCRT_by_proposed;
+                    int WCRT_by_FIFO = (int) task.WCRT_by_FIFO;
+                    int WCRT_by_RR = (int) task.WCRT_by_RR;
+                    int WCRT_by_RM = (int) task.WCRT_by_RM;
+                    int WCET = (int) task.bodyTime;
                     boolean isSchedulable_by_proposed = task.isSchedulable_by_proposed;
 
                     boolean isSchedulable_by_FIFO = task.isSchedulable_by_FIFO;
@@ -113,8 +118,10 @@ public class AnalysisResultSaver {
                     boolean isSchedulable_by_RM = task.isSchedulable_by_RM;
 
                     // Prepare data to be written to the CSV file
-                    dataToWrite = String.format("%d,%d,%s,%d,%d,%b,%b,%b,%b,%b\n",
-                            id, deadline, name, WCRT_by_simulator, WCRT_by_proposed, isSchedulable_by_simulator, isSchedulable_by_proposed, isSchedulable_by_FIFO, isSchedulable_by_RR, isSchedulable_by_RM);
+                    dataToWrite = String.format("%d,%d,%d,%s,%d,%d,%d,%d,%d,%b,%b,%b,%b,%b\n",
+                            id, deadline, WCET, name, WCRT_by_simulator, WCRT_by_proposed, 
+                            WCRT_by_FIFO, WCRT_by_RR, WCRT_by_RM,
+                            isSchedulable_by_simulator, isSchedulable_by_proposed, isSchedulable_by_FIFO, isSchedulable_by_RR, isSchedulable_by_RM);
                     
                     writer.write(dataToWrite);
                 }

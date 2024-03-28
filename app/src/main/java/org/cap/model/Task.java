@@ -55,8 +55,12 @@ public class Task {
 
     // Execution time with Concurrent Execution Interference
     public long WCRT_by_proposed;
-    public boolean isSchedulable_by_proposed;
     public long WCRT_by_simulator;
+    public long WCRT_by_FIFO;
+    public long WCRT_by_RR;
+    public long WCRT_by_RM;
+
+    public boolean isSchedulable_by_proposed;
     public boolean isSchedulable_by_simulator;
     public boolean isSchedulable_by_FIFO;
     public boolean isSchedulable_by_RR;

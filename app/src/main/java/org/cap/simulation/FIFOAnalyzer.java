@@ -20,8 +20,10 @@ public class FIFOAnalyzer {
             for (Task task: core.tasks) {
                 if (task.period < wcrt_core) {
                     task.isSchedulable_by_FIFO = false;
+                    task.WCRT_by_FIFO = wcrt_core;
                 } else {
                     task.isSchedulable_by_FIFO = true;
+                    task.WCRT_by_FIFO = wcrt_core;
                 }
             }
         }

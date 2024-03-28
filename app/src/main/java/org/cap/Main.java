@@ -5,11 +5,6 @@ import org.cap.model.ScheduleSimulationMethod;
 import org.cap.model.SimulationResult;
 import org.cap.model.Task;
 import org.cap.model.TestConfiguration;
-// import org.cap.simulation.CFSAnalyzer;
-// import org.cap.simulation.CFSSimulator;
-// import org.cap.simulation.FIFOAnalyzer;
-// import org.cap.simulation.RMAnalyzer;
-// import org.cap.simulation.RRAnalyzer;
 import org.cap.simulation.*;
 import org.cap.simulation.comparator.ComparatorCase;
 import org.cap.utility.AnalysisResultSaver;
@@ -53,7 +48,7 @@ public class Main {
             long startTime = System.nanoTime();
             
             // analyze by simulator
-            boolean simulator_schedulability = analyze_by_CFS_simulator(testConf, params);
+            boolean simulator_schedulability = analyze_by_CFS_simulator(testConf, params);            
             long simulator_timeConsumption = (System.nanoTime() - startTime)/1000L; //us
             System.out.println("Time consumption (CFS simulator): " + simulator_timeConsumption + " us");
             
@@ -70,6 +65,9 @@ public class Main {
             FIFOAnalyzer fifoAnalyzer = new FIFOAnalyzer(testConf.mappingInfo);
             RRAnalyzer rrAnalyzer = new RRAnalyzer(testConf.mappingInfo, params.getInt("sched_RR_timeslice"));
             RMAnalyzer rmAnalyzer = new RMAnalyzer(testConf.mappingInfo);
+            boolean FIFO_schedulability = fifoAnalyzer.checkSchedulability();
+            boolean RR_schedulability = rrAnalyzer.checkSchedulability();
+            boolean RM_schedulability = rmAnalyzer.checkSchedulability();
 
             // save analysis results into file
             AnalysisResultSaver analysisResultSaver = new AnalysisResultSaver();
@@ -77,7 +75,7 @@ public class Main {
                     resultDir, taskInfoPath, 
                     simulator_schedulability, simulator_timeConsumption,
                     proposed_schedulability, proposed_timeConsumption, 
-                    fifoAnalyzer.checkSchedulability(), rrAnalyzer.checkSchedulability(), rmAnalyzer.checkSchedulability()
+                    FIFO_schedulability, RR_schedulability, RM_schedulability
                     );
             analysisResultSaver.saveDetailedResult(resultDir, taskInfoPath, testConf);
         }
@@ -132,7 +130,7 @@ public class Main {
         boolean system_schedulability = true;
 
         if(simulationTime == 0) { // hyper period
-            simulationTime = MathUtility.getLCM(testConf.mappingInfo);
+            simulationTime = MathUtility.getLCM(testConf.mappingInfo) * 2;
         }
         else if (simulationTime == -1) {
             simulationTime = getMaximumPeriod(testConf.mappingInfo);
