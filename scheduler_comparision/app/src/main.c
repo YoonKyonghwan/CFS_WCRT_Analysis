@@ -42,7 +42,109 @@ int main(int argc, char* argv[]){
         exit(1);
     }
 
-    if (data_type_index == 0){ //fmtv
+    if (data_type_index == 1){ //uunifest
+        printf("Use the uunifest data type\n");
+        json_object *tasks_ids = json_object_object_get(tasks_info_json, "idNameMap");
+        json_object *mapping_info = json_object_object_get(tasks_info_json, "mappingInfo");
+
+        int num_cores = json_object_array_length(mapping_info);
+        int num_tasks = 0;
+        for (int i = 0; i < num_cores; i++){
+            json_object *core_info = json_object_array_get_idx(mapping_info, i);
+            int core_id = json_object_get_int(json_object_object_get(core_info, "coreID"));
+            json_object *tasks_info = json_object_object_get(core_info, "tasks");
+            int num_tasks_core = json_object_array_length(tasks_info);
+            num_tasks += num_tasks_core;
+        }
+
+        Task_Info tasks[num_tasks];
+        int task_index = 0;
+        for (int i = 0; i < num_cores; i++){
+            json_object *core_info = json_object_array_get_idx(mapping_info, i);
+            int core_id = json_object_get_int(json_object_object_get(core_info, "coreID"));
+            json_object *tasks_info = json_object_object_get(core_info, "tasks");
+            int num_tasks_core = json_object_array_length(tasks_info);
+            for (int j = 0; j < num_tasks_core; j++){
+                json_object *task_info = json_object_array_get_idx(tasks_info, j);
+                int task_id = json_object_get_int(json_object_object_get(task_info, "id"));
+                char *task_id_str = (char*)malloc(3);
+                sprintf(task_id_str, "%d", task_id);       
+                tasks[task_index].name = json_object_get_string(json_object_object_get(tasks_ids, task_id_str));
+                tasks[task_index].core_index = core_id;
+                tasks[task_index].isRTTask = true;
+                tasks[task_index].sched_policy = atoi(argv[1]);
+                tasks[task_index].isPeriodic = true;
+                tasks[task_index].nice_value = json_object_get_int(json_object_object_get(task_info, "nice"));
+                tasks[task_index].period_ns = 1000 * json_object_get_int(json_object_object_get(task_info, "period"));
+                tasks[task_index].phased_read_time_ns = 1000 * json_object_get_int(json_object_object_get(task_info, "readTime"));
+                tasks[task_index].phased_write_time_ns = 1000 * json_object_get_int(json_object_object_get(task_info, "writeTime"));
+                tasks[task_index].phased_execution_time_ns = NULL;
+                tasks[task_index].body_time_ns = 1000 * json_object_get_int64(json_object_object_get(task_info, "bodyTime"));
+                
+                tasks[task_index].num_samples = (simulation_period_sec*1000000) / (tasks[task_index].period_ns/1000); //us
+                tasks[task_index].num_runnables = 1;
+                tasks[task_index].wcet_ns = tasks[task_index].phased_read_time_ns + tasks[task_index].phased_write_time_ns + tasks[task_index].body_time_ns;
+
+                tasks[task_index].response_time_ns = (long long*)malloc(tasks[task_index].num_samples * sizeof(long long));
+                for (int k = 0; k < tasks[task_index].num_samples; k++){
+                    tasks[task_index].response_time_ns[k] = 0;
+                }
+                task_index++;
+            }
+        }        
+
+        printf("Initialize and create tasks\n");
+        pthread_attr_t threadAttr[num_tasks];
+        pthread_t threads[num_tasks];
+        pthread_barrier_init(&barrier, NULL, num_tasks+1); // to start all threads at the same time
+        for (int i = 0; i < num_tasks; i++) {
+            setCoreMapping(&threadAttr[i], &tasks[i]); //core mapping
+            int ret_pthread_create = 0;
+            if (tasks[i].sched_policy == EDF){
+                ret_pthread_create = pthread_create(&threads[i], NULL, task_function_unnifest, (void*)&tasks[i]);
+            }else{
+                ret_pthread_create = pthread_create(&threads[i], &threadAttr[i], task_function_unnifest, (void*)&tasks[i]);
+            }
+            if (ret_pthread_create){
+                printf("Fail to create thread %d\n", i);
+                exit(1);
+            }
+        }
+
+        sleep(1); // wait for all threads to be ready (1sec)
+        clock_gettime(CLOCK_MONOTONIC, &global_start_time);
+        pthread_barrier_wait(&barrier);
+        MARKER("After barrier")
+        // printf("global_start_time: %ld.%09ld\n", global_start_time.tv_sec, global_start_time.tv_nsec);
+
+        printf("Start to run application.\n The experiment will complete after %d seconds.\n", simulation_period_sec);
+        sleep(simulation_period_sec); // seconds
+
+        printf("Terminate tasks\n");
+        terminate = true;
+        for (int i = 0; i < num_tasks; i++) {
+            pthread_join(threads[i], NULL);
+        }
+        // for (int i = 0; i < num_tasks; i++) {
+        //     if(pthread_cancel(threads[i])){
+        //         printf("Fail to cancel thread %d\n", i);
+        //         exit(1);
+        //     }
+        // }
+        pthread_barrier_destroy(&barrier);
+
+
+        printf("Save the result to %s\n", result_file_name);
+        saveResultToJson(num_tasks, tasks, result_file_name);
+        updateRealWCET(json_file_name, tasks, num_tasks);
+        
+        // free memory
+        printf("Free Memory of Tasks_info\n");
+        for (int i = 0; i < num_tasks; i++){
+            freeTaskInfo(&tasks[i]);
+        }
+        
+    }else{ //uunifest
         printf("Use the fmtv data type\n");
         int num_tasks = json_object_array_length(tasks_info_json);
         Task_Info tasks[num_tasks];
@@ -117,106 +219,6 @@ int main(int argc, char* argv[]){
         printf("Save the result to %s\n", result_file_name);
         saveResultToJson(num_tasks, tasks, result_file_name);
 
-        // free memory
-        printf("Free Memory of Tasks_info\n");
-        for (int i = 0; i < num_tasks; i++){
-            freeTaskInfo(&tasks[i]);
-        }
-    }else{ //uunifest
-        printf("Use the uunifest data type\n");
-        json_object *tasks_ids = json_object_object_get(tasks_info_json, "idNameMap");
-        json_object *mapping_info = json_object_object_get(tasks_info_json, "mappingInfo");
-
-        int num_cores = json_object_array_length(mapping_info);
-        int num_tasks = 0;
-        for (int i = 0; i < num_cores; i++){
-            json_object *core_info = json_object_array_get_idx(mapping_info, i);
-            int core_id = json_object_get_int(json_object_object_get(core_info, "coreID"));
-            json_object *tasks_info = json_object_object_get(core_info, "tasks");
-            int num_tasks_core = json_object_array_length(tasks_info);
-            num_tasks += num_tasks_core;
-        }
-
-        Task_Info tasks[num_tasks];
-        int task_index = 0;
-        for (int i = 0; i < num_cores; i++){
-            json_object *core_info = json_object_array_get_idx(mapping_info, i);
-            int core_id = json_object_get_int(json_object_object_get(core_info, "coreID"));
-            json_object *tasks_info = json_object_object_get(core_info, "tasks");
-            int num_tasks_core = json_object_array_length(tasks_info);
-            for (int j = 0; j < num_tasks_core; j++){
-                json_object *task_info = json_object_array_get_idx(tasks_info, j);
-                int task_id = json_object_get_int(json_object_object_get(task_info, "id"));
-                char *task_id_str = (char*)malloc(3);
-                sprintf(task_id_str, "%d", task_id);       
-                tasks[task_index].name = json_object_get_string(json_object_object_get(tasks_ids, task_id_str));
-                tasks[task_index].core_index = core_id;
-                tasks[task_index].isRTTask = true;
-                tasks[task_index].sched_policy = atoi(argv[1]);
-                tasks[task_index].isPeriodic = true;
-                tasks[task_index].nice_value = json_object_get_int(json_object_object_get(task_info, "nice"));
-                tasks[task_index].period_ns = 1000 * json_object_get_int(json_object_object_get(task_info, "period"));
-                tasks[task_index].phased_read_time_ns = 1000 * json_object_get_int(json_object_object_get(task_info, "readTime"));
-                tasks[task_index].phased_write_time_ns = 1000 * json_object_get_int(json_object_object_get(task_info, "writeTime"));
-                tasks[task_index].phased_execution_time_ns = NULL;
-                tasks[task_index].body_time_ns = 1000 * json_object_get_int64(json_object_object_get(task_info, "bodyTime"));
-                
-                tasks[task_index].num_samples = (simulation_period_sec*1000000) / (tasks[task_index].period_ns/1000); //us
-                tasks[task_index].num_runnables = 1;
-                tasks[task_index].wcet_ns = tasks[task_index].phased_read_time_ns + tasks[task_index].phased_write_time_ns + tasks[task_index].body_time_ns;
-                tasks[task_index].response_time_ns = (long long*)malloc(tasks[task_index].num_samples * sizeof(long long));
-                for (int k = 0; k < tasks[task_index].num_samples; k++){
-                    tasks[task_index].response_time_ns[k] = 0;
-                }
-                task_index++;
-            }
-        }        
-
-        printf("Initialize and create tasks\n");
-        pthread_attr_t threadAttr[num_tasks];
-        pthread_t threads[num_tasks];
-        pthread_barrier_init(&barrier, NULL, num_tasks+1); // to start all threads at the same time
-        for (int i = 0; i < num_tasks; i++) {
-            setCoreMapping(&threadAttr[i], &tasks[i]); //core mapping
-            int ret_pthread_create = 0;
-            if (tasks[i].sched_policy == EDF){
-                ret_pthread_create = pthread_create(&threads[i], NULL, task_function_unnifest, (void*)&tasks[i]);
-            }else{
-                ret_pthread_create = pthread_create(&threads[i], &threadAttr[i], task_function_unnifest, (void*)&tasks[i]);
-            }
-            if (ret_pthread_create){
-                printf("Fail to create thread %d\n", i);
-                exit(1);
-            }
-        }
-
-        sleep(1); // wait for all threads to be ready (1sec)
-        clock_gettime(CLOCK_MONOTONIC, &global_start_time);
-        pthread_barrier_wait(&barrier);
-        MARKER("After barrier")
-        // printf("global_start_time: %ld.%09ld\n", global_start_time.tv_sec, global_start_time.tv_nsec);
-
-        printf("Start to run application.\n The experiment will complete after %d seconds.\n", simulation_period_sec);
-        sleep(simulation_period_sec); // seconds
-
-        printf("Terminate tasks\n");
-        terminate = true;
-        for (int i = 0; i < num_tasks; i++) {
-            pthread_join(threads[i], NULL);
-        }
-        // for (int i = 0; i < num_tasks; i++) {
-        //     if(pthread_cancel(threads[i])){
-        //         printf("Fail to cancel thread %d\n", i);
-        //         exit(1);
-        //     }
-        // }
-        pthread_barrier_destroy(&barrier);
-
-
-        printf("Save the result to %s\n", result_file_name);
-        saveResultToJson(num_tasks, tasks, result_file_name);
-        updateRealWCET(json_file_name, tasks, num_tasks);
-        
         // free memory
         printf("Free Memory of Tasks_info\n");
         for (int i = 0; i < num_tasks; i++){

@@ -90,6 +90,7 @@ void updateRealWCET(char* input_file_name, Task_Info *tasks, int num_tasks){
     json_object *tasks_ids = json_object_object_get(org_info, "idNameMap");
     json_object *mapping_info = json_object_object_get(org_info, "mappingInfo");
     int num_cores = json_object_array_length(mapping_info);
+    char *task_id_str = (char*)malloc(3);
     
     for (int i = 0; i < num_cores; i++){
         json_object *core_info = json_object_array_get_idx(mapping_info, i);
@@ -98,15 +99,20 @@ void updateRealWCET(char* input_file_name, Task_Info *tasks, int num_tasks){
         for (int j = 0; j < num_tasks_core; j++){
             json_object *task_info = json_object_array_get_idx(tasks_info, j);
             int task_id = json_object_get_int(json_object_object_get(task_info, "id"));
-            char *task_id_str = (char*)malloc(3);
             sprintf(task_id_str, "%d", task_id);
             char *task_name = json_object_get_string(json_object_object_get(tasks_ids, task_id_str));
-            int wcet = getWCETByName(task_name, tasks, num_tasks);
-            //update wcet
-            json_object_set_int(json_object_object_get(task_info, "bodyTime"), (wcet/1000) + 1);
+            int real_wcet = getWCETByName(task_name, tasks, num_tasks)/1000 + 1;
+            int wcet = json_object_get_int(json_object_object_get(task_info, "bodyTime"));
+            // printf("Task name: %s, real_wcet: %d, wcet: %d\n", task_name, real_wcet, wcet);
+            //update real_wcet
+            json_object_set_int(json_object_object_get(task_info, "bodyTime"), real_wcet);
         }
     }
+
+    //remove the original file
+    remove(input_file_name);
     json_object_to_file_ext(input_file_name, org_info, JSON_C_TO_STRING_PRETTY);
+    free(task_id_str);
 
     return;
 }
