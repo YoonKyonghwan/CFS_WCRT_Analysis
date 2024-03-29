@@ -239,6 +239,8 @@ def check_correntness(input_path, output_path):
     results_df = results_df.sort_values(['numTasks', 'utilization'])
     print(results_df)
 
+    num_TP = results_df['TP'].sum()
+    print("num_TP : ", num_TP)
     results_df.to_csv(output_path, index=False)
 
     # total accuracy

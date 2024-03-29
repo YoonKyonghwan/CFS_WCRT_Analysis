@@ -33,13 +33,15 @@ public class MathUtility {
             // check min deadline
             long min_deadline = 10 * 1000 * 1000; // with the initial large value(10 second)
             for (Task task : core.tasks) {
-                if (task.period < min_deadline) {
-                    min_deadline = task.period;
+                long period_us = task.period / 1000;
+                if (period_us < min_deadline) {
+                    min_deadline = period_us;
                 }
             }
             // assign nice values
             for (Task task : core.tasks) {
-                task.nice = computeNice(task.period, min_deadline, lambda);
+                long period_us = task.period / 1000;
+                task.nice = computeNice(period_us, min_deadline, lambda);
             }
         }
     }

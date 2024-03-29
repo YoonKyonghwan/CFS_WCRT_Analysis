@@ -51,8 +51,7 @@ public class Main {
             long startTime = System.nanoTime();
             
             // analyze by simulator
-            // boolean simulator_schedulability = analyze_by_CFS_simulator(testConf, params);            
-            boolean simulator_schedulability = true;
+            boolean simulator_schedulability = analyze_by_CFS_simulator(testConf, params);            
             long simulator_timeConsumption = (System.nanoTime() - startTime)/1000L; //us
             System.out.println("Time consumption (CFS simulator): " + simulator_timeConsumption + " us");
             
