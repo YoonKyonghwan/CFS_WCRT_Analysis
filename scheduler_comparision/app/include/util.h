@@ -5,6 +5,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <json-c/json.h>
+#include <math.h>
 #include "task.h"
 
 // scheduler type
@@ -19,7 +20,7 @@ enum SCHEDULER_TYPE {
 void setTaskInfo_fmtv(json_object *jobj, Task_Info *task);
 void freeTaskInfo(Task_Info *task);
 void saveResultToJson(int num_tasks, Task_Info *tasks, char *result_file_name);
-long long setNiceValueByDeadline(long long period);
+int setNiceValueByDeadline(long long period, long long min_period, double nice_lambda);
 
 void setCoreMapping(pthread_attr_t *threadAttr, Task_Info *task);
 // void setSchedPolicyPriority(pthread_attr_t *threadAttr, Task_Info *task);

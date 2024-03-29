@@ -5,6 +5,7 @@ pthread_mutex_t mutex_memory_access = PTHREAD_MUTEX_INITIALIZER;
 struct timespec global_start_time = {0, 0};
 bool terminate = false;
 bool isPhasedTask = false;
+double nice_lambda = 3.25;
 
 int main(int argc, char* argv[]){
     if (!(argc == 6 || argc == 7)) {
@@ -93,6 +94,18 @@ int main(int argc, char* argv[]){
             }
         }        
 
+        // set nice value
+        double min_period_ns = 10 * 1000 * 1000 * 1000; // 10s
+        for (int i = 0; i < num_tasks; i++){
+            if (tasks[i].period_ns < min_period_ns){
+                min_period_ns = tasks[i].period_ns;
+            }
+        }
+        for (int i = 0; i < num_tasks; i++){
+            tasks[i].nice_value = setNiceValueByDeadline(tasks[i].period_ns, min_period_ns, nice_lambda);
+        }
+
+
         printf("Initialize and create tasks\n");
         pthread_attr_t threadAttr[num_tasks];
         pthread_t threads[num_tasks];
@@ -161,15 +174,15 @@ int main(int argc, char* argv[]){
         tasks_info_json = NULL;
 
         // set nice value
-        if (atoi(argv[1]) == CFS){
-            for (int i = 0; i < num_tasks; i++){
-                if (tasks[i].isPeriodic){
-                    tasks[i].nice_value = setNiceValueByDeadline(tasks[i].period_ns);
-                }else{
-                    tasks[i].nice_value = setNiceValueByDeadline(tasks[i].low_interarrival_time_ns);
-                }
-            }
-        }
+        // if (atoi(argv[1]) == CFS){
+        //     for (int i = 0; i < num_tasks; i++){
+        //         if (tasks[i].isPeriodic){
+        //             tasks[i].nice_value = setNiceValueByDeadline(tasks[i].period_ns, min_period, nice_lambda);
+        //         }else{
+        //             tasks[i].nice_value = setNiceValueByDeadline(tasks[i].low_interarrival_time_ns, min_period, nice_lambda);
+        //         }
+        //     }
+        // }
 
         // initMutex(&mutex_memory_access, PTHREAD_PRIO_INHERIT); //PTHREAD_PRIO_PROTECT;
         // initMutex(&mutex_memory_access, PTHREAD_PRIO_NONE); //PTHREAD_PRIO_PROTECT;

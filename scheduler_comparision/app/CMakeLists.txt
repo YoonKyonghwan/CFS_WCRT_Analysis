@@ -21,7 +21,7 @@ CPMAddPackage(
     GIT_SHALLOW TRUE)
 
 add_executable(${PROJECT_NAME} ${SRC_FILES})
-target_link_libraries(${PROJECT_NAME} Threads::Threads json-c nvtx3-c)
+target_link_libraries(${PROJECT_NAME} Threads::Threads json-c nvtx3-c m)
 
 
 # # print all cmake-property

@@ -23,6 +23,7 @@ void* task_function_unnifest(void* arg) {
 
     // Wait for all threads to reach the barrier    
     pthread_barrier_wait(&barrier);
+    usleep(100);
 
     current_trigger_time = global_start_time;
     next_trigger_time = global_start_time;

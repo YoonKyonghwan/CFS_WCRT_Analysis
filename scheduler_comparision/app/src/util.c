@@ -1,6 +1,6 @@
 #include "util.h"
 
-long long min_period = LLONG_MAX;
+long long min_period_ns = LLONG_MAX;
 
 void setTaskInfo_fmtv(json_object *jobj, Task_Info *task){
     task->name = json_object_get_string(json_object_object_get(jobj, "task_name"));
@@ -18,13 +18,13 @@ void setTaskInfo_fmtv(json_object *jobj, Task_Info *task){
     // task->num_runnables = json_object_array_length(json_object_object_get(jobj, "time_ns"));
     
     if (task->isPeriodic){
-        if (task->period_ns < min_period){
-            min_period = task->period_ns;
+        if (task->period_ns < min_period_ns){
+            min_period_ns = task->period_ns;
         }
         task->random_interarrival_time_ns = NULL;
     }else{
-        if (task->low_interarrival_time_ns < min_period){
-            min_period = task->low_interarrival_time_ns;
+        if (task->low_interarrival_time_ns < min_period_ns){
+            min_period_ns = task->low_interarrival_time_ns;
         }
         task->random_interarrival_time_ns = (long long*)malloc(task->num_samples * sizeof(long long));
         json_object *inter_arrival_time_ns = json_object_object_get(jobj, "inter_arrival_time_ns");
@@ -75,14 +75,10 @@ void setTaskInfo_fmtv(json_object *jobj, Task_Info *task){
     return;
 }
 
-long long setNiceValueByDeadline(long long period){
-    int nice_value = -20;
-    long long period_inc = min_period;
-    while(period_inc < period && nice_value < 19){
-        period_inc = (period_inc * 5) / 4;
-        nice_value++;
-    }
-    return nice_value;
+int setNiceValueByDeadline(long long period_ns, long long min_period_ns, double nice_lambda){
+    double relative_weight = log((double)period_ns/(double)min_period_ns) / log(1.25);
+    relative_weight *= nice_lambda;
+    return min(-20 + ceil(relative_weight), 19);
 }
 
 void updateRealWCET(char* input_file_name, Task_Info *tasks, int num_tasks){
@@ -163,6 +159,7 @@ void saveResultToJson(int num_tasks, Task_Info *tasks, char *result_file_name){
         }
         json_object_object_add(task_result, "task_name", json_object_new_string(tasks[i].name));
         json_object_object_add(task_result, "core_index", json_object_new_int(tasks[i].core_index));
+        json_object_object_add(task_result, "nice_value", json_object_new_int(tasks[i].nice_value));
         json_object_object_add(task_result, "deadline_ns", json_object_new_int64(deadline_ns));
         json_object_object_add(task_result, "wcrt_ns", json_object_new_int64(tasks[i].wcrt_ns));
         json_object_object_add(task_result, "wcet_ns", json_object_new_int64(tasks[i].wcet_ns));
