@@ -180,7 +180,7 @@ def show_box_plot(file_path, values, title, fontsize, xtick_rotation):
         labels.append(f"nT: {numTasks}, U: {utilization}")
 
     # Create the box plot
-    plt.figure(figsize=(10, 6))
+    plt.figure(figsize=(15, 8))
     # plt.boxplot(boxplot_data, labels=labels)
     plt.boxplot(boxplot_data, labels=labels, showfliers=False)
     plt.xticks(rotation=xtick_rotation)
@@ -194,6 +194,8 @@ def show_box_plot(file_path, values, title, fontsize, xtick_rotation):
 
     # Display the plot
     plt.show()
+    
+    print("Max : ", df[values].max(), "Min : ", df[values].min())
     return
     
     
