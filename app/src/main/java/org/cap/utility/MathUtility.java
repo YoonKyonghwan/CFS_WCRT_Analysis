@@ -1,6 +1,7 @@
 package org.cap.utility;
 
 import org.cap.model.Core;
+import org.cap.model.NiceToWeight;
 import org.cap.model.Task;
 
 import java.util.List;
@@ -42,6 +43,7 @@ public class MathUtility {
             for (Task task : core.tasks) {
                 long period_us = task.period / 1000;
                 task.nice = computeNice(period_us, min_deadline, lambda);
+                task.weight = NiceToWeight.getWeight(task.nice);
             }
         }
     }
