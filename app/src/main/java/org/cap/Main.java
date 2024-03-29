@@ -44,11 +44,15 @@ public class Main {
             JsonReader jsonReader = new JsonReader();
             TestConfiguration testConf = jsonReader.readTasksFromFile(taskInfoPath);
             testConf.initializeTaskData();
+
+            // update task info with nice values
+            MathUtility.assignNiceValues(testConf.mappingInfo, params.getDouble("nice_lambda"));
             
             long startTime = System.nanoTime();
             
             // analyze by simulator
-            boolean simulator_schedulability = analyze_by_CFS_simulator(testConf, params);            
+            // boolean simulator_schedulability = analyze_by_CFS_simulator(testConf, params);            
+            boolean simulator_schedulability = true;
             long simulator_timeConsumption = (System.nanoTime() - startTime)/1000L; //us
             System.out.println("Time consumption (CFS simulator): " + simulator_timeConsumption + " us");
             

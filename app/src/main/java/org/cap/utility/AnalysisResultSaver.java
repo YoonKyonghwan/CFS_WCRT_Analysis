@@ -93,7 +93,8 @@ public class AnalysisResultSaver {
 
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(resultFileName, true))) {
             // write the header first
-            String header = "id,deadline,WCET,name,WCRT_by_simulator,WCRT_by_proposed,WCRT_by_FIFO,WCRT_by_RR,WCRT_by_RM," +
+            String header = "id,deadline,WCET,nice,name,"+
+            "WCRT_by_simulator,WCRT_by_proposed,WCRT_by_FIFO,WCRT_by_RR,WCRT_by_RM," +
              "simulator_schedulability,proposed_schedulability,FIFO_schedulability,RR_schedulability,RM_schedulability\n";
             writer.write(header);
 
@@ -111,6 +112,7 @@ public class AnalysisResultSaver {
                     int WCRT_by_RR = (int) task.WCRT_by_RR;
                     int WCRT_by_RM = (int) task.WCRT_by_RM;
                     int WCET = (int) task.bodyTime;
+                    int nice = task.nice;
                     boolean isSchedulable_by_proposed = task.isSchedulable_by_proposed;
 
                     boolean isSchedulable_by_FIFO = task.isSchedulable_by_FIFO;
@@ -118,8 +120,8 @@ public class AnalysisResultSaver {
                     boolean isSchedulable_by_RM = task.isSchedulable_by_RM;
 
                     // Prepare data to be written to the CSV file
-                    dataToWrite = String.format("%d,%d,%d,%s,%d,%d,%d,%d,%d,%b,%b,%b,%b,%b\n",
-                            id, deadline, WCET, name, WCRT_by_simulator, WCRT_by_proposed, 
+                    dataToWrite = String.format("%d,%d,%d,%d,%s,%d,%d,%d,%d,%d,%b,%b,%b,%b,%b\n",
+                            id, deadline, WCET, nice, name, WCRT_by_simulator, WCRT_by_proposed, 
                             WCRT_by_FIFO, WCRT_by_RR, WCRT_by_RM,
                             isSchedulable_by_simulator, isSchedulable_by_proposed, isSchedulable_by_FIFO, isSchedulable_by_RR, isSchedulable_by_RM);
                     

@@ -62,13 +62,14 @@ void setSchedPolicyPriority(Task_Info *task){
     // init variable
     pid_t tid = syscall(SYS_gettid);
     struct sched_attr attr;
+    int ret;
     memset(&attr, 0, sizeof(attr));
     attr.size = sizeof(struct sched_attr);
 
     switch (task->sched_policy) {
         // Configurations in the thread function for CFS or EDF
         case CFS:
-            int ret = nice(task->nice_value);
+            ret = nice(task->nice_value);
             // printf("task_name : %s, nice value: %d, ret: %d\n", task->name, task->nice_value, ret);
             break;
         case EDF:

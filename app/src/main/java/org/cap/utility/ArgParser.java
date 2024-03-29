@@ -37,7 +37,6 @@ public class ArgParser {
                 .dest("generated_files_save_dir")
                 .type(String.class)
                 .help("directory to store generated files");
-
         parser.addArgument("--task_info_path", "-t")
                 .dest("task_info_path")
                 .type(String.class)
@@ -102,6 +101,12 @@ public class ArgParser {
                 .setDefault(1000)
                 .nargs("?")
                 .help("jiffy(us)");
+        parser.addArgument("--nice_lambda", "-nl")
+                .dest("nice_lambda")
+                .type(Double.class)
+                .setDefault(0.9)
+                .nargs("?")
+                .help("nice_lambda");
         parser.addArgument("--sched_RR_timeslice", "-rrts")
                 .dest("sched_RR_timeslice")
                 .type(Integer.class)

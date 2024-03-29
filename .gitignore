@@ -63,3 +63,7 @@ scheduler_comparision/app/build/
 scheduler_comparision/app/application
 scheduler_comparision/app/*.nsys-rep
 scheduler_comparision/app/*.json 
+
+scheduler_comparision/app/exp_results
+nohup*
+run.jar

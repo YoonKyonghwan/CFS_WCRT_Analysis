@@ -6,7 +6,27 @@ package org.cap
 import spock.lang.Specification
 import java.lang.Math
 
+import org.cap.utility.MathUtility
+
 class BasicFunctionTest extends Specification {
+    // def "test computation of nicevalue"(){
+    //     expect :
+    //         result == MathUtility.computeNice(deadline_i, min_deadline, 1)
+    //     where :
+    //         result | deadline_i | min_deadline
+    //         -20 | 10 | 10
+    //         -9 | 100 | 10
+    // }
+
+    def "test computation of nicevalue"(){
+        expect :
+            result == MathUtility.computeNice(100, 10, lambda)
+        where :
+            lambda  | result
+            1       | -9
+            0.5     | -14
+    }
+
     // def "test mode operation"() {
     //     expect :
     //         expected == (input % 5)
