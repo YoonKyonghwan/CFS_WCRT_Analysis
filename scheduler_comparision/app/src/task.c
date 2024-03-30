@@ -32,9 +32,8 @@ void* task_function_unnifest(void* arg) {
         busyWait(task->body_time_ns);
         POP_PROFILE() 
         clock_gettime(CLOCK_MONOTONIC, &job_end); //response time
-        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end_execution_time); //execution time
-
         task->response_time_ns[iteration_index] = timeDiff(current_trigger_time, job_end);
+        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end_execution_time); //execution time
         real_execution_time = timeDiff(start_execution_time, end_execution_time);
         if (real_execution_time > real_wcet_ns){
             real_wcet_ns = real_execution_time;
