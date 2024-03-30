@@ -1,13 +1,14 @@
 #!/bin/bash
 
 # set arguments
-result_dir="exp_results_test_20240326_20ms"
+result_dir="exp_results_test_20240328_30ms_final_5"
 
-generated_files_save_dir="generated_taskset_new_100_20240328_20ms"
+generated_files_save_dir="generated_taskset_new_100_20240328_30ms"
 num_cores=(1)
 num_tasks=(3 6 9 12)
 utilizations=(0.4 0.6 0.8)
 num_sets=100
+nice_lambda=3.25
 
 
 #schedule_simulation_method="random_target_task" 
@@ -32,9 +33,9 @@ for num_core in "${num_cores[@]}"; do
             for ((i=0; i<num_sets; i++)); do
                 file_name="${num_core}cores_${num_task}tasks_${utilization}utilization_${i}.json"
                 task_info_path="${generated_files_save_dir}/${num_core}cores/${num_task}tasks/${utilization}utilization/${file_name}"
-                echo "running with ${file_name}"
-		        #echo "java -jar run.jar -t=$task_info_path -rd=$result_dir -ssm=$schedule_simulation_method -stc=$schedule_try_count -ttc=$test_try_count -lo=info"
-                java -jar run.jar -t=$task_info_path -rd=$result_dir -ssm=$schedule_simulation_method -stc=$schedule_try_count -ttc=$test_try_count -tl=$target_latency -mg=$min_gran -jf=$jiffy_us
+                cmd="java -jar run.jar -t=$task_info_path -rd=$result_dir -ssm=$schedule_simulation_method -stc=$schedule_try_count -ttc=$test_try_count -tl=$target_latency -mg=$min_gran -jf=$jiffy_us -lo=info -nl=$nice_lambda"
+                echo $cmd
+                ${cmd}
             done
         done
     done
