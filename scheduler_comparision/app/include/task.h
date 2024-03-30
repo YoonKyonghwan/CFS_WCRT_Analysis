@@ -92,7 +92,6 @@ struct sched_attr {
 };
 
 
-void *task_function_fmtv(void *arg);
 void* task_function_unnifest(void* arg);
 
 void LockMemory();

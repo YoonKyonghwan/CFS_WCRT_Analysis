@@ -6,7 +6,6 @@ void* task_function_unnifest(void* arg) {
 
     // initialize variables
     PUSH_PROFILE("init")
-    // LockMemory();
     // pthread_mutex_t period_mutex = PTHREAD_MUTEX_INITIALIZER;
     // pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
     int iteration_index = 0;
@@ -21,38 +20,37 @@ void* task_function_unnifest(void* arg) {
     // pthread_mutex_lock(&period_mutex); // to control period
     POP_PROFILE()
 
-    // Wait for all threads to reach the barrier    
-    pthread_barrier_wait(&barrier);
-    usleep(100);
+    // Wait for all threads to be ready
+    // pthread_barrier_wait(&barrier);
+    sleep(1);
 
-    current_trigger_time = global_start_time;
-    next_trigger_time = global_start_time;
-
+    clock_gettime(CLOCK_MONOTONIC, &current_trigger_time); //response time
+    next_trigger_time = current_trigger_time; //init
     while (terminate == false) {
-        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start_execution_time);
+        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start_execution_time); //execution time
         PUSH_PROFILE(task->name) 
         busyWait(task->body_time_ns);
-        clock_gettime(CLOCK_MONOTONIC, &job_end);
         POP_PROFILE() 
-        checkResponseTime(task, iteration_index, current_trigger_time, job_end);
-        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end_execution_time);
+        clock_gettime(CLOCK_MONOTONIC, &job_end); //response time
+        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end_execution_time); //execution time
+
+        task->response_time_ns[iteration_index] = timeDiff(current_trigger_time, job_end);
         real_execution_time = timeDiff(start_execution_time, end_execution_time);
         if (real_execution_time > real_wcet_ns){
             real_wcet_ns = real_execution_time;
         }
 
-        interarrival_time = task->period_ns;
-        if (interarrival_time > task->response_time_ns[iteration_index]) {
-            setNextTriggerTime(&next_trigger_time, interarrival_time);
-            // pthread_cond_timedwait(&cond, &period_mutex, &next_trigger_time); //wait until next_trigger_time
+        if (task->period_ns > task->response_time_ns[iteration_index]) {
+            setNextTriggerTime(&next_trigger_time, task->period_ns);
+            current_trigger_time = next_trigger_time;
             clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next_trigger_time, NULL);
         }else{
             clock_gettime(CLOCK_MONOTONIC, &next_trigger_time);
+            current_trigger_time = next_trigger_time;
         }
-        current_trigger_time = next_trigger_time;
         iteration_index = (iteration_index + 1) % task->num_samples;
     }
-    // pthread_mutex_unlock(&period_mutex); // to control period
+    
     task->wcet_ns = real_wcet_ns;
     printf("%s(wcet %lld) task termintated \n", task->name, real_wcet_ns);
     return NULL;
@@ -218,63 +216,4 @@ void LockMemory() {
         printf("mlockall failed\n");
         exit(1);
     }
-}
-
-void* task_function_fmtv(void* arg) {
-    Task_Info *task = (Task_Info*)arg;
-
-    // initialize variables
-    PUSH_PROFILE("init")
-    pthread_mutex_t period_mutex = PTHREAD_MUTEX_INITIALIZER;
-    pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
-    int iteration_index = 0;
-    struct timespec current_trigger_time, job_end, next_trigger_time;
-    long long sleep_time = 0LL;
-    long long interarrival_time = 0LL;
-
-    printf(" (Init) %s \n", task->name);
-    pthread_mutex_lock(&period_mutex); // to control period
-    setSchedPolicyPriority(task);
-    POP_PROFILE()
-
-    // Wait for all threads to reach the barrier    
-    pthread_barrier_wait(&barrier);
-
-    // check the global_start_time
-    if (global_start_time.tv_sec == 0 && global_start_time.tv_nsec == 0){
-        MARKER("global_start_time")
-        clock_gettime(CLOCK_REALTIME, &global_start_time);
-    }
-    current_trigger_time = global_start_time;
-    next_trigger_time = global_start_time;
-
-    while (terminate == false) {
-        PUSH_PROFILE(task->name) // for total(read + execution + write)
-        // if (isPhasedTask){
-        //     runRunnable(task->phased_read_time_ns, task->phased_execution_time_ns[iteration_index], task->phased_write_time_ns);
-        // }else{
-        //     for (int i = 0; i < task->num_runnables; i++){
-        //         runRunnable(task->runnables_read_time_ns[i], task->runnables_execution_time_ns[i][iteration_index], task->runnables_write_time_ns[i]);
-        //     }
-        // }
-        runRunnable(task->phased_read_time_ns, task->phased_execution_time_ns[iteration_index], task->phased_write_time_ns);
-
-        clock_gettime(CLOCK_REALTIME, &job_end);
-        POP_PROFILE() // for total(read + execution + write)
-        checkResponseTime(task, iteration_index, current_trigger_time, job_end);
-
-        interarrival_time = getInterarrivalTime(task, iteration_index);
-        if (interarrival_time > task->response_time_ns[iteration_index]) {
-            setNextTriggerTime(&next_trigger_time, interarrival_time);
-            pthread_cond_timedwait(&cond, &period_mutex, &next_trigger_time); //wait until next_trigger_time
-        }else{
-            clock_gettime(CLOCK_REALTIME, &next_trigger_time);
-        }
-        current_trigger_time = next_trigger_time;
-        iteration_index = (iteration_index + 1) % task->num_samples;
-    }
-    pthread_mutex_unlock(&period_mutex); // to control period
-
-    printf("%s task termintated\n", task->name);
-    return NULL;
 }

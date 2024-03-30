@@ -1,8 +1,8 @@
 #include "util.h"
 
-pthread_barrier_t barrier;
+// pthread_barrier_t barrier;
 pthread_mutex_t mutex_memory_access = PTHREAD_MUTEX_INITIALIZER;
-struct timespec global_start_time = {0, 0};
+// struct timespec global_start_time = {0, 0};
 bool terminate = false;
 bool isPhasedTask = false;
 double nice_lambda = 3.25;
@@ -95,7 +95,7 @@ int main(int argc, char* argv[]){
         }        
 
         // set nice value
-        double min_period_ns = 10 * 1000 * 1000 * 1000; // 10s
+        double min_period_ns = 10.0 * 1000.0 * 1000.0 * 1000.0; // 10s
         for (int i = 0; i < num_tasks; i++){
             if (tasks[i].period_ns < min_period_ns){
                 min_period_ns = tasks[i].period_ns;
@@ -109,7 +109,7 @@ int main(int argc, char* argv[]){
         printf("Initialize and create tasks\n");
         pthread_attr_t threadAttr[num_tasks];
         pthread_t threads[num_tasks];
-        pthread_barrier_init(&barrier, NULL, num_tasks+1); // to start all threads at the same time
+        // pthread_barrier_init(&barrier, NULL, num_tasks+1); // to start all threads at the same time
         for (int i = 0; i < num_tasks; i++) {
             setCoreMapping(&threadAttr[i], &tasks[i]); //core mapping
             int ret_pthread_create = 0;
@@ -125,9 +125,9 @@ int main(int argc, char* argv[]){
         }
 
         sleep(1); // wait for all threads to be ready (1sec)
-        clock_gettime(CLOCK_MONOTONIC, &global_start_time);
-        pthread_barrier_wait(&barrier);
-        MARKER("After barrier")
+        // clock_gettime(CLOCK_MONOTONIC, &global_start_time);
+        // pthread_barrier_wait(&barrier);
+        // MARKER("After barrier")
         // printf("global_start_time: %ld.%09ld\n", global_start_time.tv_sec, global_start_time.tv_nsec);
 
         printf("Start to run application.\n The experiment will complete after %d seconds.\n", simulation_period_sec);
@@ -144,7 +144,7 @@ int main(int argc, char* argv[]){
         //         exit(1);
         //     }
         // }
-        pthread_barrier_destroy(&barrier);
+        // pthread_barrier_destroy(&barrier);
 
 
         printf("Save the result to %s\n", result_file_name);
@@ -157,87 +157,8 @@ int main(int argc, char* argv[]){
             freeTaskInfo(&tasks[i]);
         }
         
-    }else{ //uunifest
-        printf("Use the fmtv data type\n");
-        int num_tasks = json_object_array_length(tasks_info_json);
-        Task_Info tasks[num_tasks];
-        for (int i = 0; i < num_tasks; i++){
-            json_object *task_info_json = json_object_array_get_idx(tasks_info_json, i);
-            setTaskInfo_fmtv(task_info_json, &tasks[i]);
-            if(tasks[i].isRTTask){
-                tasks[i].sched_policy = atoi(argv[1]);
-            }else{
-                tasks[i].sched_policy = CFS;
-            }
-            task_info_json = NULL;
-        }
-        tasks_info_json = NULL;
-
-        // set nice value
-        // if (atoi(argv[1]) == CFS){
-        //     for (int i = 0; i < num_tasks; i++){
-        //         if (tasks[i].isPeriodic){
-        //             tasks[i].nice_value = setNiceValueByDeadline(tasks[i].period_ns, min_period, nice_lambda);
-        //         }else{
-        //             tasks[i].nice_value = setNiceValueByDeadline(tasks[i].low_interarrival_time_ns, min_period, nice_lambda);
-        //         }
-        //     }
-        // }
-
-        // initMutex(&mutex_memory_access, PTHREAD_PRIO_INHERIT); //PTHREAD_PRIO_PROTECT;
-        // initMutex(&mutex_memory_access, PTHREAD_PRIO_NONE); //PTHREAD_PRIO_PROTECT;
-
-        printf("Initialize and create tasks\n");
-        pthread_attr_t threadAttr[num_tasks];
-        pthread_t threads[num_tasks];
-        pthread_barrier_init(&barrier, NULL, num_tasks+1); // to start all threads at the same time
-        for (int i = 0; i < num_tasks; i++) {
-            setCoreMapping(&threadAttr[i], &tasks[i]);
-            if (tasks[i].sched_policy == EDF){
-                if (pthread_create(&threads[i], NULL, task_function_fmtv, (void*)&tasks[i])){
-                    printf("Fail to create thread %d\n", i);
-                    exit(1);
-                }
-            }else{
-                if (pthread_create(&threads[i], &threadAttr[i], task_function_fmtv, (void*)&tasks[i])){
-                    printf("Fail to create thread %d\n", i);
-                    exit(1);
-                }
-            }
-        }
-        
-        usleep(1000); // wait for all threads to be ready (1ms)
-        // clock_gettime(CLOCK_REALTIME, &global_start_time);
-        pthread_barrier_wait(&barrier);
-        MARKER("After barrier")
-        // printf("global_start_time: %ld.%09ld\n", global_start_time.tv_sec, global_start_time.tv_nsec);
-
-        printf("Start to run application.\n The experiment will complete after %d seconds.\n", simulation_period_sec);
-        sleep(simulation_period_sec); // seconds
-
-        printf("Terminate tasks\n");
-        terminate = true;
-        for (int i = 0; i < num_tasks; i++) {
-            pthread_join(threads[i], NULL);
-        }
-        // for (int i = 0; i < num_tasks; i++) {
-        //     if(pthread_cancel(threads[i])){
-        //         printf("Fail to cancel thread %d\n", i);
-        //         exit(1);
-        //     }
-        // }
-        pthread_barrier_destroy(&barrier);
-
-
-        printf("Save the result to %s\n", result_file_name);
-        saveResultToJson(num_tasks, tasks, result_file_name);
-
-        // free memory
-        printf("Free Memory of Tasks_info\n");
-        for (int i = 0; i < num_tasks; i++){
-            freeTaskInfo(&tasks[i]);
-        }
-        
+    }else{ //fmtv(deprecated)
+        printf("Use the fmtv data type (deprecated)\n");
     }
 
     printf("The experiment is complete.\n");
