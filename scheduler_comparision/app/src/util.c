@@ -133,7 +133,7 @@ void saveResultToJson(int num_tasks, Task_Info *tasks, char *result_file_name){
         unsigned long long total_response_time_ns = 0;
         long long wcrt_ns = 0;
         int count_valid_response_time = 0;
-        for (int j = 0; j < tasks[i].num_samples; j++) {
+        for (int j = 1; j < tasks[i].num_samples; j++) {
             if (tasks[i].response_time_ns[j] != 0){
                 json_object_array_add(task_response_time_ns, json_object_new_int64(tasks[i].response_time_ns[j]));
                 total_response_time_ns += tasks[i].response_time_ns[j];
