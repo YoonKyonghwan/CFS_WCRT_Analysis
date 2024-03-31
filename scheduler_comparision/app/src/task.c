@@ -151,13 +151,13 @@ void setSchedPolicyPriority(Task_Info *task){
 }
 
 
-int sched_setattr(pid_t pid, const struct sched_attr *attr, unsigned int flags) {
+int sched_setattr(pid_t pid, const struct sched_attr *attr,  int flags) {
 	return syscall(__NR_sched_setattr, pid, attr, flags);
 }
 
 
 void checkResponseTime(Task_Info *task, int iteration_index, struct timespec start_time, struct timespec end_time){
-    long long responsed_ns = (end_time.tv_sec - start_time.tv_sec) * 1000000000LL + (end_time.tv_nsec - start_time.tv_nsec);
+     long long responsed_ns = (end_time.tv_sec - start_time.tv_sec) * 1000000000LL + (end_time.tv_nsec - start_time.tv_nsec);
     if (iteration_index != 0){
         task->response_time_ns[iteration_index] = responsed_ns;
         // task->start_time_ns[iteration_index] = (start_time.tv_sec * 1000000000LL ) + start_time.tv_nsec;
@@ -190,7 +190,7 @@ void runRunnable(int read_ns, int execution_ns, int write_ns){
     return;
 }
 
-long long getInterarrivalTime(Task_Info *task, int iteration_index){
+ long long getInterarrivalTime(Task_Info *task, int iteration_index){
     if (task->isPeriodic ){
         return task->period_ns;
     }else{
@@ -201,7 +201,7 @@ long long getInterarrivalTime(Task_Info *task, int iteration_index){
 }
 
 
-void setNextTriggerTime(struct timespec *next_trigger_time, long long interarrival_time_ns){
+void setNextTriggerTime(struct timespec *next_trigger_time,  long long interarrival_time_ns){
     next_trigger_time->tv_sec += (interarrival_time_ns / 1000000000LL);
     next_trigger_time->tv_nsec += (interarrival_time_ns % 1000000000LL);
     if (next_trigger_time->tv_nsec >= 1000000000LL){
@@ -226,7 +226,7 @@ void memoryAccess(int time_ns) {
 // void busyWait(int wait_time_ns){
 //     struct timespec start, end;
 //     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
-//     long long elapsed_ns = 0;
+//      long long elapsed_ns = 0;
 //     while (elapsed_ns < wait_time_ns) {
 //         clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end);
 //         elapsed_ns = (end.tv_sec - start.tv_sec) * 1000000000LL + (end.tv_nsec - start.tv_nsec);
@@ -234,7 +234,7 @@ void memoryAccess(int time_ns) {
 //     //for loop
 // }
 
-long long busyWait(int wait_time_ns){
+void busyWait( long long wait_time_ns){
     struct timespec start, end;
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
     long long elapsed_ns = 0;
@@ -245,7 +245,7 @@ long long busyWait(int wait_time_ns){
         clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end);
         elapsed_ns = (end.tv_sec - start.tv_sec) * 1000000000LL + (end.tv_nsec - start.tv_nsec);
     }
-    return elapsed_ns;
+    return;
 }
 void LockMemory() {
     int ret = mlockall(MCL_CURRENT | MCL_FUTURE);

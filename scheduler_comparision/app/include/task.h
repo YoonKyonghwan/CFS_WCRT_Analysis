@@ -46,12 +46,12 @@ typedef struct {
 
     bool isPeriodic;
     long long period_ns;
-    int low_interarrival_time_ns;
-    int upper_interarrival_time_ns;
+    long long low_interarrival_time_ns;
+    long long upper_interarrival_time_ns;
 
-    int phased_read_time_ns;
-    int phased_write_time_ns;
-    int *phased_execution_time_ns;
+    long long phased_read_time_ns;
+    long long phased_write_time_ns;
+    long long *phased_execution_time_ns;
     long long body_time_ns;
 
     // int *runnables_read_time_ns;
@@ -98,12 +98,12 @@ void* non_RT_task_function(void* arg);
 void LockMemory();
 void runRunnable(int read_ns, int execution_ns, int write_ns);
 void memoryAccess(int time_ns);
-long long busyWait(int wait_time_ns);
+void busyWait( long long wait_time_ns);
 
 void setSchedPolicyPriority(Task_Info *task);
-int sched_setattr(pid_t pid, const struct sched_attr *attr, unsigned int flags);
+int sched_setattr(pid_t pid, const struct sched_attr *attr,  int flags);
 
 long long getInterarrivalTime(Task_Info *task, int iteration_index);
-void setNextTriggerTime(struct timespec *next_trigger_time, long long interarrival_time_ns);
+void setNextTriggerTime(struct timespec *next_trigger_time,  long long interarrival_time_ns);
 void checkResponseTime(Task_Info *task, int iteration_index, struct timespec global_start, struct timespec global_end);
 long long timeDiff(struct timespec time_start, struct timespec time_end);

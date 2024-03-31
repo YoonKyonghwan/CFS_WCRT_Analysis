@@ -70,9 +70,9 @@ int main(int argc, char* argv[]){
                 tasks[task_index].sched_policy = atoi(argv[1]);
                 tasks[task_index].isPeriodic = true;
                 tasks[task_index].nice_value = json_object_get_int(json_object_object_get(task_info, "nice"));
-                tasks[task_index].period_ns = 1000 * json_object_get_int(json_object_object_get(task_info, "period"));
-                tasks[task_index].phased_read_time_ns = 1000 * json_object_get_int(json_object_object_get(task_info, "readTime"));
-                tasks[task_index].phased_write_time_ns = 1000 * json_object_get_int(json_object_object_get(task_info, "writeTime"));
+                tasks[task_index].period_ns = 1000 * json_object_get_int64(json_object_object_get(task_info, "period"));
+                tasks[task_index].phased_read_time_ns = 1000 * json_object_get_int64(json_object_object_get(task_info, "readTime"));
+                tasks[task_index].phased_write_time_ns = 1000 * json_object_get_int64(json_object_object_get(task_info, "writeTime"));
                 tasks[task_index].phased_execution_time_ns = NULL;
                 tasks[task_index].body_time_ns = 1000 * json_object_get_int64(json_object_object_get(task_info, "bodyTime"));
                 
@@ -108,9 +108,9 @@ int main(int argc, char* argv[]){
             non_rt_task.sched_policy = CFS;
             non_rt_task.isPeriodic = false;
             non_rt_task.nice_value = 19;
-            non_rt_task.period_ns = NULL;
-            non_rt_task.phased_read_time_ns = NULL;
-            non_rt_task.phased_write_time_ns = NULL;
+            non_rt_task.period_ns = 0;
+            non_rt_task.phased_read_time_ns = 0;
+            non_rt_task.phased_write_time_ns = 0;
             non_rt_task.phased_execution_time_ns = NULL;
             non_rt_task.body_time_ns = 100 * 1000 * 1000; // 100ms
             
@@ -185,7 +185,7 @@ int main(int argc, char* argv[]){
             saveResultToJson(num_tasks, tasks, &non_rt_task, result_file_name);
         }else{
             saveResultToJson(num_tasks, tasks, NULL, result_file_name);
-            updateRealWCET(json_file_name, tasks, num_tasks);
+            // updateRealWCET(json_file_name, tasks, num_tasks);
         }
         
         // free memory

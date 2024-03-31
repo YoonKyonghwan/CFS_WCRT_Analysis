@@ -10,8 +10,8 @@ void setTaskInfo_fmtv(json_object *jobj, Task_Info *task){
 
     task->isPeriodic = json_object_get_boolean(json_object_object_get(jobj, "isPeriodic"));
     task->period_ns = json_object_get_int64(json_object_object_get(jobj, "period_ns"));
-    task->low_interarrival_time_ns = json_object_get_int(json_object_object_get(jobj, "lower_bound_ns"));
-    task->upper_interarrival_time_ns = json_object_get_int(json_object_object_get(jobj, "upper_bound_ns"));
+    task->low_interarrival_time_ns = json_object_get_int64(json_object_object_get(jobj, "lower_bound_ns"));
+    task->upper_interarrival_time_ns = json_object_get_int64(json_object_object_get(jobj, "upper_bound_ns"));
 
 
     task->num_samples = json_object_array_length(json_object_object_get(jobj, "phased_execution"));
@@ -33,13 +33,13 @@ void setTaskInfo_fmtv(json_object *jobj, Task_Info *task){
         }
     }
 
-    task->phased_read_time_ns = json_object_get_int(json_object_object_get(jobj, "phased_read"));
-    task->phased_write_time_ns = json_object_get_int(json_object_object_get(jobj, "phased_write"));
-    task->phased_execution_time_ns = (int*)malloc(task->num_samples * sizeof(int));
+    task->phased_read_time_ns = json_object_get_int64(json_object_object_get(jobj, "phased_read"));
+    task->phased_write_time_ns = json_object_get_int64(json_object_object_get(jobj, "phased_write"));
+    task->phased_execution_time_ns = (long long*)malloc(task->num_samples * sizeof(long long));
     json_object *phased_execution = json_object_object_get(jobj, "phased_execution");
     int max_execution = 0;
     for (int i = 0; i < task->num_samples; i++){
-        task->phased_execution_time_ns[i] = json_object_get_int(json_object_array_get_idx(phased_execution, i));
+        task->phased_execution_time_ns[i] = json_object_get_int64(json_object_array_get_idx(phased_execution, i));
         if (task->phased_execution_time_ns[i] > max_execution){
             max_execution = task->phased_execution_time_ns[i];
         }
@@ -62,7 +62,7 @@ void setTaskInfo_fmtv(json_object *jobj, Task_Info *task){
 
     task->wcet_ns = max_execution;
     // task->wcet_ns = task->phased_read_time_ns + max_execution + task->phased_write_time_ns;
-    task->response_time_ns = (long long*)malloc(task->num_samples * sizeof(long long));
+    task->response_time_ns = ( long long*)malloc(task->num_samples * sizeof( long long));
     // task->start_time_ns = (long long*)malloc(task->num_samples * sizeof(long long));
     // task->end_time_ns = (long long*)malloc(task->num_samples * sizeof(long long));
     for (int i = 0; i < task->num_samples; i++){
@@ -75,7 +75,7 @@ void setTaskInfo_fmtv(json_object *jobj, Task_Info *task){
     return;
 }
 
-int setNiceValueByDeadline(long long period_ns, long long min_period_ns, double nice_lambda){
+int setNiceValueByDeadline( long long period_ns,  long long min_period_ns, double nice_lambda){
     double relative_weight = log((double)period_ns/(double)min_period_ns) / log(1.25);
     relative_weight *= nice_lambda;
     return min(-20 + ceil(relative_weight), 19);
@@ -97,8 +97,8 @@ void updateRealWCET(char* input_file_name, Task_Info *tasks, int num_tasks){
             int task_id = json_object_get_int(json_object_object_get(task_info, "id"));
             sprintf(task_id_str, "%d", task_id);
             char *task_name = json_object_get_string(json_object_object_get(tasks_ids, task_id_str));
-            int real_wcet = getWCETByName(task_name, tasks, num_tasks)/1000 + 1;
-            int wcet = json_object_get_int(json_object_object_get(task_info, "bodyTime"));
+            long long real_wcet = getWCETByName(task_name, tasks, num_tasks)/1000 + 1;
+            //  long long wcet = json_object_get_int64(json_object_object_get(task_info, "bodyTime"));
             // printf("Task name: %s, real_wcet: %d, wcet: %d\n", task_name, real_wcet, wcet);
             //update real_wcet
             json_object_set_int(json_object_object_get(task_info, "bodyTime"), real_wcet);
@@ -113,7 +113,7 @@ void updateRealWCET(char* input_file_name, Task_Info *tasks, int num_tasks){
     return;
 }
 
-int getWCETByName(char* task, Task_Info *tasks, int num_tasks){
+ long long getWCETByName(char* task, Task_Info *tasks, int num_tasks){
     for (int i = 0; i < num_tasks; i++){
         if (strcmp(task, tasks[i].name) == 0){
             return tasks[i].wcet_ns;
@@ -144,7 +144,7 @@ void convertTaskResultToJson(json_object *task_result, Task_Info *task){
     json_object *task_response_time_ns = json_object_new_array();
     json_object *task_start_time_ns = json_object_new_array();
     json_object *task_end_time_ns = json_object_new_array();
-    unsigned long long total_response_time_ns = 0;
+    long long total_response_time_ns = 0;
     long long wcrt_ns = 0;
     int count_valid_response_time = 0;
     for (int j = 1; j < task->num_samples; j++) {
@@ -159,7 +159,7 @@ void convertTaskResultToJson(json_object *task_result, Task_Info *task){
             }
         }
     }
-    unsigned long long avg_response_time_ns = 0;
+    long long avg_response_time_ns = 0;
     if (count_valid_response_time != 0){
         avg_response_time_ns= total_response_time_ns / count_valid_response_time;
     }
