@@ -111,7 +111,7 @@ int main(int argc, char* argv[]){
         pthread_t threads[num_tasks];
         // pthread_barrier_init(&barrier, NULL, num_tasks+1); // to start all threads at the same time
         clock_gettime(CLOCK_MONOTONIC, &global_start_time);
-        global_start_time.tv_sec += 2; // wait for all threads to be ready (2sec)
+        global_start_time.tv_sec += 3; // wait for all threads to be ready (2sec)
         for (int i = 0; i < num_tasks; i++) {
             setCoreMapping(&threadAttr[i], &tasks[i]); //core mapping
             int ret_pthread_create = 0;
@@ -130,7 +130,7 @@ int main(int argc, char* argv[]){
         // pthread_barrier_wait(&barrier);
         // MARKER("After barrier")
         // printf("global_start_time: %ld.%09ld\n", global_start_time.tv_sec, global_start_time.tv_nsec);
-        sleep(2);
+        sleep(3);
         printf("Start to run application.\n The experiment will complete after %d seconds.\n", simulation_period_sec);
         sleep(simulation_period_sec); // seconds
 
