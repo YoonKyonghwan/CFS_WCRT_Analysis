@@ -9,13 +9,13 @@ double nice_lambda = 3.25;
 
 int main(int argc, char* argv[]){
     if (!(argc == 6 || argc == 7)) {
-        printf("Usage: %s <sched_policy> <simulation_period_sec> <input_file_name> <result_file_name> [-phased]\n", argv[0]);
+        printf("Usage: %s <sched_policy> <simulation_period_sec> <input_file_name> <result_file_name> [-non_RT]\n", argv[0]);
         printf("  <sched_policy>: 0 for CFS, 1 for FIFO, 2 for RR, 3 for EDF, 4 for RM\n");
         printf("  <simulation_period_sec>: the period of the simulation in seconds\n");
         printf("  <input_file_name>: the name of the json file that contains the task information\n");
         printf("  <data_type_index>: 0 for fmtv, 1 for uunifest\n");
         printf("  <result_file_name>: the name of the json file to save the result\n");
-        printf("  [-phased]: use the phased task model\n");
+        printf("  [-non_RT]: exp with a non_RT_Task\n");
         exit(1);
     }
 
@@ -29,12 +29,6 @@ int main(int argc, char* argv[]){
         exit(1);
     }
     char *result_file_name = argv[5];
-    if (argc == 7){
-        if (strcmp(argv[6], "-phased") == 0){
-            isPhasedTask = true;
-            printf("Use the phased task model\n");
-        }
-    }
     
     printf("Read Tasks_info from %s\n", json_file_name);
     json_object *tasks_info_json = json_object_from_file(json_file_name);
@@ -58,7 +52,7 @@ int main(int argc, char* argv[]){
             num_tasks += num_tasks_core;
         }
 
-        Task_Info tasks[num_tasks];
+        Task_Info tasks[num_tasks]; //rt_tasks
         int task_index = 0;
         for (int i = 0; i < num_cores; i++){
             json_object *core_info = json_object_array_get_idx(mapping_info, i);
@@ -92,7 +86,7 @@ int main(int argc, char* argv[]){
                 }
                 task_index++;
             }
-        }        
+        }
 
         // set nice value
         double min_period_ns = 10.0 * 1000.0 * 1000.0 * 1000.0; // 10s
@@ -103,6 +97,32 @@ int main(int argc, char* argv[]){
         }
         for (int i = 0; i < num_tasks; i++){
             tasks[i].nice_value = setNiceValueByDeadline(tasks[i].period_ns, min_period_ns, nice_lambda);
+        }
+
+        // for test non_rt tasks
+        Task_Info non_rt_task;
+        if ((argc == 7) && (strcmp(argv[6], "-non_RT") == 0)){
+            non_rt_task.name = "Non_RT_Task";
+            non_rt_task.core_index = tasks[0].core_index;
+            non_rt_task.isRTTask = false;
+            non_rt_task.sched_policy = CFS;
+            non_rt_task.isPeriodic = false;
+            non_rt_task.nice_value = 19;
+            non_rt_task.period_ns = NULL;
+            non_rt_task.phased_read_time_ns = NULL;
+            non_rt_task.phased_write_time_ns = NULL;
+            non_rt_task.phased_execution_time_ns = NULL;
+            non_rt_task.body_time_ns = 100 * 1000 * 1000; // 100ms
+            
+            non_rt_task.num_samples = simulation_period_sec * 10; //max: 10 per 1sec
+            non_rt_task.num_runnables = 1;
+            non_rt_task.wcet_ns = non_rt_task.body_time_ns;
+
+            non_rt_task.response_time_ns = (long long*)malloc(non_rt_task.num_samples * sizeof(long long));
+            for (int k = 0; k < non_rt_task.num_samples; k++){
+                non_rt_task.response_time_ns[k] = 0;
+            }
+            printf("Add Non_RT_Task\n");
         }
 
 
@@ -126,6 +146,16 @@ int main(int argc, char* argv[]){
             }
         }
 
+        pthread_attr_t non_RT_threadAttr;
+        pthread_t non_RT_threads;
+        if ((argc == 7) && (strcmp(argv[6], "-non_RT") == 0)){
+            setCoreMapping(&non_RT_threadAttr, &non_rt_task); //core mapping
+            if (pthread_create(&non_RT_threads, &non_RT_threadAttr, non_RT_task_function, (void*)&non_rt_task)){
+                printf("Fail to create Non_RT thread\n");
+                exit(1);
+            }
+        }
+
         // clock_gettime(CLOCK_MONOTONIC, &global_start_time);
         // pthread_barrier_wait(&barrier);
         // MARKER("After barrier")
@@ -139,6 +169,9 @@ int main(int argc, char* argv[]){
         for (int i = 0; i < num_tasks; i++) {
             pthread_join(threads[i], NULL);
         }
+        if ((argc == 7) && (strcmp(argv[6], "-non_RT") == 0)){
+            pthread_join(non_RT_threads, NULL);
+        }
         // for (int i = 0; i < num_tasks; i++) {
         //     if(pthread_cancel(threads[i])){
         //         printf("Fail to cancel thread %d\n", i);
@@ -147,15 +180,21 @@ int main(int argc, char* argv[]){
         // }
         // pthread_barrier_destroy(&barrier);
 
-
         printf("Save the result to %s\n", result_file_name);
-        saveResultToJson(num_tasks, tasks, result_file_name);
-        updateRealWCET(json_file_name, tasks, num_tasks);
+        if ((argc == 7) && (strcmp(argv[6], "-non_RT") == 0)){
+            saveResultToJson(num_tasks, tasks, &non_rt_task, result_file_name);
+        }else{
+            saveResultToJson(num_tasks, tasks, NULL, result_file_name);
+            updateRealWCET(json_file_name, tasks, num_tasks);
+        }
         
         // free memory
         printf("Free Memory of Tasks_info\n");
         for (int i = 0; i < num_tasks; i++){
             freeTaskInfo(&tasks[i]);
+        }
+        if ((argc == 7) && (strcmp(argv[6], "-non_RT") == 0)){
+            freeTaskInfo(&non_rt_task);
         }
         
     }else{ //fmtv(deprecated)
