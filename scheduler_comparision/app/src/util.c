@@ -178,6 +178,7 @@ void convertTaskResultToJson(json_object *task_result, Task_Info *task){
     json_object_object_add(task_result, "task_name", json_object_new_string(task->name));
     json_object_object_add(task_result, "core_index", json_object_new_int(task->core_index));
     json_object_object_add(task_result, "nice_value", json_object_new_int(task->nice_value));
+    json_object_object_add(task_result, "priority", json_object_new_int(task->priority));
     json_object_object_add(task_result, "deadline_ns", json_object_new_int64(deadline_ns));
     json_object_object_add(task_result, "wcrt_ns", json_object_new_int64(task->wcrt_ns));
     json_object_object_add(task_result, "wcet_ns", json_object_new_int64(task->wcet_ns));
