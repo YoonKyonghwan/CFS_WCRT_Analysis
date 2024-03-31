@@ -93,6 +93,7 @@ struct sched_attr {
 
 
 void* task_function_unnifest(void* arg);
+void* non_RT_task_function(void* arg);
 
 void LockMemory();
 void runRunnable(int read_ns, int execution_ns, int write_ns);

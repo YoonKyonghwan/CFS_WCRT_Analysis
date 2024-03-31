@@ -9,7 +9,6 @@ void* task_function_unnifest(void* arg) {
     // pthread_mutex_t period_mutex = PTHREAD_MUTEX_INITIALIZER;
     // pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
     int iteration_index = 0;
-    long long sleep_time = 0LL;
     long long interarrival_time = 0LL;
     long long real_wcet_ns = 0;
     long long real_execution_time=0;
@@ -54,6 +53,46 @@ void* task_function_unnifest(void* arg) {
     return NULL;
 }
 
+
+void* non_RT_task_function(void* arg) {
+    Task_Info *task = (Task_Info*)arg;
+
+    // initialize variables
+    PUSH_PROFILE("init")
+    int iteration_index = 0;
+    long long real_wcet_ns = 0;
+    long long real_execution_time=0;
+    struct timespec start_execution_time, end_execution_time;
+    setSchedPolicyPriority(task);
+    // pthread_mutex_lock(&period_mutex); // to control period
+    struct timespec current_trigger_time, job_end;
+    current_trigger_time = global_start_time;
+    printf(" (Init) %s \n", task->name);
+    POP_PROFILE()
+
+    // wait for all threads to be ready
+    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &current_trigger_time, NULL);  //response time
+    // clock_gettime(CLOCK_MONOTONIC, &current_trigger_time); //response time
+    while (terminate == false) {
+        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start_execution_time); //execution time
+        PUSH_PROFILE(task->name)
+        busyWait(task->body_time_ns);
+        POP_PROFILE() 
+        clock_gettime(CLOCK_MONOTONIC, &job_end); //response time
+        task->response_time_ns[iteration_index] = timeDiff(current_trigger_time, job_end);
+        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end_execution_time); //execution time
+        real_execution_time = timeDiff(start_execution_time, end_execution_time);
+        if (real_execution_time > real_wcet_ns){
+            real_wcet_ns = real_execution_time;
+        }
+        current_trigger_time = job_end;
+        iteration_index = (iteration_index + 1) % task->num_samples;
+    }
+    
+    task->wcet_ns = real_wcet_ns;
+    printf("%s(wcet %lld) task termintated \n", task->name, real_wcet_ns);
+    return NULL;
+}
 
 void setSchedPolicyPriority(Task_Info *task){
     // init variable
