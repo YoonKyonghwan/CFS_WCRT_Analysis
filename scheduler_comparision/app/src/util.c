@@ -173,7 +173,7 @@ void convertTaskResultToJson(json_object *task_result, Task_Info *task){
             deadline_ns = task->low_interarrival_time_ns;
         }
     }else{
-        deadline_ns = 100*1000*1000; // 100ms, not important
+        deadline_ns = task->period_ns; 
     }
     json_object_object_add(task_result, "task_name", json_object_new_string(task->name));
     json_object_object_add(task_result, "core_index", json_object_new_int(task->core_index));
