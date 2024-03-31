@@ -2,7 +2,7 @@
 
 INPUT_FILE="1cores_6tasks_0.6utilization_0.json"
 DATA_TYPE_INDEX=1 # 0: fmtv, 1: uunifast
-SIM_PERIOD_SEC=3
+SIM_PERIOD_SEC=30
 SCHEDULERS=("CFS" "FIFO" "RR")
 # SCHEDULERS=("CFS")
 RESULT_DIR="./exp_results_non_RT"
