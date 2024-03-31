@@ -40,7 +40,7 @@ typedef struct {
     char *name;
     char core_index;
     char sched_policy;
-    char priority;
+    int priority;
     int nice_value;
     bool isRTTask;
 
