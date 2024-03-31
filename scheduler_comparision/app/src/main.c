@@ -109,7 +109,7 @@ int main(int argc, char* argv[]){
             non_rt_task.sched_policy = CFS;
             non_rt_task.isPeriodic = false;
             non_rt_task.nice_value = 19;
-            non_rt_task.period_ns = 0;
+            non_rt_task.period_ns = 500 * 1000 * 1000;
             non_rt_task.phased_read_time_ns = 0;
             non_rt_task.phased_write_time_ns = 0;
             non_rt_task.phased_execution_time_ns = NULL;
@@ -151,7 +151,7 @@ int main(int argc, char* argv[]){
         pthread_t non_RT_threads;
         if ((argc == 7) && (strcmp(argv[6], "-non_RT") == 0)){
             setCoreMapping(&non_RT_threadAttr, &non_rt_task); //core mapping
-            if (pthread_create(&non_RT_threads, &non_RT_threadAttr, non_RT_task_function, (void*)&non_rt_task)){
+            if (pthread_create(&non_RT_threads, &non_RT_threadAttr, task_function_unnifest, (void*)&non_rt_task)){
                 printf("Fail to create Non_RT thread\n");
                 exit(1);
             }
