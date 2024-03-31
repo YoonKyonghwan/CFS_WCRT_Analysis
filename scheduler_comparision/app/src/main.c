@@ -70,7 +70,7 @@ int main(int argc, char* argv[]){
                 tasks[task_index].sched_policy = atoi(argv[1]);
                 tasks[task_index].isPeriodic = true;
                 tasks[task_index].nice_value = json_object_get_int(json_object_object_get(task_info, "nice"));
-                tasks[task_index].priority = tasks[task_index].nice_value + 80;
+                tasks[task_index].priority = 79 - tasks[task_index].nice_value;
                 tasks[task_index].period_ns = 1000 * json_object_get_int64(json_object_object_get(task_info, "period"));
                 tasks[task_index].phased_read_time_ns = 1000 * json_object_get_int64(json_object_object_get(task_info, "readTime"));
                 tasks[task_index].phased_write_time_ns = 1000 * json_object_get_int64(json_object_object_get(task_info, "writeTime"));
