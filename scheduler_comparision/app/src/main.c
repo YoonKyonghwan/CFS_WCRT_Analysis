@@ -2,7 +2,7 @@
 
 // pthread_barrier_t barrier;
 pthread_mutex_t mutex_memory_access = PTHREAD_MUTEX_INITIALIZER;
-// struct timespec global_start_time = {0, 0};
+struct timespec global_start_time = {0, 0};
 bool terminate = false;
 bool isPhasedTask = false;
 double nice_lambda = 3.25;
@@ -110,6 +110,8 @@ int main(int argc, char* argv[]){
         pthread_attr_t threadAttr[num_tasks];
         pthread_t threads[num_tasks];
         // pthread_barrier_init(&barrier, NULL, num_tasks+1); // to start all threads at the same time
+        clock_gettime(CLOCK_MONOTONIC, &global_start_time);
+        global_start_time.tv_sec += 2; // wait for all threads to be ready (2sec)
         for (int i = 0; i < num_tasks; i++) {
             setCoreMapping(&threadAttr[i], &tasks[i]); //core mapping
             int ret_pthread_create = 0;
@@ -124,14 +126,13 @@ int main(int argc, char* argv[]){
             }
         }
 
-        sleep(1); // wait for all threads to be ready (1sec)
         // clock_gettime(CLOCK_MONOTONIC, &global_start_time);
         // pthread_barrier_wait(&barrier);
         // MARKER("After barrier")
         // printf("global_start_time: %ld.%09ld\n", global_start_time.tv_sec, global_start_time.tv_nsec);
 
         printf("Start to run application.\n The experiment will complete after %d seconds.\n", simulation_period_sec);
-        sleep(simulation_period_sec); // seconds
+        sleep(simulation_period_sec+2); // seconds
 
         printf("Terminate tasks\n");
         terminate = true;

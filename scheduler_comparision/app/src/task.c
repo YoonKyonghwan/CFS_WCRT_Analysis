@@ -9,23 +9,22 @@ void* task_function_unnifest(void* arg) {
     // pthread_mutex_t period_mutex = PTHREAD_MUTEX_INITIALIZER;
     // pthread_cond_t cond = PTHREAD_COND_INITIALIZER;
     int iteration_index = 0;
-    struct timespec current_trigger_time, job_end, next_trigger_time;
     long long sleep_time = 0LL;
     long long interarrival_time = 0LL;
     long long real_wcet_ns = 0;
     long long real_execution_time=0;
     struct timespec start_execution_time, end_execution_time;
     setSchedPolicyPriority(task);
-    printf(" (Init) %s \n", task->name);
     // pthread_mutex_lock(&period_mutex); // to control period
+    struct timespec current_trigger_time, job_end, next_trigger_time;
+    current_trigger_time = global_start_time;
+    next_trigger_time = current_trigger_time; //init
+    printf(" (Init) %s \n", task->name);
     POP_PROFILE()
 
-    // Wait for all threads to be ready
-    // pthread_barrier_wait(&barrier);
-    sleep(1);
-
-    clock_gettime(CLOCK_MONOTONIC, &current_trigger_time); //response time
-    next_trigger_time = current_trigger_time; //init
+    // wait for all threads to be ready
+    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &current_trigger_time, NULL);  //response time
+    // clock_gettime(CLOCK_MONOTONIC, &current_trigger_time); //response time
     while (terminate == false) {
         clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start_execution_time); //execution time
         PUSH_PROFILE(task->name) 

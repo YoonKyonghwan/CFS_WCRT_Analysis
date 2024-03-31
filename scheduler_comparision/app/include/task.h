@@ -30,7 +30,7 @@
 
 #define min(x, y) (x) < (y) ? (x) : (y)
 
-extern pthread_barrier_t barrier;
+// extern pthread_barrier_t barrier;
 extern pthread_mutex_t mutex_memory_access;
 extern struct timespec global_start_time;
 extern bool terminate;
