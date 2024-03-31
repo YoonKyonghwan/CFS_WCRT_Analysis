@@ -130,9 +130,9 @@ int main(int argc, char* argv[]){
         // pthread_barrier_wait(&barrier);
         // MARKER("After barrier")
         // printf("global_start_time: %ld.%09ld\n", global_start_time.tv_sec, global_start_time.tv_nsec);
-
+        sleep(2);
         printf("Start to run application.\n The experiment will complete after %d seconds.\n", simulation_period_sec);
-        sleep(simulation_period_sec+2); // seconds
+        sleep(simulation_period_sec); // seconds
 
         printf("Terminate tasks\n");
         terminate = true;
