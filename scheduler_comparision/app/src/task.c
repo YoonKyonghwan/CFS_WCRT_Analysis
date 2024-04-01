@@ -23,7 +23,6 @@ void* task_function_unnifest(void* arg) {
 
     // wait for all threads to be ready
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &current_trigger_time, NULL);  //response time
-    // clock_gettime(CLOCK_MONOTONIC, &current_trigger_time); //response time
     while (terminate == false) {
         clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start_execution_time); //execution time
         PUSH_PROFILE(task->name) 
