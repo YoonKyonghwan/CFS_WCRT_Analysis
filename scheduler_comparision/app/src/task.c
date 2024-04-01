@@ -121,12 +121,14 @@ void setSchedPolicyPriority(Task_Info *task){
             break;
         case FIFO: 
             attr.sched_policy = SCHED_FIFO;
-            attr.sched_priority = sched_get_priority_max(SCHED_FIFO);
+            // attr.sched_priority = sched_get_priority_max(SCHED_FIFO);
+            attr.sched_priority = task->priority;
             break;
         case RR:
             //set sched_policyd
             attr.sched_policy = SCHED_RR;
-            attr.sched_priority = sched_get_priority_max(SCHED_RR);
+            // attr.sched_priority = sched_get_priority_max(SCHED_RR);
+            attr.sched_priority = task->priority;
             break;
         case RM:
             //set sched_policy

@@ -70,7 +70,6 @@ int main(int argc, char* argv[]){
                 tasks[task_index].sched_policy = atoi(argv[1]);
                 tasks[task_index].isPeriodic = true;
                 tasks[task_index].nice_value = json_object_get_int(json_object_object_get(task_info, "nice"));
-                tasks[task_index].priority = 69 - tasks[task_index].nice_value;
                 tasks[task_index].period_ns = 1000 * json_object_get_int64(json_object_object_get(task_info, "period"));
                 tasks[task_index].phased_read_time_ns = 1000 * json_object_get_int64(json_object_object_get(task_info, "readTime"));
                 tasks[task_index].phased_write_time_ns = 1000 * json_object_get_int64(json_object_object_get(task_info, "writeTime"));
@@ -98,6 +97,7 @@ int main(int argc, char* argv[]){
         }
         for (int i = 0; i < num_tasks; i++){
             tasks[i].nice_value = setNiceValueByDeadline(tasks[i].period_ns, min_period_ns, nice_lambda);
+            tasks[i].priority = 69 - tasks[i].nice_value;
         }
 
         // for test non_rt tasks
