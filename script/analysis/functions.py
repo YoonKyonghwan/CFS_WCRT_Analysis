@@ -177,10 +177,10 @@ def show_box_plot(file_path, values, title, fontsize, xtick_rotation):
     for (numTasks, utilization), group in time_data:
         time_consumption = group[values]
         boxplot_data.append(time_consumption)
-        labels.append(f"({numTasks}/{utilization})")
+        labels.append(f"nT: {numTasks}, U: {utilization}")
 
     # Create the box plot
-    plt.figure(figsize=(12, 7))
+    plt.figure(figsize=(12, 8))
     # plt.boxplot(boxplot_data, labels=labels)
     plt.boxplot(boxplot_data, labels=labels, showfliers=False)
     plt.xticks(rotation=xtick_rotation)

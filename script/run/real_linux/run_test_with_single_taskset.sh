@@ -1,10 +1,11 @@
 #!/bin/bash
 
-INPUT_FILE="1cores_6tasks_0.6utilization_0.json"
-SIM_PERIOD_SEC=60
-SCHEDULERS=("CFS" "FIFO" "RR")
-RESULT_DIR="./exp_results_non_RT"
-APPLICATION_PATH="./application"
+INPUT_FILE="real_linux_application/app/sample_taskset.json"
+SIM_PERIOD_SEC=10
+# SCHEDULERS=("CFS" "FIFO" "RR")
+SCHEDULERS=("CFS")
+RESULT_DIR="./real_linux_application/exp_results_single"
+APPLICATION_PATH="./real_linux_application/app/application"
 ENABLE_NSYS=0
 
 # If the result is not exist, create the directory
@@ -28,7 +29,7 @@ for SCHEDULER in "${SCHEDULERS[@]}"; do
     esac
     
     echo ""
-    cmd="${APPLICATION_PATH} ${SCHED_INDEX} ${SIM_PERIOD_SEC} ${INPUT_FILE} ${RESULT_DIR}/${OUTPUT_FILE} -non_RT"
+    cmd="${APPLICATION_PATH} ${SCHED_INDEX} ${SIM_PERIOD_SEC} ${INPUT_FILE} ${RESULT_DIR}/${OUTPUT_FILE}"
     if [ ${ENABLE_NSYS} -eq 0 ]; then
         echo "command : sudo ${cmd}"
         ${cmd}

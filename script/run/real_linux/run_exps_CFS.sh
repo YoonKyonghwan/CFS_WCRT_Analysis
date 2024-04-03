@@ -1,11 +1,11 @@
 #!/bin/bash
 
-INPUT_DIR="./generated_taskset_new_100_20240328_30ms"
-RESULT_DIR="./exp_results"
+INPUT_DIR="./generated_taskset_final"
+RESULT_DIR="./real_linux_application/exp_results_CFS"
 
 SIM_PERIOD_SEC=60
 SCHEDULER="CFS"
-APPLICATION_PATH="./application"
+APPLICATION_PATH="./real_linux_application/app/application"
 ENABLE_NSYS=0
 
 num_cores=(1)
