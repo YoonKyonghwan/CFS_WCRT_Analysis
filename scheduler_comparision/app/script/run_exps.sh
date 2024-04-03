@@ -3,7 +3,6 @@
 INPUT_DIR="./generated_taskset_new_100_20240328_30ms"
 RESULT_DIR="./exp_results"
 
-DATA_TYPE="uunifest" # "uunifest" or "fmtv"
 SIM_PERIOD_SEC=60
 SCHEDULER="CFS"
 APPLICATION_PATH="./application"
@@ -20,16 +19,6 @@ if [ ! -d ${RESULT_DIR} ]; then
 fi
 rm -f ${RESULT_DIR}/*
 
-
-# set Data Type index
-case "${DATA_TYPE}" in
-    "fmtv") DATA_TYPE_INDEX=0 ;;
-    "uunifest") DATA_TYPE_INDEX=1 ;;
-    *)
-        echo "Unsupported data type: ${DATA_TYPE}"
-        exit 1
-        ;;
-esac
 case "${SCHEDULER}" in
     "CFS") SCHED_INDEX=0 ;;
     "FIFO") SCHED_INDEX=1 ;;
@@ -46,7 +35,6 @@ esac
 for num_core in "${num_cores[@]}"; do
     for num_task in "${num_tasks[@]}"; do
         for utilization in "${utilizations[@]}"; do
-            # create the directory
             OUTPUT_DIR="${RESULT_DIR}/details/${num_core}cores/${num_task}tasks/${utilization}utilization"
             if [ ! -d ${OUTPUT_DIR} ]; then
                 mkdir -p ${OUTPUT_DIR}
@@ -57,8 +45,7 @@ for num_core in "${num_cores[@]}"; do
                 INPUT_PATH="${INPUT_DIR}/${num_core}cores/${num_task}tasks/${utilization}utilization/${INPUT_FILE_NAME}"
                 echo "running with ${INPUT_FILE_NAME}"
                 OUTPUT_FILE="result_${i}.json"
-                cmd="${APPLICATION_PATH} ${SCHED_INDEX} ${SIM_PERIOD_SEC} ${INPUT_PATH} ${DATA_TYPE_INDEX} ${OUTPUT_DIR}/${OUTPUT_FILE}"
-                echo ""
+                cmd="${APPLICATION_PATH} ${SCHED_INDEX} ${SIM_PERIOD_SEC} ${INPUT_PATH} ${OUTPUT_DIR}/${OUTPUT_FILE}"
                 echo ""
                 echo "command : ${cmd}"
                 ${cmd}

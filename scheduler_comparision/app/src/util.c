@@ -2,76 +2,110 @@
 
 long long min_period_ns = LLONG_MAX;
 
-void setTaskInfo_fmtv(json_object *jobj, Task_Info *task){
-    task->name = json_object_get_string(json_object_object_get(jobj, "task_name"));
-    task->core_index = json_object_get_int(json_object_object_get(jobj, "core_index"));
-    task->priority = json_object_get_int(json_object_object_get(jobj, "priority"));
-    task->isRTTask = json_object_get_boolean(json_object_object_get(jobj, "isRTTask"));
+void setTaskInfo(char *json_file_name, Task_Info *tasks, int sched_policy, int simulation_period_sec){
+    json_object *tasks_info_json = json_object_from_file(json_file_name);
+    if (tasks_info_json == NULL){
+        printf("Error: when read json file\n");
+        exit(1);
+    }
 
-    task->isPeriodic = json_object_get_boolean(json_object_object_get(jobj, "isPeriodic"));
-    task->period_ns = json_object_get_int64(json_object_object_get(jobj, "period_ns"));
-    task->low_interarrival_time_ns = json_object_get_int64(json_object_object_get(jobj, "lower_bound_ns"));
-    task->upper_interarrival_time_ns = json_object_get_int64(json_object_object_get(jobj, "upper_bound_ns"));
+    json_object *tasks_ids = json_object_object_get(tasks_info_json, "idNameMap");
+    json_object *mapping_info = json_object_object_get(tasks_info_json, "mappingInfo");
+
+    int num_cores = json_object_array_length(mapping_info);
+    int num_tasks = getNumTasks(json_file_name);
+
+    int task_index = 0;
+    for (int i = 0; i < num_cores; i++){
+        json_object *core_info = json_object_array_get_idx(mapping_info, i);
+        int core_id = json_object_get_int(json_object_object_get(core_info, "coreID"));
+        json_object *tasks_info = json_object_object_get(core_info, "tasks");
+        int num_tasks_core = json_object_array_length(tasks_info);
+        for (int j = 0; j < num_tasks_core; j++){
+            json_object *task_info = json_object_array_get_idx(tasks_info, j);
+            int task_id = json_object_get_int(json_object_object_get(task_info, "id"));
+            char *task_id_str = (char*)malloc(3);
+            sprintf(task_id_str, "%d", task_id);       
+            tasks[task_index].name = json_object_get_string(json_object_object_get(tasks_ids, task_id_str));
+            tasks[task_index].core_index = core_id;
+            tasks[task_index].isRTTask = true;
+            tasks[task_index].sched_policy = sched_policy; // atoi(argv[1]);
+            tasks[task_index].isPeriodic = true;
+            tasks[task_index].nice_value = json_object_get_int(json_object_object_get(task_info, "nice"));
+            tasks[task_index].period_ns = 1000 * json_object_get_int64(json_object_object_get(task_info, "period"));
+            tasks[task_index].body_time_ns = 1000 * json_object_get_int64(json_object_object_get(task_info, "bodyTime"));
+
+            tasks[task_index].num_samples = (simulation_period_sec*1000000) / (tasks[task_index].period_ns/1000); //us
+            tasks[task_index].wcet_ns = tasks[task_index].body_time_ns;
+
+            tasks[task_index].response_time_ns = (long long*)malloc(tasks[task_index].num_samples * sizeof(long long));
+            for (int k = 0; k < tasks[task_index].num_samples; k++){
+                tasks[task_index].response_time_ns[k] = 0;
+            }
+            task_index++;
+        }
+    }
+    return;
+}
 
 
-    task->num_samples = json_object_array_length(json_object_object_get(jobj, "phased_execution"));
-    // task->num_runnables = json_object_array_length(json_object_object_get(jobj, "time_ns"));
+void setNonRTTaskInfo(Task_Info* non_rt_task, char* name, int core_index, int execution_ns, int period_ns, int num_samples){
+    non_rt_task->name = name; "Non_RT_Task";
+    non_rt_task->isRTTask = false;
+    non_rt_task->sched_policy = CFS;
+    non_rt_task->isPeriodic = false;
+    non_rt_task->nice_value = 19;
+
+    non_rt_task->core_index = core_index;
+    non_rt_task->period_ns = period_ns;
+    non_rt_task->body_time_ns = execution_ns;
+    non_rt_task->num_samples = num_samples; // simulation_period_sec * 10; //max: 10 per 1sec
     
-    if (task->isPeriodic){
-        if (task->period_ns < min_period_ns){
-            min_period_ns = task->period_ns;
-        }
-        task->random_interarrival_time_ns = NULL;
-    }else{
-        if (task->low_interarrival_time_ns < min_period_ns){
-            min_period_ns = task->low_interarrival_time_ns;
-        }
-        task->random_interarrival_time_ns = (long long*)malloc(task->num_samples * sizeof(long long));
-        json_object *inter_arrival_time_ns = json_object_object_get(jobj, "inter_arrival_time_ns");
-        for (int i = 0; i < task->num_samples; i++){
-            task->random_interarrival_time_ns[i] = json_object_get_int64(json_object_array_get_idx(inter_arrival_time_ns, i));
+    non_rt_task->wcet_ns = execution_ns;
+
+    non_rt_task->response_time_ns = (long long*)malloc(non_rt_task->num_samples * sizeof(long long));
+    for (int k = 0; k < non_rt_task->num_samples; k++){
+        non_rt_task->response_time_ns[k] = 0;
+    }
+}
+
+
+int getNumTasks(char *json_file_name){
+    json_object *tasks_info_json = json_object_from_file(json_file_name);
+    if (tasks_info_json == NULL){
+        printf("Error: when read json file\n");
+        exit(1);
+    }
+    json_object *mapping_info = json_object_object_get(tasks_info_json, "mappingInfo");
+
+    int num_cores = json_object_array_length(mapping_info);
+    int num_tasks = 0;
+    for (int i = 0; i < num_cores; i++){
+        json_object *core_info = json_object_array_get_idx(mapping_info, i);
+        int core_id = json_object_get_int(json_object_object_get(core_info, "coreID"));
+        json_object *tasks_info = json_object_object_get(core_info, "tasks");
+        int num_tasks_core = json_object_array_length(tasks_info);
+        num_tasks += num_tasks_core;
+    }
+    return num_tasks;
+}
+
+
+void setNiceAndPriority(Task_Info *tasks, int num_tasks, double nice_lambda){
+    double min_period_ns = 0; 
+    for (int i = 0; i < num_tasks; i++){
+        if (i == 0){
+            min_period_ns = tasks[i].period_ns;
+        }else{
+            if (tasks[i].period_ns < min_period_ns){
+                min_period_ns = tasks[i].period_ns;
+            }
         }
     }
-
-    task->phased_read_time_ns = json_object_get_int64(json_object_object_get(jobj, "phased_read"));
-    task->phased_write_time_ns = json_object_get_int64(json_object_object_get(jobj, "phased_write"));
-    task->phased_execution_time_ns = (long long*)malloc(task->num_samples * sizeof(long long));
-    json_object *phased_execution = json_object_object_get(jobj, "phased_execution");
-    int max_execution = 0;
-    for (int i = 0; i < task->num_samples; i++){
-        task->phased_execution_time_ns[i] = json_object_get_int64(json_object_array_get_idx(phased_execution, i));
-        if (task->phased_execution_time_ns[i] > max_execution){
-            max_execution = task->phased_execution_time_ns[i];
-        }
+    for (int i = 0; i < num_tasks; i++){
+        tasks[i].nice_value = setNiceValueByDeadline(tasks[i].period_ns, min_period_ns, nice_lambda);
+        tasks[i].priority = 69 - tasks[i].nice_value;
     }
-
-    // task->runnables_read_time_ns = (int*)malloc(task->num_runnables * sizeof(int));
-    // task->runnables_write_time_ns = (int*)malloc(task->num_runnables * sizeof(int));
-    // task->runnables_execution_time_ns = (int**)malloc(task->num_runnables * sizeof(int*));
-    // json_object *runnables_info = json_object_object_get(jobj, "time_ns");
-    // for (int i = 0; i < task->num_runnables; i++){
-    //     json_object *runnable = json_object_array_get_idx(runnables_info, i);
-    //     task->runnables_read_time_ns[i] = json_object_get_int(json_object_object_get(runnable, "read"));
-    //     task->runnables_write_time_ns[i] = json_object_get_int(json_object_object_get(runnable, "write"));
-    //     task->runnables_execution_time_ns[i] = (int*)malloc(task->num_samples * sizeof(int));
-    //     json_object *execution = json_object_object_get(runnable, "execution");
-    //     for (int j = 0; j < task->num_samples; j++){
-    //         task->runnables_execution_time_ns[i][j] = json_object_get_int(json_object_array_get_idx(execution, j));
-    //     }
-    // }
-
-    task->wcet_ns = max_execution;
-    // task->wcet_ns = task->phased_read_time_ns + max_execution + task->phased_write_time_ns;
-    task->response_time_ns = ( long long*)malloc(task->num_samples * sizeof( long long));
-    // task->start_time_ns = (long long*)malloc(task->num_samples * sizeof(long long));
-    // task->end_time_ns = (long long*)malloc(task->num_samples * sizeof(long long));
-    for (int i = 0; i < task->num_samples; i++){
-        task->response_time_ns[i] = 0;
-        // task->start_time_ns[i] = 0;
-        // task->end_time_ns[i] = 0;
-    }
-    task->wcrt_ns = 0;
-
     return;
 }
 
@@ -113,6 +147,7 @@ void updateRealWCET(char* input_file_name, Task_Info *tasks, int num_tasks){
     return;
 }
 
+
  long long getWCETByName(char* task, Task_Info *tasks, int num_tasks){
     for (int i = 0; i < num_tasks; i++){
         if (strcmp(task, tasks[i].name) == 0){
@@ -139,6 +174,7 @@ void saveResultToJson(int num_tasks, Task_Info *tasks, Task_Info *non_RT_task, c
 
     return;
 }
+
 
 void convertTaskResultToJson(json_object *task_result, Task_Info *task){
     json_object *task_response_time_ns = json_object_new_array();
@@ -189,27 +225,16 @@ void convertTaskResultToJson(json_object *task_result, Task_Info *task){
 }
 
 void freeTaskInfo(Task_Info *task){
-    free(task->phased_execution_time_ns);
-    // free(task->runnables_read_time_ns);
-    // free(task->runnables_write_time_ns);
     free(task->response_time_ns);
-    // for (int i = 0; i < task->num_runnables; i++){
-    //     free(task->runnables_execution_time_ns[i]);
-    // }
-    // free(task->runnables_execution_time_ns);
     return;
 }
 
 
 void setCoreMapping(pthread_attr_t *threadAttr, Task_Info *task){
-    // initialize thread attribute
     if (pthread_attr_init(threadAttr)){
         printf("Fail to initialize thread attribute.\n");
         exit(1);
     }
-
-    // set schedule policy and priority
-    // setSchedPolicyPriority(threadAttr, task);
 
     cpu_set_t cpuset;
     CPU_ZERO(&cpuset);
@@ -228,61 +253,6 @@ void setCoreMapping(pthread_attr_t *threadAttr, Task_Info *task){
 }
 
 
-
-// void setSchedPolicyPriority(pthread_attr_t *threadAttr, Task_Info *task){
-//     struct sched_param schedparam;
-//     switch (task->sched_policy) {
-//         // Configurations in the thread function for CFS or EDF
-//         case CFS:
-//             break;
-//         case EDF:
-//             break;
-//         case FIFO: 
-//             //set sched_policy
-//             if (pthread_attr_setschedpolicy(threadAttr, SCHED_FIFO)){
-//                 printf("Fail to set schedule policy.\n");
-//                 exit(1);
-//             }
-//             //set priority
-//             schedparam.sched_priority = sched_get_priority_max(SCHED_FIFO);
-//             if (pthread_attr_setschedparam(threadAttr, &schedparam)){
-//                 printf("Fail to set scheduling priority.\n");
-//                 exit(1);
-//             }
-//             break;
-//         case RR:
-//             //set sched_policy
-//             if (pthread_attr_setschedpolicy(threadAttr, SCHED_RR)){
-//                 printf("Fail to set schedule policy.\n");
-//                 exit(1);
-//             }
-//             //set priority
-//             schedparam.sched_priority = sched_get_priority_max(SCHED_RR);
-//             if (pthread_attr_setschedparam(threadAttr, &schedparam)){
-//                 printf("Fail to set scheduling priority.\n");
-//                 exit(1);
-//             }
-//             break;
-//         case RM:
-//             //set sched_policy
-//             if (pthread_attr_setschedpolicy(threadAttr, SCHED_FIFO)){
-//                 printf("Fail to set schedule policy.\n");
-//                 exit(1);
-//             }
-//             //set priority
-//             schedparam.sched_priority = task->priority;
-//             if (pthread_attr_setschedparam(threadAttr, &schedparam)){
-//                 printf("Fail to set scheduling priority.\n");
-//                 exit(1);
-//             }
-//             break;
-//         default:
-//             printf("Check the supported scheduler type.\n");
-//             exit(1);
-//     }
-//     return;
-// }
-
 void printSchedPolicy(int policy){
     switch (policy){
         case CFS:
@@ -297,31 +267,9 @@ void printSchedPolicy(int policy){
         case EDF:
             printf("Scheduling policy : EDF\n");
             break;
-        case RM:
-            printf("Scheduling policy : RM\n");
-            break;
         default:
             printf("Check the supported scheduler type.\n");
             break;
     }
     return;
-}
-
-void initMutex(pthread_mutex_t *mutex_memory_access, int mutex_protocol){
-    pthread_mutexattr_t mutexAttr;
-    if (pthread_mutexattr_init(&mutexAttr))
-    {
-        printf("Fail to initialize mutex attribute\n");
-        exit(1);
-    }
-    if (pthread_mutexattr_setprotocol(&mutexAttr, mutex_protocol))
-    {
-        printf("Fail to set mutex protocol\n");
-        exit(1);
-    }
-    if (pthread_mutex_init(mutex_memory_access, &mutexAttr))
-    {
-        printf("Fail to initialize mutex\n");
-        exit(1);
-    }
 }

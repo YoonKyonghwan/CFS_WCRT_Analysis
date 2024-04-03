@@ -1,7 +1,6 @@
 #!/bin/bash
 
 INPUT_FILE="1cores_6tasks_0.6utilization_0.json"
-DATA_TYPE_INDEX=1 # 0: fmtv, 1: uunifast
 SIM_PERIOD_SEC=10
 # SCHEDULERS=("CFS" "FIFO" "RR" "RM")
 SCHEDULERS=("CFS")
@@ -30,8 +29,7 @@ for SCHEDULER in "${SCHEDULERS[@]}"; do
     esac
     
     echo ""
-    echo ""
-    cmd="${APPLICATION_PATH} ${SCHED_INDEX} ${SIM_PERIOD_SEC} ${INPUT_FILE} ${DATA_TYPE_INDEX} ${RESULT_DIR}/${OUTPUT_FILE}"
+    cmd="${APPLICATION_PATH} ${SCHED_INDEX} ${SIM_PERIOD_SEC} ${INPUT_FILE} ${RESULT_DIR}/${OUTPUT_FILE}"
     if [ ${ENABLE_NSYS} -eq 0 ]; then
         echo "command : sudo ${cmd}"
         ${cmd}
