@@ -4,7 +4,7 @@
 
 We provide the Java application specifically designed for task scheduling simulation and Worst-Case Response Time (WCRT) analysis in the context of Linux's Completely Fair Scheduling (CFS). It is important to note that this application is currently under active development and enhancements. 
 
-Included in the real/linux_application directory is a program designed for measuring WCRT by executing tasks directly on real Linux systems.
+In the [directory](real_linux_application), you'll find an application developed for direct WCRT measurement by running tasks on actual Linux systems. For a detailed explanation of the implementation, please refer to the Implementation Detail [document](real_linux_application/Implementation_detail.md).
 
 For a comprehensive understanding of the task set and instructions for conducting experiments, please refer to the below.
 
@@ -61,7 +61,7 @@ sudo bash ./script/run/real_linux/run_exps_CFS.sh
 sudo bash ./script/run/real_linux/run_exps_with_nonRT.sh
 ```
 
-### Analyze the experimental result
+## Analyze the experimental result
 
 * **Time Consumption Analysis** : [notebook](./script/analysis/time_complexity.ipynb)
 * **Comparison(Proposed vs Simulator)** : [notebook](./script/analysis/comparison_with_simulator.ipynb)
