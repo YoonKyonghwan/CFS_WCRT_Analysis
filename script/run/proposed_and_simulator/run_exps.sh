@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # set arguments
-taskset_dir="./generated_taskset_final"
+taskset_dir="./_generated_taskset"
 result_dir="./exp_results_proposed_and_simulator"
 
 num_cores=(1)
