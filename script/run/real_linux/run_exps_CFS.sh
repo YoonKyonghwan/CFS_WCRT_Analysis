@@ -3,15 +3,14 @@
 INPUT_DIR="./generated_taskset_final"
 RESULT_DIR="./real_linux_application/exp_results_CFS"
 
-SIM_PERIOD_SEC=60
+SIM_PERIOD_SEC=90
 SCHEDULER="CFS"
 APPLICATION_PATH="./real_linux_application/app/application"
-ENABLE_NSYS=0
 
 num_cores=(1)
 num_tasks=(3 6 9 12)
 utilizations=(0.4 0.6 0.8)
-num_sets=100
+num_sets=30
 
 # If the result is not exist, create the directory
 if [ ! -d ${RESULT_DIR} ]; then
@@ -54,3 +53,4 @@ for num_core in "${num_cores[@]}"; do
     done
 done
 
+python3 ./script/run/real_linux/gen_exp_summary.py --result_dir=${RESULT_DIR} --num_tasksets=${num_sets} 

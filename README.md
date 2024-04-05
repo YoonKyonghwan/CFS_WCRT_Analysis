@@ -2,41 +2,69 @@
 
 ## Overview
 
-This Java application is specifically designed for task scheduling simulation and Worst-Case Response Time (WCRT) analysis in the context of Linux's Completely Fair Scheduling (CFS). It is important to note that this application is currently under active development and enhancements. The program serves two primary functions: generating random tasksets for experimental purposes and performing simulations and WCRT analysis on these tasksets.
+We provide the Java application specifically designed for task scheduling simulation and Worst-Case Response Time (WCRT) analysis in the context of Linux's Completely Fair Scheduling (CFS). It is important to note that this application is currently under active development and enhancements. 
 
-## Features
+Included in the real/linux_application directory is a program designed for measuring WCRT by executing tasks directly on real Linux systems.
 
-* **Task Generation**:  Leveraging the "JsonTaskCreator" class, the application can generate tasks based on user-specified parameters.
-* **Scheduling Simulation**: Utilizes the "CFSSimulator" class to simulate task scheduling scenarios.
-* **WCRT analysis**: analyzes the WCRT of task using the "CFSAnalyzer" class.
-* **Result Saving**: Saves detailed analysis and summary results in a specified directory.
+For a comprehensive understanding of the task set and instructions for conducting experiments, please refer to the below.
+
 
 ## Prerequisites
 
+###  To run simulator and analyze WCRT by proposed method
 * **Java Version**: Requires Java 8 or higher.
-* **Build Tool**: Uses Gradle for building and managing dependencies.
+* **Build Tool**: Gradle is used for building the application and managing dependencies.
+* Refer to [build.gradle.kts](./app/build.gradle.kts) for detailed dependency information.
 
-### Java Libraries
+###  To run taskset on real Linux systems.
+* **GCC Version**: Requires gcc 9.4 or higher.
+* **Build Tool**: Cmake is used for building the application and managing dependencies.
+* Refer to [CMakeLists.txt](.real_linux_application/app/CMakeLists.txt) for detailed dependency information.
+* We tested the application on Raspberry Pi4 which installed Ubuntu 22.04
 
-Refer to "app/build.gradle.kts" for detailed dependency information.
+### Python Libraries (for Additional Analysis Only)
+'''
+pip3 install pandas matplotlib scikit-learn
+'''
 
-### Python Libraries(only for additional analysis)
+## Experiment Instructions
 
-    pip install pandas matplotlib scikit-learn
+### Generating a Synthetic Dataset
+* We provide the complete set of task sets used in our experiments. (Available in the [file](._generated_taskset.zip))
+* To generate new task sets, execute the following command. Note that periods are in microseconds.
+* You can modify the number of tasks in a set and the system utilization in [main.py](./task_generation/main.py).
+* For each combination of task numbers and system utilizations, a corresponding number of task sets (num_tasksets) will be generated.
+'''
+python3 ./task_generation/main.py --generated_files_save_dir=test_gen_tasksets --num_tasksets=100 --min_period=20000 --max_period=1000000
+'''
 
-## Basic Usage
+### Running the Simulation and the Proposed WCRT Analysis
+* Utilize the simulation and the proposed WCRT analysis to evaluate the WCRT for each task set.
+'''
+bash ./script/run/proposed_and_simulator/run_exps.sh
+'''
 
-### Generate Synthetic Dataset
+### Executing Tasks on a Real Linux System
+* Build the application with the following command:
+'''    
+bash ./script/run/real_linux/build_application.sh
+'''
 
-    bash ./script/generate_taskset.sh
+* To specify a task's nice value from -20 to +19, sudo privileges are required.
+* Tasks based on the generated task set information are executed on a real Linux system to measure the actual WCRT.
+'''    
+sudo bash ./script/run/real_linux/run_exps_CFS.sh
+'''
 
-### Run the simulation and the WCRT analysis
+* To compare the performance of CFS with other RT schedulers with a mixed critical system, use the following command (Refer to Table 5):
+'''
+sudo bash ./script/run/real_linux/run_exps_with_nonRT.sh
+'''
 
-    bash ./script/run_experiment.sh
+### Analyze the experimental result
 
-### Additional Analysis Tools
-
-* **Time Consumption Analysis** : ./script/time_complexity.ipynb
-* **Check correctness** : ./script/correntness.ipynb
+* **Time Consumption Analysis** : [notebook](./script/analysis/time_complexity.ipynb)
+* **Comparison(Proposed vs Simulator)** : [notebook](./script/analysis/comparison_with_simulator.ipynb)
+* **Comparison(Proposed vs RealLinux)** : [notebook](./script/analysis/comparison_with_realLinux.ipynb)
 
 For more detailed information and instructions, please refer to the script directory in the project.
