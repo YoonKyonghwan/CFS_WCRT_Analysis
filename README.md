@@ -34,32 +34,32 @@ pip3 install pandas matplotlib scikit-learn
 * To generate new task sets, execute the following command. Note that periods are in microseconds.
 * You can modify the number of tasks in a set and the system utilization in [main.py](./task_generation/main.py).
 * For each combination of task numbers and system utilizations, a corresponding number of task sets (num_tasksets) will be generated.
-'''
+```
 python3 ./task_generation/main.py --generated_files_save_dir=test_gen_tasksets --num_tasksets=100 --min_period=20000 --max_period=1000000
-'''
+```
 
 ### Running the Simulation and the Proposed WCRT Analysis
 * Utilize the simulation and the proposed WCRT analysis to evaluate the WCRT for each task set.
-'''
+```
 bash ./script/run/proposed_and_simulator/run_exps.sh
-'''
+```
 
 ### Executing Tasks on a Real Linux System
 * Build the application with the following command:
-'''    
+```    
 bash ./script/run/real_linux/build_application.sh
-'''
+```
 
 * To specify a task's nice value from -20 to +19, sudo privileges are required.
 * Tasks based on the generated task set information are executed on a real Linux system to measure the actual WCRT.
-'''    
+```    
 sudo bash ./script/run/real_linux/run_exps_CFS.sh
-'''
+```
 
 * To compare the performance of CFS with other RT schedulers with a mixed critical system, use the following command (Refer to Table 5):
-'''
+```
 sudo bash ./script/run/real_linux/run_exps_with_nonRT.sh
-'''
+```
 
 ### Analyze the experimental result
 
