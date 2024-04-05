@@ -10,8 +10,6 @@ utilizations=(0.4 0.6 0.8)
 num_sets=100
 nice_lambda=3.25
 
-
-#schedule_simulation_method="random_target_task" 
 schedule_simulation_method="random" 
 schedule_try_count=1
 test_try_count=10000
