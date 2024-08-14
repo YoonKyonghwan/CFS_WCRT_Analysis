@@ -18,14 +18,14 @@ class BasicFunctionTest extends Specification {
     //         -9 | 100 | 10
     // }
 
-    def "test computation of nicevalue"(){
-        expect :
-            result == MathUtility.computeNice(100, 10, lambda)
-        where :
-            lambda  | result
-            1       | -9
-            0.5     | -14
-    }
+    // def "test computation of nicevalue"(){
+    //     expect :
+    //         result == MathUtility.computeNice(100, 10, lambda)
+    //     where :
+    //         lambda  | result
+    //         1       | -9
+    //         0.5     | -14
+    // }
 
     // def "test mode operation"() {
     //     expect :

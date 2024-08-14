@@ -27,7 +27,6 @@ int main(int argc, char* argv[]){
         isMixedCritical = true;
         printf("The experiment is a mixed critical system.\n");
     }  
-    
 
     printf("Read Tasks_info from %s\n", json_file_name);
     Task_Info rt_tasks_info[num_tasks]; //rt_tasks

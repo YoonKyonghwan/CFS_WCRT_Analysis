@@ -20,6 +20,7 @@ enum SCHEDULER_TYPE {
 void setTaskInfo(char *json_file_name, Task_Info *tasks, int sched_policy, int simulation_period_sec);
 void setNonRTTaskInfo(Task_Info* non_rt_task, char* name, int core_index, int execution_ns, int period_ns, int num_samples);
 
+void setNiceAndPriority_2(Task_Info *tasks, int num_tasks, double nice_lambda);
 void setNiceAndPriority(Task_Info *tasks, int num_tasks, double nice_lambda);
 int setNiceValueByDeadline( long long period,  long long min_period, double nice_lambda);
 int getNumTasks(char *json_file_name);

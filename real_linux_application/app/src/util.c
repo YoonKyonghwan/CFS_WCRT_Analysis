@@ -90,6 +90,26 @@ int getNumTasks(char *json_file_name){
     return num_tasks;
 }
 
+void setNiceAndPriority_2(Task_Info *tasks, int num_tasks, double nice_lambda){
+    double min_period_ns = INT_MAX; 
+    double max_period_ns = 0;
+    for (int i = 0; i < num_tasks; i++){
+        if (tasks[i].period_ns < min_period_ns){
+            min_period_ns = tasks[i].period_ns;
+        }
+        if (tasks[i].period_ns > max_period_ns){
+            max_period_ns = tasks[i].period_ns;
+        }
+    }
+
+    for (int i = 0; i < num_tasks; i++){
+        /*$nice_i = -19 + \lceil (\frac{D_i -D_{min}}{D_{max} -D_{min}}) \times 39 \rceil$*/
+        double ratio = (tasks[i].period_ns - min_period_ns) / (max_period_ns - min_period_ns);
+        tasks[i].nice_value = -19 + ceil(ratio * 39);
+        tasks[i].priority = 69 - tasks[i].nice_value;
+    }
+    return;
+}
 
 void setNiceAndPriority(Task_Info *tasks, int num_tasks, double nice_lambda){
     double min_period_ns = 0; 
@@ -110,9 +130,8 @@ void setNiceAndPriority(Task_Info *tasks, int num_tasks, double nice_lambda){
 }
 
 int setNiceValueByDeadline( long long period_ns,  long long min_period_ns, double nice_lambda){
-    double relative_weight = log((double)period_ns/(double)min_period_ns) / log(1.25);
-    relative_weight *= nice_lambda;
-    return min(-20 + ceil(relative_weight), 19);
+    double relative_weight = log((double)period_ns/(double)min_period_ns) * nice_lambda;
+    return min(-20 + (int) relative_weight, 19);
 }
 
 void updateRealWCET(char* input_file_name, Task_Info *tasks, int num_tasks){

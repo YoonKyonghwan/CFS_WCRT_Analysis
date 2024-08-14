@@ -57,5 +57,8 @@ script/analysis/__pycache__/
 generated_taskset*
 dataset
 
-scheduler_comparision/app/exp_results
 nohup*
+
+script/analysis/additional
+script/analysis/__pycache__/
+script/run/additional
