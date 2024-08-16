@@ -75,6 +75,7 @@ public class Main {
             for (Core core: testConf.mappingInfo) {
                 for (Task task: core.tasks) {
                     task.period = task.period/1000; // ns -> us
+                    System.out.println("Task ID: " + task.id + ", Period: " + task.period + ", Nice: " + task.nice);
                 }
             }
             boolean proposed_schedulability = false;

@@ -1,19 +1,27 @@
 #include "task.h"
 #include "util.h"
 
+
 void* task_function(void* arg) {
     Task_Info *task = (Task_Info*)arg;
 
     PUSH_PROFILE("Init")
     int iteration_index = 0;
-    long long real_wcet_ns = 0;
     long long real_execution_time=0;
+    long long response_time_ns = 0;
     struct timespec current_trigger_time, job_end, next_trigger_time; // for period, response time
     struct timespec start_execution_time, end_execution_time; // for execution time
     setSchedPolicyPriority(task);
     current_trigger_time = global_start_time;
     next_trigger_time = current_trigger_time; //init
-    printf(" (Init) %s \n", task->name);
+    if (!initial_try){ 
+        // it initial try, all tasks release at the same time
+        // if not initial try, add random offset to the trigger time of each task
+        int random_offset = rand() % (task->period_ns / 2);
+        addNanoSecondToTimespec(&current_trigger_time, random_offset);
+        addNanoSecondToTimespec(&next_trigger_time, random_offset);
+    }
+    printf("     (Init) %s \n", task->name);
     POP_PROFILE()
 
     // wait for all threads to be ready
@@ -21,17 +29,22 @@ void* task_function(void* arg) {
 
     // iterative execution
     while (terminate == false) {
-        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start_execution_time); //execution time
         PUSH_PROFILE(task->name) 
+        clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start_execution_time); //execution time
         busyWait(task->body_time_ns);
-        POP_PROFILE() 
         clock_gettime(CLOCK_MONOTONIC, &job_end); //response time
-        task->response_time_ns[iteration_index] = timeDiff(current_trigger_time, job_end);
+        response_time_ns = timeDiff(current_trigger_time, job_end);
+        task->response_time_ns[iteration_index] = response_time_ns;
+        if (task->wcrt_ns < response_time_ns && iteration_index != 0){
+            task->wcrt_ns = response_time_ns;
+        }
         clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end_execution_time); //execution time
         real_execution_time = timeDiff(start_execution_time, end_execution_time);
-        if (real_execution_time > real_wcet_ns){
-            real_wcet_ns = real_execution_time;
+        if (real_execution_time > task->real_wcet_ns && iteration_index != 0){
+            task->real_wcet_ns = real_execution_time;
         }
+        POP_PROFILE() 
+        // printf("%s(rt %lld, et %lld) \n", task->name, response_time_ns, real_execution_time);
 
         if (task->period_ns > task->response_time_ns[iteration_index]) {
             setNextTriggerTime(&next_trigger_time, task->period_ns);
@@ -44,8 +57,7 @@ void* task_function(void* arg) {
         iteration_index = (iteration_index + 1) % task->num_samples;
     }
     
-    task->wcet_ns = real_wcet_ns;
-    printf("%s(wcet %lld) task termintated \n", task->name, real_wcet_ns);
+    printf("     %s(wcrt %lld, wcet %lld) termintated \n", task->name, task->wcrt_ns, task->real_wcet_ns);
     return NULL;
 }
 
@@ -112,11 +124,16 @@ void checkResponseTime(Task_Info *task, int iteration_index, struct timespec sta
 }
 
 void setNextTriggerTime(struct timespec *next_trigger_time,  long long interarrival_time_ns){
-    next_trigger_time->tv_sec += (interarrival_time_ns / 1000000000LL);
-    next_trigger_time->tv_nsec += (interarrival_time_ns % 1000000000LL);
-    if (next_trigger_time->tv_nsec >= 1000000000LL){
-        next_trigger_time->tv_sec += 1;
-        next_trigger_time->tv_nsec -= 1000000000LL;
+    addNanoSecondToTimespec(next_trigger_time, interarrival_time_ns);
+}
+
+void addNanoSecondToTimespec(struct timespec *time_info, long long add_time_ns){
+    time_info->tv_sec += (add_time_ns / 1000000000LL);
+    time_info->tv_nsec += (add_time_ns % 1000000000LL);
+    if (time_info->tv_nsec >= 1000000000LL)
+    {
+        time_info->tv_sec += 1;
+        time_info->tv_nsec -= 1000000000LL;
     }
 }
 
@@ -129,7 +146,7 @@ void busyWait( long long wait_time_ns){
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
     long long elapsed_ns = 0;
     while (elapsed_ns < wait_time_ns) {
-        for (int i = 0; i < 1000; i++) {
+        for (int i = 0; i < 100; i++) {
             //waste time
         }
         clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end);

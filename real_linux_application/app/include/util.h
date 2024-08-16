@@ -17,7 +17,11 @@ enum SCHEDULER_TYPE {
     RM
 };
 
-void setTaskInfo(char *json_file_name, Task_Info *tasks, int sched_policy, int simulation_period_sec);
+long long gcd(long long a, long long b);
+long long lcm(long long a, long long b);
+long long getHyperperiod_ns(Task_Info *tasks, int num_tasks);
+
+void setTaskInfo(char *json_file_name, Task_Info *tasks, int sched_policy);
 void setNonRTTaskInfo(Task_Info* non_rt_task, char* name, int core_index, int execution_ns, int period_ns, int num_samples);
 
 void setNiceAndPriority_2(Task_Info *tasks, int num_tasks, double nice_lambda);
@@ -34,5 +38,5 @@ void setCoreMapping(pthread_attr_t *threadAttr, Task_Info *task);
 // void setSchedPolicyPriority(pthread_attr_t *threadAttr, Task_Info *task);
 void printSchedPolicy(int policy);
 
-long long getWCETByName(char* task, Task_Info *tasks, int num_tasks);
+long long getRealWCETByName(char* task, Task_Info *tasks, int num_tasks);
 void updateRealWCET(char* input_file_name, Task_Info *tasks, int num_tasks);
