@@ -46,7 +46,7 @@ public class Main {
             testConf.initializeTaskData();
 
             // analyze by simulator
-            double nice_lambda = 20;
+            double nice_lambda = params.getDouble("nice_lambda");
             MathUtility.assignNiceValues(testConf.mappingInfo, nice_lambda);
             long startTime = System.nanoTime();
             boolean simulator_schedulability = analyze_by_CFS_simulator(testConf, params);            
@@ -59,7 +59,6 @@ public class Main {
             for (Core core: testConf.mappingInfo) {
                 for (Task task: core.tasks) {
                     task.period = task.period/1000; // ns -> us
-                    System.out.println("Task ID: " + task.id + ", Period: " + task.period + ", Nice: " + task.nice);
                 }
             }
             boolean proposed_schedulability = false;
@@ -75,7 +74,6 @@ public class Main {
             //     nice_lambda = nice_lambda + 0.1;
             // }
 
-            nice_lambda = 20;   
             MathUtility.assignNiceValues(testConf.mappingInfo, nice_lambda);
             CFSAnalyzer_v2 analyzer = new CFSAnalyzer_v2(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
             startTime = System.nanoTime();
@@ -180,6 +178,11 @@ public class Main {
             for (Integer taskID : testConf.idNameMap.keySet()) {
                 logger.fine("\n\n ********** Start simulation with target task: " + taskID + " **********");
                 for(int i = 0 ; i  < test_try_count ; i++) {
+                    // if first try, start with initial offset(0)
+                    // if not first try, set random offset
+                    if (i != 0) { 
+                        MathUtility.setTaskRandomOffset(testConf.mappingInfo);
+                    }
                     SimulationResult simulResult = CFSSimulator.simulateCFS(testConf.mappingInfo,
                             taskID.intValue(), simulationTime);
                     CFSSimulator.mergeToFinalResult(finalSimulationResult, simulResult);
