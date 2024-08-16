@@ -1,7 +1,7 @@
 #!/bin/bash
 
 INPUT_FILE="real_linux_application/app/sample_taskset.json"
-SIM_PERIOD_SEC=10
+NUM_REPEAT=1
 # SCHEDULERS=("CFS" "FIFO" "RR")
 SCHEDULERS=("CFS")
 RESULT_DIR="./real_linux_application/exp_results_single"
@@ -29,7 +29,7 @@ for SCHEDULER in "${SCHEDULERS[@]}"; do
     esac
     
     echo ""
-    cmd="${APPLICATION_PATH} ${SCHED_INDEX} ${SIM_PERIOD_SEC} ${INPUT_FILE} ${RESULT_DIR}/${OUTPUT_FILE}"
+    cmd="${APPLICATION_PATH} ${SCHED_INDEX} ${NUM_REPEAT} ${INPUT_FILE} ${RESULT_DIR}/${OUTPUT_FILE}"
     if [ ${ENABLE_NSYS} -eq 0 ]; then
         echo "command : sudo ${cmd}"
         ${cmd}

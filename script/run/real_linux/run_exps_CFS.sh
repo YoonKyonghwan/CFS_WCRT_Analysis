@@ -1,16 +1,17 @@
 #!/bin/bash
 
-INPUT_DIR="./generated_taskset_final"
+INPUT_DIR="./generated_taskset_even_2"
 RESULT_DIR="./real_linux_application/exp_results_CFS"
 
-SIM_PERIOD_SEC=90
+NUM_REPEAT=100
 SCHEDULER="CFS"
 APPLICATION_PATH="./real_linux_application/app/application"
 
 num_cores=(1)
-num_tasks=(3 6 9 12)
-utilizations=(0.4 0.6 0.8)
-num_sets=30
+num_tasks=(4 6 8 10)
+utilizations=(0.3 0.5 0.7)
+num_sets=100
+
 
 # If the result is not exist, create the directory
 if [ ! -d ${RESULT_DIR} ]; then
@@ -44,7 +45,7 @@ for num_core in "${num_cores[@]}"; do
                 INPUT_PATH="${INPUT_DIR}/${num_core}cores/${num_task}tasks/${utilization}utilization/${INPUT_FILE_NAME}"
                 echo "running with ${INPUT_FILE_NAME}"
                 OUTPUT_FILE="result_${i}.json"
-                cmd="${APPLICATION_PATH} ${SCHED_INDEX} ${SIM_PERIOD_SEC} ${INPUT_PATH} ${OUTPUT_DIR}/${OUTPUT_FILE}"
+                cmd="${APPLICATION_PATH} ${SCHED_INDEX} ${NUM_REPEAT} ${INPUT_PATH} ${OUTPUT_DIR}/${OUTPUT_FILE}"
                 echo ""
                 echo "command : ${cmd}"
                 ${cmd}
