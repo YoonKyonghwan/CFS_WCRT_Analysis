@@ -89,7 +89,6 @@ public class MathUtility {
         }
     }
 
-
     //nice_i = \min \left(-20 +  \ceil*{\log_{1.25} \frac{D_i}{D_{\text{min}}}}, \;19 \right)
     private static int computeNice(long deadline_i, long min_deadline, double lambda){
         // double relative_weight = Math.log((double)deadline_i / min_deadline) / Math.log(1.25);
@@ -98,5 +97,13 @@ public class MathUtility {
         // double relative_weight = Math.log((double)deadline_i / min_deadline) / Math.log(lambda);
         double relative_weight = Math.log((double)deadline_i / min_deadline) * lambda;
         return Math.min(-20 + (int) relative_weight, 19);
+    }
+
+    public static void setTaskRandomOffset(List<Core> cores) {
+        for (Core core : cores) {
+            for (Task task : core.tasks) {
+                task.startTime = (long) (Math.random() * (task.period/2));
+            }
+        }
     }
 }

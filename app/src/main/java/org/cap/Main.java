@@ -45,30 +45,14 @@ public class Main {
             TestConfiguration testConf = jsonReader.readTasksFromFile(taskInfoPath);
             testConf.initializeTaskData();
 
-            // update task info with nice values
-            // MathUtility.assignNiceValues(testConf.mappingInfo, params.getDouble("nice_lambda"));
-            // MathUtility.assignNiceValues2(testConf.mappingInfo, params.getDouble("nice_lambda"));
-            
-            // long startTime = System.nanoTime();
-            
-            // analyze by proposed
-            /*
-            startTime = System.nanoTime();
-            // CFSAnalyzer analyzer = new CFSAnalyzer(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
-            CFSAnalyzer_v2 analyzer = new CFSAnalyzer_v2(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
-            analyzer.analyze(); 
-            boolean proposed_schedulability = analyzer.checkSystemSchedulability();
-            long proposed_timeConsumption = (System.nanoTime() - startTime) / 1000L;
-            // System.out.println("Time consumption (Analysis): " + proposed_timeConsumption + " us"); 
-            */
             // analyze by simulator
             double nice_lambda = 20;
             MathUtility.assignNiceValues(testConf.mappingInfo, nice_lambda);
             long startTime = System.nanoTime();
-            // boolean simulator_schedulability = analyze_by_CFS_simulator(testConf, params);            
-            // long simulator_timeConsumption = (System.nanoTime() - startTime)/1000L; //us
-            boolean simulator_schedulability = true;            
-            long simulator_timeConsumption = 0; //us
+            boolean simulator_schedulability = analyze_by_CFS_simulator(testConf, params);            
+            long simulator_timeConsumption = (System.nanoTime() - startTime)/1000L; //us
+            // boolean simulator_schedulability = true;            
+            // long simulator_timeConsumption = 0; //us
             // System.out.println("Time consumption (CFS simulator): " + simulator_timeConsumption + " us");
             
             
@@ -205,20 +189,25 @@ public class Main {
 
             system_schedulability = finalSimulationResult.schedulability;
             for (Integer taskIDWCRT : testConf.idNameMap.keySet()) {
-            long WCRT_by_simulator = (finalSimulationResult.wcrtMap.get(taskIDWCRT)/1000);
-            long deadline = CFSSimulator.findTaskbyID(testConf, taskIDWCRT.intValue()).period/1000;
-            boolean task_schedulability = (WCRT_by_simulator <= deadline);
-            CFSSimulator.findTaskbyID(testConf, taskIDWCRT.intValue()).isSchedulable_by_simulator = task_schedulability;
-            CFSSimulator.findTaskbyID(testConf, taskIDWCRT.intValue()).WCRT_by_simulator = (int) WCRT_by_simulator;
-            logger.info(String.format("Task ID with %3d (WCRT: %8d us, Period: %8d us, Schedulability: %5s)", taskIDWCRT, WCRT_by_simulator, deadline, task_schedulability));
-            if(finalSimulationResult.schedulability == false)
-                system_schedulability = false;
+                long WCRT_by_simulator = (finalSimulationResult.wcrtMap.get(taskIDWCRT)/1000);
+                long deadline = CFSSimulator.findTaskbyID(testConf, taskIDWCRT.intValue()).period/1000;
+                boolean task_schedulability = (WCRT_by_simulator <= deadline);
+                CFSSimulator.findTaskbyID(testConf, taskIDWCRT.intValue()).isSchedulable_by_simulator = task_schedulability;
+                CFSSimulator.findTaskbyID(testConf, taskIDWCRT.intValue()).WCRT_by_simulator = (int) WCRT_by_simulator;
+                logger.info(String.format("Task ID with %3d (WCRT: %8d us, Period: %8d us, Schedulability: %5s)", taskIDWCRT, WCRT_by_simulator, deadline, task_schedulability));
+                if(finalSimulationResult.schedulability == false)
+                    system_schedulability = false;
             }
             logger.info("Schedule execution count (unique): " + totalTryCount);
         } else{
             SimulationResult finalSimulationResult = new SimulationResult();
             long totalTryCount = 0L;
             for(int i = 0 ; i  < test_try_count ; i++) {
+                // if first try, start with initial offset(0)
+                // if not first try, set random offset
+                if (i != 0) { 
+                    MathUtility.setTaskRandomOffset(testConf.mappingInfo);
+                }
                 SimulationResult simulResult = CFSSimulator.simulateCFS(testConf.mappingInfo, -1, simulationTime);
                 CFSSimulator.mergeToFinalResult(finalSimulationResult, simulResult);
                 totalTryCount += CFSSimulator.getTriedScheduleCount();
