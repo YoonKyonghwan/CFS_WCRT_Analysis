@@ -104,7 +104,7 @@ public class ArgParser {
         parser.addArgument("--nice_lambda", "-nl")
                 .dest("nice_lambda")
                 .type(Double.class)
-                .setDefault(20)
+                .setDefault(20.0)
                 .nargs("?")
                 .help("nice_lambda");
         parser.addArgument("--sched_RR_timeslice", "-rrts")

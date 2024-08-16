@@ -49,10 +49,10 @@ public class Main {
             double nice_lambda = params.getDouble("nice_lambda");
             MathUtility.assignNiceValues(testConf.mappingInfo, nice_lambda);
             long startTime = System.nanoTime();
-            boolean simulator_schedulability = analyze_by_CFS_simulator(testConf, params);            
-            long simulator_timeConsumption = (System.nanoTime() - startTime)/1000L; //us
-            // boolean simulator_schedulability = true;            
-            // long simulator_timeConsumption = 0; //us
+            // boolean simulator_schedulability = analyze_by_CFS_simulator(testConf, params);            
+            // long simulator_timeConsumption = (System.nanoTime() - startTime)/1000L; //us
+            boolean simulator_schedulability = true;            
+            long simulator_timeConsumption = 0; //us
             // System.out.println("Time consumption (CFS simulator): " + simulator_timeConsumption + " us");
             
             
@@ -63,23 +63,23 @@ public class Main {
             }
             boolean proposed_schedulability = false;
             long proposed_timeConsumption = 0;
-            // nice_lambda = 0;   
-            // while(!proposed_schedulability && nice_lambda < 40) {
-            //     MathUtility.assignNiceValues(testConf.mappingInfo, nice_lambda);
-            //     CFSAnalyzer_v2 analyzer = new CFSAnalyzer_v2(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
-            //     startTime = System.nanoTime();
-            //     analyzer.analyze(); 
-            //     proposed_schedulability = analyzer.checkSystemSchedulability();
-            //     proposed_timeConsumption = (System.nanoTime() - startTime) / 1000L;
-            //     nice_lambda = nice_lambda + 0.1;
-            // }
+            nice_lambda = 0;   
+            while(!proposed_schedulability && nice_lambda < 40) {
+                MathUtility.assignNiceValues(testConf.mappingInfo, nice_lambda);
+                CFSAnalyzer_v2 analyzer = new CFSAnalyzer_v2(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
+                startTime = System.nanoTime();
+                analyzer.analyze(); 
+                proposed_schedulability = analyzer.checkSystemSchedulability();
+                proposed_timeConsumption = (System.nanoTime() - startTime) / 1000L;
+                nice_lambda = nice_lambda + 0.1;
+            }
 
-            MathUtility.assignNiceValues(testConf.mappingInfo, nice_lambda);
-            CFSAnalyzer_v2 analyzer = new CFSAnalyzer_v2(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
-            startTime = System.nanoTime();
-            analyzer.analyze(); 
-            proposed_schedulability = analyzer.checkSystemSchedulability();
-            proposed_timeConsumption = (System.nanoTime() - startTime) / 1000L;
+            // MathUtility.assignNiceValues(testConf.mappingInfo, nice_lambda);
+            // CFSAnalyzer_v2 analyzer = new CFSAnalyzer_v2(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
+            // startTime = System.nanoTime();
+            // analyzer.analyze(); 
+            // proposed_schedulability = analyzer.checkSystemSchedulability();
+            // proposed_timeConsumption = (System.nanoTime() - startTime) / 1000L;
             
             // to compare with other scheduler
             FIFOAnalyzer fifoAnalyzer = new FIFOAnalyzer(testConf.mappingInfo);
