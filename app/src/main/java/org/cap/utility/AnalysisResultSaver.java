@@ -13,8 +13,7 @@ import org.cap.model.TestConfiguration;
 
 public class AnalysisResultSaver {
     public void saveResultSummary(String resultDir, String taskInfoPath, boolean simulator_schedulability,
-            long simulator_timeConsumption, boolean proposed_schedulability, long proposed_timeConsumption,
-            boolean FIFO_schedulability, boolean RR_schedulability, boolean RM_schedulability) {
+            long simulator_timeConsumption, boolean proposed_schedulability, long proposed_timeConsumption) {
 
         // Parse information from the filename
         String inputFileName = new File(taskInfoPath).getName();
@@ -53,11 +52,10 @@ public class AnalysisResultSaver {
             }
 
             // Prepare data to be written to the CSV file
-            String dataToWrite = String.format("%s,%s,%s,%s,%s,%d,%s,%d,%b,%b,%b\n",
+            String dataToWrite = String.format("%s,%s,%s,%s,%s,%d,%s,%d\n",
                     numCores, numTasks, utilization, tasksetIndex,
                     simulator_schedulability, simulator_timeConsumption,
-                    proposed_schedulability, proposed_timeConsumption,
-                    FIFO_schedulability, RR_schedulability, RM_schedulability);
+                    proposed_schedulability, proposed_timeConsumption);
             writer.write(dataToWrite);
             // System.out.println("Results saved to " + resultFileName);
         } catch (IOException e) {

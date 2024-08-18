@@ -44,8 +44,8 @@ int main(int argc, char* argv[]){
     Task_Info nrt_task_info;
     if (isMixedCritical){
         int core_index = rt_tasks_info[0].core_index;
-        long long execution_ns = 36 * 1000 * 1000;
-        long long period_ns = 300 * 1000 * 1000;
+        long long execution_ns = 10 * 1000 * 1000;
+        long long period_ns = 1000 * 1000 * 1000;
         int num_samples = simulation_period_us / (period_ns / 1000);
         setNonRTTaskInfo(&nrt_task_info, "Non_RT_Task", core_index, execution_ns, period_ns, num_samples);
     }

@@ -228,6 +228,8 @@ public class CFSSimulator {
             finalSimulationResult = performSimulation(cores, queues, wcrtMap, simulationState, time, simulationTime, 0, false);
             for(int i = 0 ; i < this.numOfTryToSchedule - 1 ; i++) {
                 SchedulePickResult pickResult = this.scheduleCache.pickScheduleData(this.comparator);
+                if (pickResult == null) 
+                    break;
                 ScheduleCacheData pickData = pickResult.getScheduleData();
                 pickData.getQueues().get(pickData.getCoreIndex()).addAll(pickData.getMinRuntimeTasks());
                 SimulationResult simulResult = performSimulation(cores, pickData.getQueues(), wcrtMap,

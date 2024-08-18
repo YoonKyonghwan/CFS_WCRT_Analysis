@@ -102,7 +102,9 @@ public class MathUtility {
     public static void setTaskRandomOffset(List<Core> cores) {
         for (Core core : cores) {
             for (Task task : core.tasks) {
-                task.startTime = (long) (Math.random() * (task.period/2));
+                long startTime = (long) (Math.random() * (task.period/2));
+                // round to the nearest multiple of ms
+                task.startTime = (startTime / 1000000) * 1000000;
             }
         }
     }
