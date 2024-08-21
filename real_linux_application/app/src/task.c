@@ -56,7 +56,7 @@ void* task_function(void* arg) {
         iteration_index = (iteration_index + 1) % task->num_samples;
     }
     
-    printf("     %s(wcrt %lld, wcet %lld) termintated \n", task->name, task->wcrt_ns, task->real_wcet_ns);
+    printf("     %s(period %lld, wcrt %lld, wcet %lld) termintated \n", task->name, task->period_ns, task->wcrt_ns, task->real_wcet_ns);
     return NULL;
 }
 

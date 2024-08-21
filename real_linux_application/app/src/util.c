@@ -190,6 +190,8 @@ void updateRealWCET(char* input_file_name, Task_Info *tasks, int num_tasks){
     json_object_to_file_ext(input_file_name, org_info, JSON_C_TO_STRING_PRETTY);
     free(task_id_str);
 
+    printf("Update real_wcet in %s\n", input_file_name);
+
     return;
 }
 
