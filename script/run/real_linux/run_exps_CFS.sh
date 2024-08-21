@@ -1,16 +1,16 @@
 #!/bin/bash
 
-INPUT_DIR="./generated_taskset_even_2"
+INPUT_DIR="./generated_taskset_even"
 RESULT_DIR="./real_linux_application/exp_results_CFS"
 
-NUM_REPEAT=100
+NUM_REPEAT=30
 SCHEDULER="CFS"
 APPLICATION_PATH="./real_linux_application/app/application"
 
 num_cores=(1)
-num_tasks=(4 6 8 10)
-utilizations=(0.3 0.5 0.7)
-num_sets=100
+num_tasks=(2 4 6 8 10)
+utilizations=(0.4 0.6 0.8)
+num_sets=50
 
 
 # If the result is not exist, create the directory

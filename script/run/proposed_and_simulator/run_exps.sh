@@ -1,14 +1,14 @@
 #!/bin/bash
 
 # set arguments
-taskset_dir="./_generated_taskset"
-result_dir="./exp_results_proposed_and_simulator"
+taskset_dir="./generated_taskset_even_2"
+result_dir="./exp_results_proposed_new_overestimation"
 
 num_cores=(1)
-num_tasks=(3 6 9 12)
-utilizations=(0.4 0.6 0.8)
+num_tasks=(4 6 8 10)
+utilizations=(0.3 0.5 0.7)
+
 num_sets=100
-nice_lambda=3.25
 
 schedule_simulation_method="random" 
 schedule_try_count=1
@@ -31,7 +31,7 @@ for num_core in "${num_cores[@]}"; do
             for ((i=0; i<num_sets; i++)); do
                 file_name="${num_core}cores_${num_task}tasks_${utilization}utilization_${i}.json"
                 task_info_path="${taskset_dir}/${num_core}cores/${num_task}tasks/${utilization}utilization/${file_name}"
-                cmd="java -jar run.jar -t=$task_info_path -rd=$result_dir -ssm=$schedule_simulation_method -stc=$schedule_try_count -ttc=$test_try_count -tl=$target_latency -mg=$min_gran -jf=$jiffy_us -nl=$nice_lambda -lo=info"
+                cmd="java -jar run.jar -t=$task_info_path -rd=$result_dir -ssm=$schedule_simulation_method -stc=$schedule_try_count -ttc=$test_try_count -tl=$target_latency -mg=$min_gran -jf=$jiffy_us -lo=off"
                 echo $cmd
                 ${cmd}
             done

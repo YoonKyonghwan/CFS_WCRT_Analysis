@@ -46,8 +46,7 @@ public class AnalysisResultSaver {
                 // If the file didn't exist before, write the headers first
                 String header = "numCores,numTasks,utilization," + 
                 "tasksetIndex,simulator_schedulability," +
-                "simulator_timeConsumption(us),proposed_schedulability,proposed_timeConsumption(us),"+
-                "FIFO_schedulability,RR_schedulability,RM_schedulability\n";
+                "simulator_timeConsumption(us),proposed_schedulability,proposed_timeConsumption(us)\n";
                 writer.write(header);
             }
 

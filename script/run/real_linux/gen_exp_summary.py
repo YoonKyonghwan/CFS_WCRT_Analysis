@@ -3,7 +3,7 @@ import os
 import argparse
 
 num_cores = [1]
-num_tasks = [3, 6, 9, 12]
+num_tasks = [4, 6, 8, 10]
 utilizations = [0.4, 0.6, 0.8]
 
 
@@ -34,7 +34,7 @@ def genSummary(result_dir, summary_path, num_cores, num_tasks, utilizations, num
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--result_dir", type=str, default="./real_linux_application/exp_results_CFS", help="Directory of experiment results")
-    parser.add_argument("--num_tasksets", type=int, default=30, help="Number of tasksets")
+    parser.add_argument("--num_tasksets", type=int, default=50, help="Number of tasksets")
     args = parser.parse_args()
     
     # generate summary of experiment results for Table3
