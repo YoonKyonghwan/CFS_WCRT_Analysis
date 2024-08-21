@@ -5,7 +5,9 @@
     "3":"task3",
     "4":"task4",
     "5":"task5",
-    "6":"task6"
+    "6":"task6",
+    "7":"task7",
+    "8":"task8"
   },
   "mappingInfo":[
     {
@@ -15,10 +17,10 @@
           "id":1,
           "startTime":0,
           "readTime":0.0,
-          "bodyTime":2793,
+          "bodyTime":50000,
           "writeTime":0.0,
           "nice":-15,
-          "period":100000.0,
+          "period":500000.0,
           "initialPriority":-1,
           "index":0
         },
@@ -26,56 +28,72 @@
           "id":2,
           "startTime":0,
           "readTime":0.0,
-          "bodyTime":112976,
+          "bodyTime":50000,
           "writeTime":0.0,
-          "nice":-5,
+          "nice":-15,
           "period":500000.0,
           "initialPriority":-1,
           "index":1
-        },
-        {
+        },        {
           "id":3,
           "startTime":0,
           "readTime":0.0,
-          "bodyTime":1758,
+          "bodyTime":50000,
           "writeTime":0.0,
-          "nice":-19,
-          "period":50000.0,
+          "nice":-15,
+          "period":500000.0,
           "initialPriority":-1,
           "index":2
-        },
-        {
+        },        {
           "id":4,
           "startTime":0,
           "readTime":0.0,
-          "bodyTime":69160,
+          "bodyTime":50000,
           "writeTime":0.0,
-          "nice":-12,
+          "nice":-15,
           "period":500000.0,
           "initialPriority":-1,
           "index":3
-        },
-        {
+        },        {
           "id":5,
           "startTime":0,
           "readTime":0.0,
-          "bodyTime":1461,
+          "bodyTime":50000,
           "writeTime":0.0,
           "nice":-15,
-          "period":100000.0,
+          "period":500000.0,
           "initialPriority":-1,
           "index":4
-        },
-        {
+        },        {
           "id":6,
           "startTime":0,
           "readTime":0.0,
-          "bodyTime":32676,
+          "bodyTime":50000,
           "writeTime":0.0,
-          "nice":-8,
-          "period":200000.0,
+          "nice":-15,
+          "period":500000.0,
           "initialPriority":-1,
           "index":5
+        },        {
+          "id":7,
+          "startTime":0,
+          "readTime":0.0,
+          "bodyTime":50000,
+          "writeTime":0.0,
+          "nice":-15,
+          "period":500000.0,
+          "initialPriority":-1,
+          "index":6
+        },        {
+          "id":8,
+          "startTime":0,
+          "readTime":0.0,
+          "bodyTime":50000,
+          "writeTime":0.0,
+          "nice":-15,
+          "period":500000.0,
+          "initialPriority":-1,
+          "index":7
         }
       ]
     }
