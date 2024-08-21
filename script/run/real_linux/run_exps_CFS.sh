@@ -12,12 +12,11 @@ num_tasks=(2 4 6 8 10)
 utilizations=(0.4 0.6 0.8)
 num_sets=50
 
-
 # If the result is not exist, create the directory
 if [ ! -d ${RESULT_DIR} ]; then
     mkdir ${RESULT_DIR}
 fi
-rm -f ${RESULT_DIR}/*
+rm -rf ${RESULT_DIR}/*
 
 case "${SCHEDULER}" in
     "CFS") SCHED_INDEX=0 ;;

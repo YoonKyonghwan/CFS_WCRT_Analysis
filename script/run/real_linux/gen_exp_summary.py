@@ -3,7 +3,7 @@ import os
 import argparse
 
 num_cores = [1]
-num_tasks = [4, 6, 8, 10]
+num_tasks = [2, 4, 6, 8, 10]
 utilizations = [0.4, 0.6, 0.8]
 
 

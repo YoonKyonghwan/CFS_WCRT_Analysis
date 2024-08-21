@@ -97,7 +97,7 @@ int main(int argc, char* argv[]){
         if (isMixedCritical){
             pthread_join(nrt_thread, NULL);
         }
-        usleep(5000);
+        usleep(10000);
     }
 
     printf("Save the result to %s\n", result_file_name);
