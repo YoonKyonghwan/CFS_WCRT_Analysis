@@ -143,20 +143,38 @@ void setNiceAndPriority_2(Task_Info *tasks, int num_tasks, double nice_lambda){
 }
 
 void setNiceAndPriority(Task_Info *tasks, int num_tasks, double nice_lambda){
-    double min_period_ns = 0; 
+    //sort tasks by period from small to large
     for (int i = 0; i < num_tasks; i++){
-        if (i == 0){
-            min_period_ns = tasks[i].period_ns;
-        }else{
-            if (tasks[i].period_ns < min_period_ns){
-                min_period_ns = tasks[i].period_ns;
+        for (int j = i + 1; j < num_tasks; j++){
+            if (tasks[i].period_ns > tasks[j].period_ns){
+                Task_Info temp = tasks[i];
+                tasks[i] = tasks[j];
+                tasks[j] = temp;
             }
         }
     }
+    double min_period_ns = tasks[0].period_ns;
+
+    // set priority by period(RM)
+    tasks[0].priority = 60;
+    for (int i = 1; i < num_tasks; i++){
+        if (tasks[i].period_ns == tasks[i-1].period_ns){
+            tasks[i].priority = tasks[i-1].priority;
+        }else{
+            tasks[i].priority = tasks[i-1].priority + 1;
+        }
+    }
+
+    // set nice_value
     for (int i = 0; i < num_tasks; i++){
         tasks[i].nice_value = setNiceValueByDeadline(tasks[i].period_ns, min_period_ns, nice_lambda);
-        tasks[i].priority = 69 - tasks[i].nice_value;
     }
+    
+    // print nice value and priority
+    for (int i = 0; i < num_tasks; i++){
+        printf("Task name: %s, period: %lld, nice_value: %d, priority: %d\n", tasks[i].name, tasks[i].period_ns, tasks[i].nice_value, tasks[i].priority);
+    }
+
     return;
 }
 
