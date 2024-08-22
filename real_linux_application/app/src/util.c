@@ -47,12 +47,12 @@ void setTaskInfo(char *json_file_name, Task_Info *tasks, int sched_policy){
     for (int i = 0; i < num_tasks; i++){
         tasks[i].num_samples = (2 * hyperperiod_ns) / tasks[i].period_ns; //us
         tasks[i].response_time_ns = (long long*)malloc(tasks[i].num_samples * sizeof(long long));
-        tasks[i].start_time_ns = (long long*)malloc(tasks[i].num_samples * sizeof(long long));
-        tasks[i].end_time_ns = (long long*)malloc(tasks[i].num_samples * sizeof(long long));
+        // tasks[i].start_time_ns = (long long*)malloc(tasks[i].num_samples * sizeof(long long));
+        // tasks[i].end_time_ns = (long long*)malloc(tasks[i].num_samples * sizeof(long long));
         for (int k = 0; k < tasks[i].num_samples; k++){
             tasks[i].response_time_ns[k] = 0;
-            tasks[i].start_time_ns[k] = 0;
-            tasks[i].end_time_ns[k] = 0;
+            // tasks[i].start_time_ns[k] = 0;
+            // tasks[i].end_time_ns[k] = 0;
         }
     }
     
@@ -230,8 +230,8 @@ void saveResultToJson(int num_tasks, Task_Info *tasks, Task_Info *non_RT_task, c
 
 void convertTaskResultToJson(json_object *task_result, Task_Info *task){
     json_object *task_response_time_ns = json_object_new_array();
-    json_object *task_start_time_ns = json_object_new_array();
-    json_object *task_end_time_ns = json_object_new_array();
+    // json_object *task_start_time_ns = json_object_new_array();
+    // json_object *task_end_time_ns = json_object_new_array();
     long long total_response_time_ns = 0;
     int count_valid_response_time = 0;
     for (int j = 1; j < task->num_samples; j++) {
@@ -239,8 +239,8 @@ void convertTaskResultToJson(json_object *task_result, Task_Info *task){
             json_object_array_add(task_response_time_ns, json_object_new_int64(task->response_time_ns[j]));
             total_response_time_ns += task->response_time_ns[j];
             count_valid_response_time++;
-            json_object_array_add(task_start_time_ns, json_object_new_int64(task->start_time_ns[j]));
-            json_object_array_add(task_end_time_ns, json_object_new_int64(task->end_time_ns[j]));
+            // json_object_array_add(task_start_time_ns, json_object_new_int64(task->start_time_ns[j]));
+            // json_object_array_add(task_end_time_ns, json_object_new_int64(task->end_time_ns[j]));
         }
     }
     long long avg_response_time_ns = 0;
@@ -267,8 +267,8 @@ void convertTaskResultToJson(json_object *task_result, Task_Info *task){
     json_object_object_add(task_result, "wcet_ns", json_object_new_int64(task->real_wcet_ns));
     json_object_object_add(task_result, "avg_response_time_ns", json_object_new_int64(avg_response_time_ns));
     json_object_object_add(task_result, "response_time_ns", task_response_time_ns);
-    json_object_object_add(task_result, "start_time_ns", task_start_time_ns);
-    json_object_object_add(task_result, "end_time_ns", task_end_time_ns);
+    // json_object_object_add(task_result, "start_time_ns", task_start_time_ns);
+    // json_object_object_add(task_result, "end_time_ns", task_end_time_ns);
 }
 
 void freeTaskInfo(Task_Info *task){

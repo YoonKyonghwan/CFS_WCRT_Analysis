@@ -20,13 +20,12 @@ void* task_function(void* arg) {
     //     // addNanoSecondToTimespec(&current_trigger_time, random_offset);
     //     // addNanoSecondToTimespec(&next_trigger_time, random_offset);
     // }
-    printf("     initial trigger time: %ld, %ld \n", trigger_time.tv_sec, trigger_time.tv_nsec);
     printf("     (Init) %s \n", task->name);
     POP_PROFILE()
 
     // wait for all threads to be ready
     clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &trigger_time, NULL);  //response time
-
+    usleep(1000); // 1ms
     // iterative execution
     while (terminate == false) {
         PUSH_PROFILE(task->name) 
@@ -35,8 +34,8 @@ void* task_function(void* arg) {
         clock_gettime(CLOCK_MONOTONIC, &job_end); //response time
         response_time_ns = timeDiff(trigger_time, job_end);
         task->response_time_ns[iteration_index] = response_time_ns;
-        task->start_time_ns[iteration_index] = (trigger_time.tv_sec * 1000000000LL ) + trigger_time.tv_nsec;
-        task->end_time_ns[iteration_index] = (job_end.tv_sec * 1000000000LL ) + job_end.tv_nsec;
+        // task->start_time_ns[iteration_index] = (trigger_time.tv_sec * 1000000000LL ) + trigger_time.tv_nsec;
+        // task->end_time_ns[iteration_index] = (job_end.tv_sec * 1000000000LL ) + job_end.tv_nsec;
         if (task->wcrt_ns < response_time_ns && iteration_index != 0 && iteration_index != task->num_samples){
             task->wcrt_ns = response_time_ns;
         }
@@ -137,7 +136,7 @@ void busyWait( long long wait_time_ns){
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
     long long elapsed_ns = 0;
     while (elapsed_ns < wait_time_ns) {
-        for (int i = 0; i < 100; i++) {
+        for (int i = 0; i < 1000; i++) {
             //waste time
         }
         clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end);
