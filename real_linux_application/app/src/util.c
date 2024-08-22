@@ -28,7 +28,11 @@ void setTaskInfo(char *json_file_name, Task_Info *tasks, int sched_policy){
             sprintf(task_id_str, "%d", task_id);       
             tasks[task_index].name = json_object_get_string(json_object_object_get(tasks_ids, task_id_str));
             tasks[task_index].core_index = core_id;
-            tasks[task_index].isRTTask = true;
+            if (json_object_get_int(json_object_object_get(task_info, "initialPriority")) == -1){
+                tasks[task_index].isRTTask = true;
+            }else{
+                tasks[task_index].isRTTask = false;
+            }
             tasks[task_index].sched_policy = sched_policy; // atoi(argv[1]);
             tasks[task_index].isPeriodic = true;
             tasks[task_index].nice_value = json_object_get_int(json_object_object_get(task_info, "nice"));
@@ -121,26 +125,6 @@ int getNumTasks(char *json_file_name){
     return num_tasks;
 }
 
-void setNiceAndPriority_2(Task_Info *tasks, int num_tasks, double nice_lambda){
-    double min_period_ns = INT_MAX; 
-    double max_period_ns = 0;
-    for (int i = 0; i < num_tasks; i++){
-        if (tasks[i].period_ns < min_period_ns){
-            min_period_ns = tasks[i].period_ns;
-        }
-        if (tasks[i].period_ns > max_period_ns){
-            max_period_ns = tasks[i].period_ns;
-        }
-    }
-
-    for (int i = 0; i < num_tasks; i++){
-        /*$nice_i = -19 + \lceil (\frac{D_i -D_{min}}{D_{max} -D_{min}}) \times 39 \rceil$*/
-        double ratio = (tasks[i].period_ns - min_period_ns) / (max_period_ns - min_period_ns);
-        tasks[i].nice_value = -19 + ceil(ratio * 39);
-        tasks[i].priority = 69 - tasks[i].nice_value;
-    }
-    return;
-}
 
 void setNiceAndPriority(Task_Info *tasks, int num_tasks, double nice_lambda){
     //sort tasks by period from small to large
@@ -167,9 +151,12 @@ void setNiceAndPriority(Task_Info *tasks, int num_tasks, double nice_lambda){
 
     // set nice_value
     for (int i = 0; i < num_tasks; i++){
-        tasks[i].nice_value = setNiceValueByDeadline(tasks[i].period_ns, min_period_ns, nice_lambda);
+        if (tasks[i].isRTTask){
+            tasks[i].nice_value = setNiceValueByDeadline(tasks[i].period_ns, min_period_ns, nice_lambda);
+        }else{
+            tasks[i].nice_value = 19;
+        }
     }
-
     return;
 }
 

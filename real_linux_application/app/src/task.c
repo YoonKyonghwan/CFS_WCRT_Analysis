@@ -68,40 +68,44 @@ void setSchedPolicyPriority(Task_Info *task){
     memset(&attr, 0, sizeof(attr));
     attr.size = sizeof(struct sched_attr);
 
-    switch (task->sched_policy) {
-        case CFS:
-            ret = nice(task->nice_value);
-            break;
-        case EDF:
-            attr.sched_policy = SCHED_DEADLINE;
-            if (task->isPeriodic){
-                attr.sched_deadline = task->period_ns; //ns
-                attr.sched_period = task->period_ns; //ns
-            }else{
-                attr.sched_deadline = task->low_interarrival_time_ns; //ns
-                attr.sched_period = task->low_interarrival_time_ns; //ns
-            }
-            int margin = min(400 * 1000, (int) attr.sched_period /10); // 400us
-            attr.sched_runtime = task->wcet_ns + margin;  //ns
-            break;
-        case FIFO: 
-            attr.sched_policy = SCHED_FIFO;
-            attr.sched_priority = task->priority;
-            break;
-        case RR:
-            //set sched_policyd
-            attr.sched_policy = SCHED_RR;
-            attr.sched_priority = task->priority;
-            break;
-        default:
-            printf("Check the supported scheduler type.\n");
-            exit(1);
-    }
+    if (task->isRTTask == false){
+        ret = nice(task->nice_value);
+    }else{
+        switch (task->sched_policy) {
+            case CFS:
+                ret = nice(task->nice_value);
+                break;
+            case EDF:
+                attr.sched_policy = SCHED_DEADLINE;
+                if (task->isPeriodic){
+                    attr.sched_deadline = task->period_ns; //ns
+                    attr.sched_period = task->period_ns; //ns
+                }else{
+                    attr.sched_deadline = task->low_interarrival_time_ns; //ns
+                    attr.sched_period = task->low_interarrival_time_ns; //ns
+                }
+                int margin = min(400 * 1000, (int) attr.sched_period /10); // 400us
+                attr.sched_runtime = task->wcet_ns + margin;  //ns
+                break;
+            case FIFO: 
+                attr.sched_policy = SCHED_FIFO;
+                attr.sched_priority = task->priority;
+                break;
+            case RR:
+                //set sched_policyd
+                attr.sched_policy = SCHED_RR;
+                attr.sched_priority = task->priority;
+                break;
+            default:
+                printf("Check the supported scheduler type.\n");
+                exit(1);
+        }
 
-    if (task->sched_policy != CFS){
-        if (sched_setattr(tid, &attr, 0) < 0){
-            perror("sched_setattr");
-            exit(1);
+        if (task->sched_policy != CFS){
+            if (sched_setattr(tid, &attr, 0) < 0){
+                perror("sched_setattr");
+                exit(1);
+            }
         }
     }
     return;
