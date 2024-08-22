@@ -5,7 +5,7 @@ struct timespec global_start_time = {0, 0};
 bool terminate = false;
 // bool initial_try = true;
 double nice_lambda = 20;
-int wait_initialization_sec = 1;
+int wait_initialization_sec = 2;
 
 int main(int argc, char* argv[]){
     if (!(argc == 5) && !(argc == 6)) {
@@ -60,6 +60,7 @@ int main(int argc, char* argv[]){
         pthread_t rt_threads[num_tasks];
         clock_gettime(CLOCK_MONOTONIC, &global_start_time);
         global_start_time.tv_sec += wait_initialization_sec; // wait for all threads to be ready (3sec)
+        printf("global_start_time: %ld sec %ld ns\n", global_start_time.tv_sec, global_start_time.tv_nsec);
         for (int i = 0; i < num_tasks; i++) {
             setCoreMapping(&threadAttr[i], &rt_tasks_info[i]); //core mapping
             int ret_pthread_create = 0;

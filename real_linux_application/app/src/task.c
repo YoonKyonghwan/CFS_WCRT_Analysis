@@ -9,11 +9,10 @@ void* task_function(void* arg) {
     int iteration_index = 0;
     long long real_execution_time=0;
     long long response_time_ns = 0;
-    struct timespec current_trigger_time, job_end, next_trigger_time; // for period, response time
+    struct timespec trigger_time, job_end; // for period, response time
     struct timespec start_execution_time, end_execution_time; // for execution time
     setSchedPolicyPriority(task);
-    current_trigger_time = global_start_time;
-    next_trigger_time = current_trigger_time; //init
+    trigger_time = global_start_time;
     // if (!initial_try){ 
     //     // it initial try, all tasks release at the same time
     //     // if not initial try, add random offset to the trigger time of each task
@@ -25,7 +24,7 @@ void* task_function(void* arg) {
     POP_PROFILE()
 
     // wait for all threads to be ready
-    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &current_trigger_time, NULL);  //response time
+    clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &trigger_time, NULL);  //response time
 
     // iterative execution
     while (terminate == false) {
@@ -33,9 +32,9 @@ void* task_function(void* arg) {
         clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start_execution_time); //execution time
         busyWait(task->body_time_ns);
         clock_gettime(CLOCK_MONOTONIC, &job_end); //response time
-        response_time_ns = timeDiff(current_trigger_time, job_end);
+        response_time_ns = timeDiff(trigger_time, job_end);
         task->response_time_ns[iteration_index] = response_time_ns;
-        task->start_time_ns[iteration_index] = (current_trigger_time.tv_sec * 1000000000LL ) + current_trigger_time.tv_nsec;
+        task->start_time_ns[iteration_index] = (trigger_time.tv_sec * 1000000000LL ) + trigger_time.tv_nsec;
         task->end_time_ns[iteration_index] = (job_end.tv_sec * 1000000000LL ) + job_end.tv_nsec;
         if (task->wcrt_ns < response_time_ns && iteration_index != 0 && iteration_index != task->num_samples){
             task->wcrt_ns = response_time_ns;
@@ -49,13 +48,10 @@ void* task_function(void* arg) {
         // printf("%s(rt %lld, et %lld) \n", task->name, response_time_ns, real_execution_time);
 
         if (task->period_ns > task->response_time_ns[iteration_index]) {
-            setNextTriggerTime(&next_trigger_time, task->period_ns);
-            current_trigger_time = next_trigger_time;
-            clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next_trigger_time, NULL);
+            setNextTriggerTime(&trigger_time, task->period_ns);
+            clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &trigger_time, NULL);
         }else{
-            clock_gettime(CLOCK_MONOTONIC, &next_trigger_time);
-            setNextTriggerTime(&next_trigger_time, task->period_ns);
-            clock_gettime(CLOCK_MONOTONIC, &current_trigger_time);
+            clock_gettime(CLOCK_MONOTONIC, &trigger_time);
         }
         iteration_index = (iteration_index + 1) % task->num_samples;
     }
