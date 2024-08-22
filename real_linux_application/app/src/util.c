@@ -156,12 +156,12 @@ void setNiceAndPriority(Task_Info *tasks, int num_tasks, double nice_lambda){
     double min_period_ns = tasks[0].period_ns;
 
     // set priority by period(RM)
-    tasks[0].priority = 60;
+    tasks[0].priority = 40;
     for (int i = 1; i < num_tasks; i++){
         if (tasks[i].period_ns == tasks[i-1].period_ns){
             tasks[i].priority = tasks[i-1].priority;
         }else{
-            tasks[i].priority = tasks[i-1].priority + 1;
+            tasks[i].priority = tasks[i-1].priority - 1;
         }
     }
 

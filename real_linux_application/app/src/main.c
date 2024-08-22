@@ -5,7 +5,7 @@ struct timespec global_start_time = {0, 0};
 bool terminate = false;
 // bool initial_try = true;
 double nice_lambda = 20;
-int wait_initialization_sec = 2;
+int wait_initialization_sec = 1;
 
 int main(int argc, char* argv[]){
     if (!(argc == 5) && !(argc == 6)) {
