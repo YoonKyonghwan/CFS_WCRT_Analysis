@@ -3,7 +3,7 @@
 
 struct timespec global_start_time = {0, 0};
 bool terminate = false;
-bool initial_try = true;
+// bool initial_try = true;
 double nice_lambda = 20;
 int wait_initialization_sec = 1;
 
@@ -55,7 +55,7 @@ int main(int argc, char* argv[]){
         printf("Repeat_index %d\n", repeat_index);
         printf("    Initialize and create tasks\n");
         terminate = false;
-        if (repeat_index != 0)  initial_try = false;
+        // if (repeat_index != 0)  initial_try = false;
         pthread_attr_t threadAttr[num_tasks];
         pthread_t rt_threads[num_tasks];
         clock_gettime(CLOCK_MONOTONIC, &global_start_time);

@@ -14,13 +14,13 @@ void* task_function(void* arg) {
     setSchedPolicyPriority(task);
     current_trigger_time = global_start_time;
     next_trigger_time = current_trigger_time; //init
-    if (!initial_try){ 
-        // it initial try, all tasks release at the same time
-        // if not initial try, add random offset to the trigger time of each task
-        // int random_offset = rand() % (task->period_ns / 2);
-        // addNanoSecondToTimespec(&current_trigger_time, random_offset);
-        // addNanoSecondToTimespec(&next_trigger_time, random_offset);
-    }
+    // if (!initial_try){ 
+    //     // it initial try, all tasks release at the same time
+    //     // if not initial try, add random offset to the trigger time of each task
+    //     // int random_offset = rand() % (task->period_ns / 2);
+    //     // addNanoSecondToTimespec(&current_trigger_time, random_offset);
+    //     // addNanoSecondToTimespec(&next_trigger_time, random_offset);
+    // }
     printf("     (Init) %s \n", task->name);
     POP_PROFILE()
 
@@ -35,12 +35,12 @@ void* task_function(void* arg) {
         clock_gettime(CLOCK_MONOTONIC, &job_end); //response time
         response_time_ns = timeDiff(current_trigger_time, job_end);
         task->response_time_ns[iteration_index] = response_time_ns;
-        if (task->wcrt_ns < response_time_ns && iteration_index != 0){
+        if (task->wcrt_ns < response_time_ns && iteration_index != 0 && iteration_index != task->num_samples){
             task->wcrt_ns = response_time_ns;
         }
         clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end_execution_time); //execution time
         real_execution_time = timeDiff(start_execution_time, end_execution_time);
-        if (real_execution_time > task->real_wcet_ns && iteration_index != 0){
+        if (real_execution_time > task->real_wcet_ns && iteration_index != 0 && iteration_index != task->num_samples){
             task->real_wcet_ns = real_execution_time;
         }
         POP_PROFILE() 

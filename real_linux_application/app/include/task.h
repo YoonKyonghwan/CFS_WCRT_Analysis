@@ -32,7 +32,7 @@
 
 extern struct timespec global_start_time;
 extern bool terminate;
-extern bool initial_try;
+// extern bool initial_try;
 
 typedef struct {
     char *name;
