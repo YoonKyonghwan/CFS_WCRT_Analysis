@@ -266,9 +266,9 @@ void convertTaskResultToJson(json_object *task_result, Task_Info *task){
     json_object_object_add(task_result, "wcrt_ns", json_object_new_int64(task->wcrt_ns));
     json_object_object_add(task_result, "wcet_ns", json_object_new_int64(task->real_wcet_ns));
     json_object_object_add(task_result, "avg_response_time_ns", json_object_new_int64(avg_response_time_ns));
-    // json_object_object_add(task_result, "response_time_ns", task_response_time_ns);
-    // json_object_object_add(task_result, "start_time_ns", task_start_time_ns);
-    // json_object_object_add(task_result, "end_time_ns", task_end_time_ns);
+    json_object_object_add(task_result, "response_time_ns", task_response_time_ns);
+    json_object_object_add(task_result, "start_time_ns", task_start_time_ns);
+    json_object_object_add(task_result, "end_time_ns", task_end_time_ns);
 }
 
 void freeTaskInfo(Task_Info *task){
