@@ -13,7 +13,8 @@
     "11": "task11",
     "12": "task12",
     "13": "task13",
-    "14": "task14"
+    "14": "task14",
+    "15": "task15"
   },
   "mappingInfo": [
     {
@@ -126,7 +127,7 @@
           "writeTime": 0.0,
           "nice": -8,
           "period": 1000000.0,
-          "initialPriority": -1,
+          "initialPriority": 0,
           "index": 9
         },
         {
@@ -148,7 +149,7 @@
           "writeTime": 0.0,
           "nice": -5,
           "period": 250000.0,
-          "initialPriority": -1,
+          "initialPriority": 0,
           "index": 11
         },
         {
@@ -166,12 +167,23 @@
           "id": 14,
           "startTime": 0,
           "readTime": 0.0,
-          "bodyTime": 888000,
+          "bodyTime": 88800,
           "writeTime": 0.0,
           "nice": -19,
           "period": 2000000.0,
           "initialPriority": -1,
           "index": 13
+        },
+        {
+          "id": 15,
+          "startTime": 0,
+          "readTime": 0.0,
+          "bodyTime": 40000,
+          "writeTime": 0.0,
+          "nice": -19,
+          "period": 2000000.0,
+          "initialPriority": 0,
+          "index": 14
         }
       ]
     }
