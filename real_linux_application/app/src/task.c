@@ -51,7 +51,9 @@ void* task_function(void* arg) {
             current_trigger_time = next_trigger_time;
             clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &next_trigger_time, NULL);
         }else{
-            terminate = true;
+            clock_gettime(CLOCK_MONOTONIC, &next_trigger_time);
+            setNextTriggerTime(&next_trigger_time, task->period_ns);
+            clock_gettime(CLOCK_MONOTONIC, &current_trigger_time);
         }
         iteration_index = (iteration_index + 1) % task->num_samples;
     }
