@@ -169,11 +169,6 @@ void setNiceAndPriority(Task_Info *tasks, int num_tasks, double nice_lambda){
     for (int i = 0; i < num_tasks; i++){
         tasks[i].nice_value = setNiceValueByDeadline(tasks[i].period_ns, min_period_ns, nice_lambda);
     }
-    
-    // print nice value and priority
-    for (int i = 0; i < num_tasks; i++){
-        printf("Task name: %s, period: %lld, nice_value: %d, priority: %d\n", tasks[i].name, tasks[i].period_ns, tasks[i].nice_value, tasks[i].priority);
-    }
 
     return;
 }
