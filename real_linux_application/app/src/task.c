@@ -35,6 +35,8 @@ void* task_function(void* arg) {
         clock_gettime(CLOCK_MONOTONIC, &job_end); //response time
         response_time_ns = timeDiff(current_trigger_time, job_end);
         task->response_time_ns[iteration_index] = response_time_ns;
+        task->start_time_ns[iteration_index] = (current_trigger_time.tv_sec * 1000000000LL ) + current_trigger_time.tv_nsec;
+        task->end_time_ns[iteration_index] = (job_end.tv_sec * 1000000000LL ) + job_end.tv_nsec;
         if (task->wcrt_ns < response_time_ns && iteration_index != 0 && iteration_index != task->num_samples){
             task->wcrt_ns = response_time_ns;
         }
@@ -113,16 +115,6 @@ int sched_setattr(pid_t pid, const struct sched_attr *attr,  int flags) {
 	return syscall(__NR_sched_setattr, pid, attr, flags);
 }
 
-
-void checkResponseTime(Task_Info *task, int iteration_index, struct timespec start_time, struct timespec end_time){
-     long long responsed_ns = (end_time.tv_sec - start_time.tv_sec) * 1000000000LL + (end_time.tv_nsec - start_time.tv_nsec);
-    if (iteration_index != 0){
-        task->response_time_ns[iteration_index] = responsed_ns;
-        // task->start_time_ns[iteration_index] = (start_time.tv_sec * 1000000000LL ) + start_time.tv_nsec;
-        // task->end_time_ns[iteration_index] = (end_time.tv_sec * 1000000000LL ) + end_time.tv_nsec;
-    }
-    return;
-}
 
 void setNextTriggerTime(struct timespec *next_trigger_time,  long long interarrival_time_ns){
     addNanoSecondToTimespec(next_trigger_time, interarrival_time_ns);

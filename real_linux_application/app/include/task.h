@@ -55,8 +55,8 @@ typedef struct {
     long long real_wcet_ns;
     long long *response_time_ns;
     long long wcrt_ns;
-    // long long *start_time_ns;
-    // long long *end_time_ns;
+    long long *start_time_ns;
+    long long *end_time_ns;
     
 } Task_Info;
 
@@ -90,5 +90,4 @@ int sched_setattr(pid_t pid, const struct sched_attr *attr,  int flags);
 
 void setNextTriggerTime(struct timespec *next_trigger_time, long long interarrival_time_ns);
 void addNanoSecondToTimespec(struct timespec *time_info, long long add_time_ns);
-void checkResponseTime(Task_Info *task, int iteration_index, struct timespec global_start, struct timespec global_end);
 long long timeDiff(struct timespec time_start, struct timespec time_end);
