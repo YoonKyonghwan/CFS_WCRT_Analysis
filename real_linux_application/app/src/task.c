@@ -20,6 +20,7 @@ void* task_function(void* arg) {
     //     // addNanoSecondToTimespec(&current_trigger_time, random_offset);
     //     // addNanoSecondToTimespec(&next_trigger_time, random_offset);
     // }
+    printf("     initial trigger time: %ld, %ld \n", trigger_time.tv_sec, trigger_time.tv_nsec);
     printf("     (Init) %s \n", task->name);
     POP_PROFILE()
 
