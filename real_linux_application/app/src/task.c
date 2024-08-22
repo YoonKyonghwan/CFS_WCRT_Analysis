@@ -44,14 +44,15 @@ void* task_function(void* arg) {
         if (real_execution_time > task->real_wcet_ns && iteration_index != 0 && iteration_index != task->num_samples){
             task->real_wcet_ns = real_execution_time;
         }
-        POP_PROFILE() 
         // printf("%s(rt %lld, et %lld) \n", task->name, response_time_ns, real_execution_time);
 
         if (task->period_ns > task->response_time_ns[iteration_index]) {
             setNextTriggerTime(&trigger_time, task->period_ns);
+            POP_PROFILE() 
             clock_nanosleep(CLOCK_MONOTONIC, TIMER_ABSTIME, &trigger_time, NULL);
         }else{
             clock_gettime(CLOCK_MONOTONIC, &trigger_time);
+            POP_PROFILE() 
         }
         iteration_index = (iteration_index + 1) % task->num_samples;
     }
