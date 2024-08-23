@@ -77,7 +77,11 @@ long long gcd(long long a, long long b) {
 }
 
 long long lcm(long long a, long long b) {
-	return (a * b) / gcd(a, b);
+    if (a == b){
+        return a;
+    } else{
+        return a * (b / gcd(a, b));
+    }
 }
 
 
