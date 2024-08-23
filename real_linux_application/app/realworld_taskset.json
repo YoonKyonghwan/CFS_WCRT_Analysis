@@ -188,7 +188,7 @@
           "writeTime": 0.0,
           "nice": -19,
           "period": 1000000.0,
-          "initialPriority": 0,
+          "initialPriority": -1,
           "index": 14
         },        
         {
@@ -199,7 +199,7 @@
           "writeTime": 0.0,
           "nice": -5,
           "period": 1000000.0,
-          "initialPriority": 0,
+          "initialPriority": -1,
           "index": 15
         },
         {
@@ -243,7 +243,7 @@
           "writeTime": 0.0,
           "nice": -19,
           "period": 1000000.0,
-          "initialPriority": 0,
+          "initialPriority": -1,
           "index": 19
         },
         {
@@ -254,7 +254,7 @@
           "writeTime": 0.0,
           "nice": -19,
           "period": 32000000.0,
-          "initialPriority": 0,
+          "initialPriority": -1,
           "index": 20
         }
       ]
