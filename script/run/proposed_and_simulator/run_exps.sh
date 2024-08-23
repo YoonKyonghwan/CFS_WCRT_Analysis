@@ -1,17 +1,17 @@
 #!/bin/bash
 
 # set arguments
-taskset_dir="./generated_taskset_even_2"
-result_dir="./exp_results_proposed_new_overestimation"
+result_dir="./exp_results_proposed_time_consumption"
+taskset_dir="./generated_taskset_even"
 
 num_cores=(1)
-num_tasks=(4 6 8 10)
-utilizations=(0.3 0.5 0.7)
+num_tasks=(2 4 6 8 10)
+utilizations=(0.4 0.6 0.8)
 
 num_sets=100
 
 schedule_simulation_method="random" 
-schedule_try_count=1
+schedule_try_count=100
 test_try_count=10000
 target_latency=18000
 min_gran=2250

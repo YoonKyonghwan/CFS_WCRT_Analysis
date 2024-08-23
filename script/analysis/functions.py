@@ -184,7 +184,7 @@ def show_box_plot(file_path, values, title, fontsize, xtick_rotation):
     # plt.boxplot(boxplot_data, labels=labels)
     plt.boxplot(boxplot_data, labels=labels, showfliers=False)
     plt.xticks(rotation=xtick_rotation)
-    plt.xlabel('Number of Tasks and Utilization', fontsize=fontsize)
+    plt.xlabel('Number of Tasks (nT) and Utilization (U)', fontsize=fontsize)
     plt.ylabel('Time Consumption (us)', fontsize=fontsize)
     # plt.title(title, fontsize=fontsize)
     plt.tight_layout()
