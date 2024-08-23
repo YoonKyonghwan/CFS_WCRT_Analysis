@@ -6,7 +6,6 @@ num_cores = [1]
 num_tasks = [2, 4, 6, 8, 10]
 utilizations = [0.4, 0.6, 0.8]
 
-
 def genSummary(result_dir, summary_path, num_cores, num_tasks, utilizations, num_tasksets):
     header = "numCores,numTasks,utilization,tasksetIndex,realLinux_schedulability"
     with open(summary_path, "a") as f:

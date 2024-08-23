@@ -199,7 +199,7 @@ def show_box_plot(file_path, values, title, fontsize, xtick_rotation):
     return
     
     
-def check_correntness(input_path, output_path):
+def check_correntness_simulator(input_path):
     df = pd.read_csv(input_path, sep=",")
 
     results = []
@@ -243,12 +243,65 @@ def check_correntness(input_path, output_path):
 
     num_TP = results_df['TP'].sum()
     print("num_TP : ", num_TP)
-    results_df.to_csv(output_path, index=False)
+    # results_df.to_csv(output_path, index=False)
 
     # total accuracy
     total_accuracy = results_df['accuracy'].mean()
     print("total accuracy : ", total_accuracy)
     return
+
+
+
+def check_correntness_real_linux(proposed_result, real_linux_result):
+    # merge the two dataframes with [numCores, numTasks, utilization, tasksetIndex]
+    merged = pd.merge(proposed_result, real_linux_result, on=['numCores', 'numTasks', 'utilization', 'tasksetIndex'])
+
+    results = []
+    configurations = merged[['numTasks', 'utilization']].drop_duplicates()
+    for i, (num_tasks, utilization) in configurations.iterrows():
+            subset = merged[(merged['numTasks'] == num_tasks) & (merged['utilization'] == utilization)]
+            
+            # Calculate confusion matrix for the subset
+            confusion = confusion_matrix(subset['realLinux_schedulability'], subset['proposed_schedulability'])
+            
+            # Calculate True Positives (TP), True Negatives (TN), False Positives (FP), and False Negatives (FN)
+            if (confusion.shape == (2, 2)):
+                TP = confusion[1, 1]
+                TN = confusion[0, 0]
+                FP = confusion[0, 1]
+                FN = confusion[1, 0]
+            else:
+                assert confusion.shape == (1, 1), "need to check the confusion matrix : confusion.shape" + str(confusion.shape)
+                if subset['realLinux_schedulability'].iloc[0] == False:
+                    TP = 0
+                    TN = confusion[0, 0]
+                    FP = 0
+                    FN = 0
+                else:
+                    TP = confusion[0, 0]
+                    TN = 0
+                    FP = 0
+                    FN = 0
+                    
+            accuracy = (TP + TN) / (TP + TN + FP + FN)
+            # precision = TP / (TP + FP) if (TP + FP) != 0 else 0
+            # recall = TP / (TP + FN) if (TP + FN) != 0 else 0
+
+            # Append the results to the list
+            results.append([num_tasks, utilization, TP, TN, FP, FN, accuracy])
+            
+    # Create a DataFrame to store the results
+    results_df = pd.DataFrame(results, columns=['numTasks', 'utilization', 'TP', 'TN', 'FP', 'FN', 'accuracy'])
+    results_df = results_df.sort_values(['numTasks', 'utilization'])
+    print(results_df)
+
+    num_TP = results_df['TP'].sum()
+    print("num_TP : ", num_TP)
+    # results_df.to_csv(output_path, index=False)
+
+    # total accuracy
+    total_accuracy = results_df['accuracy'].mean()
+    print("total accuracy : ", total_accuracy)
 
 
     
