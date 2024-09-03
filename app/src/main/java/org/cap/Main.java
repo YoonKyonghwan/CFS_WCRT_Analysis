@@ -40,49 +40,74 @@ public class Main {
             String taskInfoPath = params.getString("task_info_path");
             String resultDir = params.getString("result_dir");
 
-            // read task info from file
+            // read task info from file & initialize variables
             JsonReader jsonReader = new JsonReader();
             TestConfiguration testConf = jsonReader.readTasksFromFile(taskInfoPath);
             testConf.initializeTaskData();
+            long startTime = System.nanoTime();
+            double nice_lambda = params.getDouble("nice_lambda");
 
             // analyze by simulator
-            double nice_lambda = params.getDouble("nice_lambda");
-            MathUtility.assignNiceValues(testConf.mappingInfo, nice_lambda);
-            long startTime = System.nanoTime();
-            boolean simulator_schedulability = analyze_by_CFS_simulator(testConf, params);            
-            long simulator_timeConsumption = (System.nanoTime() - startTime)/1000L; //us
+            // MathUtility.assignNiceValues(testConf.mappingInfo, nice_lambda);
+            // long startTime = System.nanoTime();
+            // boolean simulator_schedulability = analyze_by_CFS_simulator(testConf, params);            
+            // long simulator_timeConsumption = (System.nanoTime() - startTime)/1000L; //us
             // boolean simulator_schedulability = true;            
             // long simulator_timeConsumption = 0; //us
-            // System.out.println("Time consumption (CFS simulator): " + simulator_timeConsumption + " us");
-            
             
             for (Core core: testConf.mappingInfo) {
                 for (Task task: core.tasks) {
                     task.period = task.period/1000; // ns -> us
                 }
             }
+            
             boolean proposed_schedulability = false;
             long proposed_timeConsumption = 0;
-            
             // for accessing the nice value assignment algorithm.
-            // nice_lambda = 0;   
-            // while(!proposed_schedulability && nice_lambda < 40) {
-            //     MathUtility.assignNiceValues(testConf.mappingInfo, nice_lambda);
-            //     CFSAnalyzer_v2 analyzer = new CFSAnalyzer_v2(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
-            //     startTime = System.nanoTime();
-            //     analyzer.analyze(); 
-            //     proposed_schedulability = analyzer.checkSystemSchedulability();
-            //     proposed_timeConsumption = (System.nanoTime() - startTime) / 1000L;
-            //     nice_lambda = nice_lambda + 0.1;
-            // }
+            nice_lambda = 0;   
+            while(!proposed_schedulability && nice_lambda < 40) {
+                MathUtility.assignNiceValues(testConf.mappingInfo, nice_lambda);
+                CFSAnalyzer_v2 analyzer = new CFSAnalyzer_v2(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
+                startTime = System.nanoTime();
+                analyzer.analyze(); 
+                proposed_schedulability = analyzer.checkSystemSchedulability();
+                proposed_timeConsumption = (System.nanoTime() - startTime) / 1000L;
+                if (!proposed_schedulability){
+                    nice_lambda = nice_lambda + 0.1;
+                }
+            }
+
+            if (!proposed_schedulability){
+                nice_lambda = params.getDouble("nice_lambda"); //20 (default)
+            }
 
             // for accessing the the degree of overestimation.
+            // MathUtility.assignNiceValues(testConf.mappingInfo, nice_lambda);
+            // CFSAnalyzer_v2 analyzer = new CFSAnalyzer_v2(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
+            // startTime = System.nanoTime();
+            // analyzer.analyze(); 
+            // proposed_schedulability = analyzer.checkSystemSchedulability();
+            // proposed_timeConsumption = (System.nanoTime() - startTime) / 1000L;
+
+            for (Core core: testConf.mappingInfo) {
+                for (Task task: core.tasks) {
+                    task.period = task.period * 1000; // us -> ns
+                }
+            }
+
+            // analyze by simulator
             MathUtility.assignNiceValues(testConf.mappingInfo, nice_lambda);
-            CFSAnalyzer_v2 analyzer = new CFSAnalyzer_v2(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
             startTime = System.nanoTime();
-            analyzer.analyze(); 
-            proposed_schedulability = analyzer.checkSystemSchedulability();
-            proposed_timeConsumption = (System.nanoTime() - startTime) / 1000L;
+            boolean simulator_schedulability = analyze_by_CFS_simulator(testConf, params);            
+            long simulator_timeConsumption = (System.nanoTime() - startTime)/1000L; //us
+            // boolean simulator_schedulability = true;            
+            // long simulator_timeConsumption = 0; //us
+
+            for (Core core: testConf.mappingInfo) {
+                for (Task task: core.tasks) {
+                    task.period = task.period/1000; // ns -> us
+                }
+            }
 
             // save analysis results into file
             AnalysisResultSaver analysisResultSaver = new AnalysisResultSaver();
@@ -92,8 +117,12 @@ public class Main {
                     proposed_schedulability, proposed_timeConsumption
                     );
             analysisResultSaver.saveDetailedResult(resultDir, taskInfoPath, testConf);
+
+            // update the task info file with the nice values
+            analysisResultSaver.updateNiceValues(taskInfoPath, testConf);
         }
     }
+
 
     private static long getMaximumPeriod(List<Core> cores) {
         long maxPeriod = -1;

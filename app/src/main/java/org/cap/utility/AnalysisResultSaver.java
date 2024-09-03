@@ -11,6 +11,8 @@ import org.cap.model.Core;
 import org.cap.model.Task;
 import org.cap.model.TestConfiguration;
 
+import com.google.gson.GsonBuilder;
+
 public class AnalysisResultSaver {
     public void saveResultSummary(String resultDir, String taskInfoPath, boolean simulator_schedulability,
             long simulator_timeConsumption, boolean proposed_schedulability, long proposed_timeConsumption) {
@@ -129,6 +131,17 @@ public class AnalysisResultSaver {
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
 
+    public void updateNiceValues(String taskInfoPath, TestConfiguration testConf){
+        // save the updated nice values to the file
+        GsonBuilder gsonbuilder = new GsonBuilder();
+        String updatedTaskInfo = gsonbuilder.excludeFieldsWithoutExposeAnnotation().setPrettyPrinting().create().toJson(testConf);
+        
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(taskInfoPath))) {
+            writer.write(updatedTaskInfo);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 }

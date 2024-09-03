@@ -308,9 +308,9 @@ public class CFSSimulator {
                         task = coreState.currentTask;
                         executeTask(task, queue, cloneWcrtMap, simulationState, coreState, time, coreIndex);
                         updateMinimumVirtualRuntime(coreState, queue);
-                        // if(queue.size() == 0) {
-                        //     coreState.minimumVirtualRuntime = task.virtualRuntime;
-                        // }
+                        if(queue.size() == 0) {
+                            coreState.minimumVirtualRuntime = task.virtualRuntime;
+                        }
                     }
                     if(coreState.isRunning == false) {
                         task = null;
