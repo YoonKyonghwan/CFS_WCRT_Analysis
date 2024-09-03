@@ -164,6 +164,39 @@ void setNiceAndPriority(Task_Info *tasks, int num_tasks, double nice_lambda){
     return;
 }
 
+
+void setNiceAndPriority2(Task_Info *tasks, int num_tasks){
+    //sort tasks by period from small to large
+    for (int i = 0; i < num_tasks; i++){
+        for (int j = i + 1; j < num_tasks; j++){
+            if (tasks[i].period_ns > tasks[j].period_ns){
+                Task_Info temp = tasks[i];
+                tasks[i] = tasks[j];
+                tasks[j] = temp;
+            }
+        }
+    }
+    double min_period_ns = tasks[0].period_ns;
+
+    // set priority by period(RM)
+    tasks[0].priority = 40;
+    for (int i = 1; i < num_tasks; i++){
+        if (tasks[i].isRTTask){
+            if (tasks[i].period_ns == tasks[i-1].period_ns){
+                tasks[i].priority = tasks[i-1].priority;
+            }else{
+                tasks[i].priority = tasks[i-1].priority - 1;
+            }
+        }else{
+            tasks[i].priority = 0;
+            tasks[i].nice_value = 19;
+        }
+    }
+
+    return;
+}
+
+
 int setNiceValueByDeadline( long long period_ns,  long long min_period_ns, double nice_lambda){
     double relative_weight = log((double)period_ns/(double)min_period_ns) * nice_lambda;
     return min(-20 + (int) relative_weight, 19);

@@ -25,6 +25,7 @@ void setTaskInfo(char *json_file_name, Task_Info *tasks, int sched_policy);
 void setNonRTTaskInfo(Task_Info* non_rt_task, char* name, int core_index, int execution_ns, int period_ns, int num_samples);
 
 void setNiceAndPriority(Task_Info *tasks, int num_tasks, double nice_lambda);
+void setNiceAndPriority2(Task_Info *tasks, int num_tasks);
 int setNiceValueByDeadline( long long period,  long long min_period, double nice_lambda);
 int getNumTasks(char *json_file_name);
 

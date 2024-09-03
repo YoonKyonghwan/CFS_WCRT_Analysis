@@ -5,7 +5,7 @@ struct timespec global_start_time = {0, 0};
 bool terminate = false;
 // bool initial_try = true;
 double nice_lambda = 20;
-int wait_initialization_sec = 1;
+int wait_initialization_sec = 2;
 
 int main(int argc, char* argv[]){
     if (!(argc == 5)) {
@@ -31,7 +31,8 @@ int main(int argc, char* argv[]){
 
     // set nice value
     printf("Set nice values and priorities.\n");
-    setNiceAndPriority(tasks_info, num_tasks, nice_lambda);
+    // setNiceAndPriority(tasks_info, num_tasks, nice_lambda);
+    setNiceAndPriority2(tasks_info, num_tasks);
 
     // print task information
     printf("Task Information\n");
