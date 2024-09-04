@@ -101,6 +101,7 @@ void setSchedPolicyPriority(Task_Info *task){
         }
 
         if (task->sched_policy != CFS){
+            printf("     %s (sched_policy %d, period %lld deadline %lld, workload %lld)\n", task->name, attr.sched_policy, attr.sched_period, attr.sched_deadline, attr.sched_runtime);
             if (sched_setattr(tid, &attr, 0) < 0){
                 perror("sched_setattr");
                 exit(1);
