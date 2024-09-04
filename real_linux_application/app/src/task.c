@@ -77,12 +77,13 @@ void setSchedPolicyPriority(Task_Info *task){
                 break;
             case EDF:
                 attr.sched_policy = SCHED_DEADLINE;
+                __u64 max_period = 2000000000LL;
                 if (task->isPeriodic){
-                    attr.sched_deadline = task->period_ns; //ns
-                    attr.sched_period = task->period_ns; //ns
+                    attr.sched_deadline = min(task->period_ns, max_period); //ns
+                    attr.sched_period = min(task->period_ns, max_period); //ns
                 }else{
-                    attr.sched_deadline = task->low_interarrival_time_ns; //ns
-                    attr.sched_period = task->low_interarrival_time_ns; //ns
+                    attr.sched_deadline = min(task->low_interarrival_time_ns, max_period); //ns
+                    attr.sched_period = min(task->low_interarrival_time_ns, max_period); //ns
                 }
                 attr.sched_runtime = task->wcet_ns + task->wcet_ns/50;  //ns (102% of wcet)
                 break;
