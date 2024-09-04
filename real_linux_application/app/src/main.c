@@ -50,7 +50,7 @@ int main(int argc, char* argv[]){
         pthread_t rt_threads[num_tasks];
         clock_gettime(CLOCK_MONOTONIC, &global_start_time);
         global_start_time.tv_sec += wait_initialization_sec; // wait for all threads to be ready (3sec)
-        printf("global_start_time: %ld sec %ld ns\n", global_start_time.tv_sec, global_start_time.tv_nsec);
+        // printf("global_start_time: %ld sec %ld ns\n", global_start_time.tv_sec, global_start_time.tv_nsec);
         for (int i = 0; i < num_tasks; i++) {
             setCoreMapping(&threadAttr[i], &tasks_info[i]); //core mapping
             int ret_pthread_create = 0;

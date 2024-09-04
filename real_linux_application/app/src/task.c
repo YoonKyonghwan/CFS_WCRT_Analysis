@@ -84,8 +84,7 @@ void setSchedPolicyPriority(Task_Info *task){
                     attr.sched_deadline = task->low_interarrival_time_ns; //ns
                     attr.sched_period = task->low_interarrival_time_ns; //ns
                 }
-                int margin = min(400 * 1000, (int) attr.sched_period /10); // 400us
-                attr.sched_runtime = task->wcet_ns + margin;  //ns
+                attr.sched_runtime = task->wcet_ns + task->wcet_ns/20;  //ns (105% of wcet)
                 break;
             case FIFO: 
                 attr.sched_policy = SCHED_FIFO;
