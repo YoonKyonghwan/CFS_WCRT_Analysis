@@ -77,7 +77,7 @@ void setSchedPolicyPriority(Task_Info *task){
                 break;
             case EDF:
                 attr.sched_policy = SCHED_DEADLINE;
-                __u64 max_period = 2000000000LL;
+                __u64 max_period = 3000000000LL;
                 if (task->isPeriodic){
                     attr.sched_deadline = min(task->period_ns, max_period); //ns
                     attr.sched_period = min(task->period_ns, max_period); //ns
@@ -85,7 +85,7 @@ void setSchedPolicyPriority(Task_Info *task){
                     attr.sched_deadline = min(task->low_interarrival_time_ns, max_period); //ns
                     attr.sched_period = min(task->low_interarrival_time_ns, max_period); //ns
                 }
-                attr.sched_runtime = task->wcet_ns + task->wcet_ns/50;  //ns (102% of wcet)
+                attr.sched_runtime = task->wcet_ns + task->wcet_ns/20;  //ns (105% of wcet)
                 break;
             case FIFO: 
                 attr.sched_policy = SCHED_FIFO;
@@ -102,7 +102,6 @@ void setSchedPolicyPriority(Task_Info *task){
         }
 
         if (task->sched_policy != CFS){
-            printf("     %s (sched_policy %d, period %lld deadline %lld, workload %lld)\n", task->name, attr.sched_policy, attr.sched_period, attr.sched_deadline, attr.sched_runtime);
             if (sched_setattr(tid, &attr, 0) < 0){
                 perror("sched_setattr");
                 exit(1);

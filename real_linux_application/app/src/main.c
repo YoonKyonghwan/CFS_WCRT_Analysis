@@ -37,7 +37,7 @@ int main(int argc, char* argv[]){
     // print task information
     printf("Task Information\n");
     for (int i = 0; i < num_tasks; i++){
-        printf("    %s (RT %d, P %d, priority %d, nice %d, sched_policy %d)\n", tasks_info[i].name, tasks_info[i].isRTTask, tasks_info[i].isPeriodic, tasks_info[i].priority, tasks_info[i].nice_value, tasks_info[i].sched_policy);
+        printf("    %s (RT %d, priority %d, nice %d, sched_policy %d)\n", tasks_info[i].name, tasks_info[i].isRTTask, tasks_info[i].priority, tasks_info[i].nice_value, tasks_info[i].sched_policy);
     }
 
     printf("num_repeat: %d\n", num_repeat);
