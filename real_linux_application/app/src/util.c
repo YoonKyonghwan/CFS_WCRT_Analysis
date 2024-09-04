@@ -30,10 +30,11 @@ void setTaskInfo(char *json_file_name, Task_Info *tasks, int sched_policy){
             tasks[task_index].core_index = core_id;
             if (json_object_get_int(json_object_object_get(task_info, "initialPriority")) == -1){
                 tasks[task_index].isRTTask = true;
+                tasks[task_index].sched_policy = sched_policy; // atoi(argv[1]);
             }else{
                 tasks[task_index].isRTTask = false;
+                tasks[task_index].sched_policy = CFS; // atoi(argv[1]);
             }
-            tasks[task_index].sched_policy = sched_policy; // atoi(argv[1]);
             tasks[task_index].isPeriodic = true;
             tasks[task_index].nice_value = json_object_get_int(json_object_object_get(task_info, "nice"));
             tasks[task_index].period_ns = 1000 * json_object_get_int64(json_object_object_get(task_info, "period"));
