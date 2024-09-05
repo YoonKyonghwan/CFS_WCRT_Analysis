@@ -533,7 +533,8 @@ public class CFSSimulator {
 
     private void updateMinimumVirtualRuntime(CoreState coreState, Queue<TaskStat> queue) {
         if (queue.size() >= 1)
-            coreState.minimumVirtualRuntime = queue.peek().virtualRuntime;
+            // coreState.minimumVirtualRuntime = queue.peek().virtualRuntime;
+            coreState.minimumVirtualRuntime = Math.max(coreState.minimumVirtualRuntime, queue.peek().virtualRuntime);
     }
 
     private HashMap<Integer, Long> initializeWCRTs(List<Core> cores) {
@@ -591,7 +592,8 @@ public class CFSSimulator {
                     TaskStat taskStat = new TaskStat(task);
 
                     taskStat.readReleaseTime = time;
-                    taskStat.virtualRuntime = Math.max(coreState.getLastVirtualRuntime(task.id), coreState.minimumVirtualRuntime);
+                    long min_vruntime = coreState.minimumVirtualRuntime - (this.targetLatency/2);  // place_entity in linux/kernel/sched/fair.c  (assume that GENTLE_FAIR_SLEEPERS is enabled)
+                    taskStat.virtualRuntime = Math.max(coreState.getLastVirtualRuntime(task.id), min_vruntime);
                     skipReadStageIfNoReadTime(taskStat);
                     addIntoQueue(queue, taskStat, time);
                 }

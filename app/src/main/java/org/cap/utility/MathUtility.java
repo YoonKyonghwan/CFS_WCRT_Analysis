@@ -70,10 +70,25 @@ public class MathUtility {
                     min_deadline = period_us;
                 }
             }
+            // long max_deadline = 0; // with the initial large value(10 second)
+            // for (Task task : core.tasks) {
+            //     long period_us = task.period / 1000;
+            //     if (period_us > max_deadline) {
+            //         max_deadline = period_us;
+            //     }
+            // }
             // assign nice values
             for (Task task : core.tasks) {
                 long period_us = task.period / 1000;
                 task.nice = computeNice(period_us, min_deadline, lambda);
+                // task.nice = computeNice2(period_us, max_deadline, lambda);
+                task.weight = NiceToWeight.getWeight(task.nice);
+            }
+
+            int max_nice = core.tasks.stream().mapToInt(task -> task.nice).max().getAsInt();
+            int shift_nice = 19 - max_nice;
+            for (Task task : core.tasks) {
+                task.nice += shift_nice; 
                 task.weight = NiceToWeight.getWeight(task.nice);
             }
         }
@@ -97,6 +112,12 @@ public class MathUtility {
         // double relative_weight = Math.log((double)deadline_i / min_deadline) / Math.log(lambda);
         double relative_weight = Math.log((double)deadline_i / min_deadline) * lambda;
         return Math.min(-20 + (int) relative_weight, 19);
+    }
+
+    //nice_i /max \left(-20, 19 -  \ceil*{\log_{1.25} \frac{D_i}{D_{\text{min}}}}, \;19 \right)
+    private static int computeNice2(long deadline_i, long max_deadline, double lambda){
+        double relative_weight = Math.log((double)deadline_i / max_deadline) * lambda;
+        return Math.max(-20, 19 + (int) relative_weight);
     }
 
     public static void setTaskRandomOffset(List<Core> cores) {
