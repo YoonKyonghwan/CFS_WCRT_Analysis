@@ -13,13 +13,8 @@ void* task_function(void* arg) {
     struct timespec start_execution_time, end_execution_time; // for execution time
     setSchedPolicyPriority(task);
     trigger_time = global_start_time;
-    // if (!initial_try){ 
-    //     // it initial try, all tasks release at the same time
-    //     // if not initial try, add random offset to the trigger time of each task
-    //     // int random_offset = rand() % (task->period_ns / 2);
-    //     // addNanoSecondToTimespec(&current_trigger_time, random_offset);
-    //     // addNanoSecondToTimespec(&next_trigger_time, random_offset);
-    // }
+    int random_offset = (rand() % 100) * 1000; // 0 ~ 100us
+    addNanoSecondToTimespec(&trigger_time, random_offset);
     printf("     (Init) %s \n", task->name);
     POP_PROFILE()
 
