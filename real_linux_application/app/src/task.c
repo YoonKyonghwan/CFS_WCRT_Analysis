@@ -31,12 +31,12 @@ void* task_function(void* arg) {
         task->response_time_ns[iteration_index] = response_time_ns;
         // task->start_time_ns[iteration_index] = (trigger_time.tv_sec * 1000000000LL ) + trigger_time.tv_nsec;
         // task->end_time_ns[iteration_index] = (job_end.tv_sec * 1000000000LL ) + job_end.tv_nsec;
-        if (task->wcrt_ns < response_time_ns && iteration_index%(task->num_samples/2) != 0 ){
+        if (task->wcrt_ns < response_time_ns && iteration_index != 0 ){
             task->wcrt_ns = response_time_ns;
         }
         clock_gettime(CLOCK_THREAD_CPUTIME_ID, &end_execution_time); //execution time
         real_execution_time = timeDiff(start_execution_time, end_execution_time);
-        if (real_execution_time > task->real_wcet_ns && iteration_index%(task->num_samples/2) != 0 ){
+        if (real_execution_time > task->real_wcet_ns && iteration_index != 0 ){
             task->real_wcet_ns = real_execution_time;
         }
         // printf("%s(rt %lld, et %lld) \n", task->name, response_time_ns, real_execution_time);
