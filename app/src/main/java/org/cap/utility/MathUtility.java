@@ -70,27 +70,27 @@ public class MathUtility {
                     min_deadline = period_us;
                 }
             }
-            // long max_deadline = 0; // with the initial large value(10 second)
-            // for (Task task : core.tasks) {
-            //     long period_us = task.period / 1000;
-            //     if (period_us > max_deadline) {
-            //         max_deadline = period_us;
-            //     }
-            // }
+            long max_deadline = 0; // with the initial large value(10 second)
+            for (Task task : core.tasks) {
+                long period_us = task.period / 1000;
+                if (period_us > max_deadline) {
+                    max_deadline = period_us;
+                }
+            }
             // assign nice values
             for (Task task : core.tasks) {
                 long period_us = task.period / 1000;
-                task.nice = computeNice(period_us, min_deadline, lambda);
-                // task.nice = computeNice2(period_us, max_deadline, lambda);
+                // task.nice = computeNice(period_us, min_deadline, lambda);
+                task.nice = computeNice2(period_us, max_deadline, lambda);
                 task.weight = NiceToWeight.getWeight(task.nice);
             }
 
-            int max_nice = core.tasks.stream().mapToInt(task -> task.nice).max().getAsInt();
-            int shift_nice = 19 - max_nice;
-            for (Task task : core.tasks) {
-                task.nice += shift_nice; 
-                task.weight = NiceToWeight.getWeight(task.nice);
-            }
+            // int max_nice = core.tasks.stream().mapToInt(task -> task.nice).max().getAsInt();
+            // int shift_nice = 19 - max_nice;
+            // for (Task task : core.tasks) {
+            //     task.nice += shift_nice; 
+            //     task.weight = NiceToWeight.getWeight(task.nice);
+            // }
         }
     }
 

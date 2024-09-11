@@ -125,6 +125,13 @@ public class ArgParser {
                 .setDefault(true)
                 .nargs("?")
                 .help("Change initial order");
+        parser.addArgument("--fix_lambda", "-fl")
+                .dest("fix_lambda")
+                .type(Boolean.class)
+                .setDefault(false)
+                .nargs("?")
+                .help("If you want to fix lambda enable this option");
+                                
         Namespace params = parser.parseArgsOrFail(args);
         return params;
     }

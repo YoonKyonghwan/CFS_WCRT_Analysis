@@ -34,7 +34,7 @@ public class Main {
             jsonTaskCreator.run(params);
             return;
         }
-
+        
         if (params.getString("task_info_path") != null) {
             assert params.getString("result_dir") != null : "Please specify --resultDir to store result files";
             String taskInfoPath = params.getString("task_info_path");
@@ -47,47 +47,40 @@ public class Main {
             long startTime = System.nanoTime();
             double nice_lambda = params.getDouble("nice_lambda");
 
-            // analyze by simulator
-            // MathUtility.assignNiceValues(testConf.mappingInfo, nice_lambda);
-            // long startTime = System.nanoTime();
-            // boolean simulator_schedulability = analyze_by_CFS_simulator(testConf, params);            
-            // long simulator_timeConsumption = (System.nanoTime() - startTime)/1000L; //us
-            // boolean simulator_schedulability = true;            
-            // long simulator_timeConsumption = 0; //us
-            
             for (Core core: testConf.mappingInfo) {
                 for (Task task: core.tasks) {
                     task.period = task.period/1000; // ns -> us
                 }
             }
-            
+
             boolean proposed_schedulability = false;
             long proposed_timeConsumption = 0;
-            // for accessing the nice value assignment algorithm.
-            nice_lambda = 0;   
-            while(!proposed_schedulability && nice_lambda < 40) {
+            if (params.getBoolean("fix_lambda")) {
                 MathUtility.assignNiceValues(testConf.mappingInfo, nice_lambda);
                 CFSAnalyzer_v2 analyzer = new CFSAnalyzer_v2(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
                 startTime = System.nanoTime();
                 analyzer.analyze(); 
                 proposed_schedulability = analyzer.checkSystemSchedulability();
                 proposed_timeConsumption = (System.nanoTime() - startTime) / 1000L;
+            }else{
+                // for accessing the nice value assignment algorithm.
+                nice_lambda = 0;   
+                while(!proposed_schedulability && nice_lambda < 50) {
+                    MathUtility.assignNiceValues(testConf.mappingInfo, nice_lambda);
+                    CFSAnalyzer_v2 analyzer = new CFSAnalyzer_v2(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
+                    startTime = System.nanoTime();
+                    analyzer.analyze(); 
+                    proposed_schedulability = analyzer.checkSystemSchedulability();
+                    proposed_timeConsumption = (System.nanoTime() - startTime) / 1000L;
+                    if (!proposed_schedulability){
+                        nice_lambda = nice_lambda + 0.01;
+                    }
+                }
+    
                 if (!proposed_schedulability){
-                    nice_lambda = nice_lambda + 0.1;
+                    nice_lambda = params.getDouble("nice_lambda"); //20 (default)
                 }
             }
-
-            if (!proposed_schedulability){
-                nice_lambda = params.getDouble("nice_lambda"); //20 (default)
-            }
-
-            // for accessing the the degree of overestimation.
-            // MathUtility.assignNiceValues(testConf.mappingInfo, nice_lambda);
-            // CFSAnalyzer_v2 analyzer = new CFSAnalyzer_v2(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
-            // startTime = System.nanoTime();
-            // analyzer.analyze(); 
-            // proposed_schedulability = analyzer.checkSystemSchedulability();
-            // proposed_timeConsumption = (System.nanoTime() - startTime) / 1000L;
 
             for (Core core: testConf.mappingInfo) {
                 for (Task task: core.tasks) {
@@ -100,7 +93,7 @@ public class Main {
             startTime = System.nanoTime();
             boolean simulator_schedulability = analyze_by_CFS_simulator(testConf, params);            
             long simulator_timeConsumption = (System.nanoTime() - startTime)/1000L; //us
-            // boolean simulator_schedulability = true;            
+            // boolean simulator_schedulability = true;
             // long simulator_timeConsumption = 0; //us
 
             for (Core core: testConf.mappingInfo) {
@@ -122,7 +115,6 @@ public class Main {
             analysisResultSaver.updateNiceValues(taskInfoPath, testConf);
         }
     }
-
 
     private static long getMaximumPeriod(List<Core> cores) {
         long maxPeriod = -1;
