@@ -5,7 +5,7 @@ utilizations=(0.2 0.4 0.6 0.8)
 # result_dir="./exp_results_proposed_new_nice_assignment"
 # result_dir="./exp_results_proposed_new_overestimation"
 result_dir="./exp_results_proposed_new_fix_lambda"
-# taskset_dir="./generated_taskset_even"
+
 taskset_dir="./generated_taskset_10010000"
 schedule_try_count=1
 test_try_count=1
@@ -32,7 +32,7 @@ if [ $fix_lambda = "true" ]; then
                 fi
                 num_test_set=$((100 / ${#set_start_index[@]}))
                 for start_index in "${set_start_index[@]}"; do
-                    ./script/run/additional/run_exps_parallel.sh $num_task $utilization $result_dir_lambda $taskset_dir $start_index $num_test_set $schedule_try_count $test_try_count $fix_lambda $lambda &
+                    ./script/run/proposed_and_simulator/run_exps_parallel.sh $num_task $utilization $result_dir_lambda $taskset_dir $start_index $num_test_set $schedule_try_count $test_try_count $fix_lambda $lambda &
                 done
             done
         done
@@ -49,7 +49,7 @@ else # heuristic algorithm to assign nice_value
             fi
             num_test_set=$((100 / ${#set_start_index[@]}))
             for start_index in "${set_start_index[@]}"; do
-                ./script/run/additional/run_exps_parallel.sh $num_task $utilization $result_dir $taskset_dir $start_index $num_test_set $schedule_try_count $test_try_count $fix_lambda $default_lambda &
+                ./script/run/proposed_and_simulator/run_exps_parallel.sh $num_task $utilization $result_dir $taskset_dir $start_index $num_test_set $schedule_try_count $test_try_count $fix_lambda $default_lambda &
             done
         done
     done
