@@ -593,6 +593,7 @@ public class CFSSimulator {
 
                     taskStat.readReleaseTime = time;
                     long min_vruntime = coreState.minimumVirtualRuntime - (this.targetLatency/2);  // place_entity in linux/kernel/sched/fair.c  (assume that GENTLE_FAIR_SLEEPERS is enabled)
+                    //long min_vruntime = coreState.minimumVirtualRuntime;  // place_entity in linux/kernel/sched/fair.c  (assume that GENTLE_FAIR_SLEEPERS is enabled)
                     taskStat.virtualRuntime = Math.max(coreState.getLastVirtualRuntime(task.id), min_vruntime);
                     skipReadStageIfNoReadTime(taskStat);
                     addIntoQueue(queue, taskStat, time);
@@ -640,7 +641,7 @@ public class CFSSimulator {
                 this.minimumGranularity);
         coreState.remainingRuntime = (int) ((coreState.remainingRuntime / this.schedulePeriod) * this.schedulePeriod + this.schedulePeriod); 
 
-        coreState.remainingRuntime = Math.min(coreState.remainingRuntime, (int) (task.readTimeInNanoSeconds + task.bodyTimeInNanoSeconds + task.writeTimeInNanoSeconds));
+        coreState.remainingRuntime = Math.min(coreState.remainingRuntime, (long) (task.readTimeInNanoSeconds + task.bodyTimeInNanoSeconds + task.writeTimeInNanoSeconds));
         coreState.isRunning = true;
     }
 
