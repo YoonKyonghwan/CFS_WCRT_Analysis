@@ -1,5 +1,6 @@
 package org.cap.utility;
 
+import org.cap.model.NiceAssignMethod;
 import org.cap.model.ScheduleSimulationMethod;
 import org.cap.simulation.comparator.ComparatorCase;
 
@@ -125,12 +126,12 @@ public class ArgParser {
                 .setDefault(true)
                 .nargs("?")
                 .help("Change initial order");
-        parser.addArgument("--fix_lambda", "-fl")
-                .dest("fix_lambda")
-                .type(Boolean.class)
-                .setDefault(false)
+        parser.addArgument("--nice_assign_method", "-nat")
+                .dest("nice_assign_method")
+                .type(Arguments.enumStringType(NiceAssignMethod.class))
+                .setDefault(NiceAssignMethod.HEURISTIC.toString())
                 .nargs("?")
-                .help("If you want to fix lambda enable this option");
+                .help("nice value method (fix_lambda, heuristic, GA) ");
                                 
         Namespace params = parser.parseArgsOrFail(args);
         return params;

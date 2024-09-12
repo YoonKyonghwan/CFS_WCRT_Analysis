@@ -28,37 +28,6 @@ public class MathUtility {
         }
     }
 
-    
-    public static void assignNiceValues2(List<Core> cores, double lambda) {
-        for (Core core : cores) {
-            // check min deadline
-            double min_deadline = Long.MAX_VALUE;
-            double max_deadline = 0;
-            for (Task task : core.tasks) {
-                long period_us = task.period / 1000;
-                if (period_us < min_deadline) {
-                    min_deadline = period_us;
-                }
-                if (period_us > max_deadline) {
-                    max_deadline = period_us;
-                }
-            }
-
-            // assign nice values
-            for (Task task : core.tasks) {
-                long period_us = task.period / 1000;
-                double deadline_ratio = (period_us - min_deadline) / (max_deadline - min_deadline);
-                int nice = (int)(2 * 39 * log2(deadline_ratio + 1)) - 20;
-                nice = Math.min(nice, 19);
-                task.nice = nice;
-                task.weight = NiceToWeight.getWeight(task.nice);
-            }
-            
-        }
-    }
-
-    static double log2(double x) {return Math.log(x) / Math.log(2);}
-
 
     public static void assignNiceValues(List<Core> cores, double lambda) {
         for (Core core : cores) {
@@ -80,17 +49,26 @@ public class MathUtility {
             // assign nice values
             for (Task task : core.tasks) {
                 long period_us = task.period / 1000;
-                // task.nice = computeNice(period_us, min_deadline, lambda);
-                task.nice = computeNice2(period_us, max_deadline, lambda);
+                task.nice = computeNice(period_us, min_deadline, lambda);
+                // task.nice = computeNice2(period_us, max_deadline, lambda);
                 task.weight = NiceToWeight.getWeight(task.nice);
             }
 
-            // int max_nice = core.tasks.stream().mapToInt(task -> task.nice).max().getAsInt();
-            // int shift_nice = 19 - max_nice;
-            // for (Task task : core.tasks) {
-            //     task.nice += shift_nice; 
-            //     task.weight = NiceToWeight.getWeight(task.nice);
-            // }
+            int max_nice = core.tasks.stream().mapToInt(task -> task.nice).max().getAsInt();
+            int shift_nice = 19 - max_nice;
+            for (Task task : core.tasks) {
+                task.nice += shift_nice; 
+                task.weight = NiceToWeight.getWeight(task.nice);
+            }
+        }
+    }
+
+    public static void assignNiceValues_GA(List<Core> cores, List<Integer> niceValues) {
+        for (Core core : cores) {
+            for(Task task : core.tasks){
+                task.nice = niceValues.get(task.index);
+                task.weight = NiceToWeight.getWeight(task.nice);
+            }
         }
     }
 

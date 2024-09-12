@@ -1,6 +1,8 @@
 package org.cap;
 
 import org.cap.model.Core;
+import org.cap.model.GANiceAssigner;
+import org.cap.model.NiceAssignMethod;
 import org.cap.model.ScheduleSimulationMethod;
 import org.cap.model.SimulationResult;
 import org.cap.model.Task;
@@ -46,50 +48,61 @@ public class Main {
             testConf.initializeTaskData();
             long startTime = System.nanoTime();
             double nice_lambda = params.getDouble("nice_lambda");
-
+            int num_tasks = testConf.mappingInfo.stream().mapToInt(core -> core.tasks.size()).sum();
             for (Core core: testConf.mappingInfo) {
                 for (Task task: core.tasks) {
                     task.period = task.period/1000; // ns -> us
                 }
             }
 
+            NiceAssignMethod niceAssignMethod = NiceAssignMethod.fromValue(params.getString("nice_assign_method"));
             boolean proposed_schedulability = false;
             long proposed_timeConsumption = 0;
-            if (params.getBoolean("fix_lambda")) {
+            if (niceAssignMethod == NiceAssignMethod.FIX_LAMBDA) {
+                startTime = System.nanoTime();
                 MathUtility.assignNiceValues(testConf.mappingInfo, nice_lambda);
                 CFSAnalyzer_v2 analyzer = new CFSAnalyzer_v2(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
-                startTime = System.nanoTime();
                 analyzer.analyze(); 
                 proposed_schedulability = analyzer.checkSystemSchedulability();
                 proposed_timeConsumption = (System.nanoTime() - startTime) / 1000L;
-            }else{
+            }else if (niceAssignMethod == NiceAssignMethod.HEURISTIC){
                 // for accessing the nice value assignment algorithm.
                 nice_lambda = 0;   
-                while(!proposed_schedulability && nice_lambda < 50) {
+                startTime = System.nanoTime();
+                while(!proposed_schedulability && nice_lambda < 40) {
                     MathUtility.assignNiceValues(testConf.mappingInfo, nice_lambda);
                     CFSAnalyzer_v2 analyzer = new CFSAnalyzer_v2(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
-                    startTime = System.nanoTime();
                     analyzer.analyze(); 
                     proposed_schedulability = analyzer.checkSystemSchedulability();
-                    proposed_timeConsumption = (System.nanoTime() - startTime) / 1000L;
                     if (!proposed_schedulability){
                         nice_lambda = nice_lambda + 0.01;
                     }
                 }
-    
+                proposed_timeConsumption = (System.nanoTime() - startTime) / 1000L;
+                if (!proposed_schedulability){
+                    nice_lambda = params.getDouble("nice_lambda"); 
+                    MathUtility.assignNiceValues(testConf.mappingInfo, nice_lambda);
+                } 
+            }else{ //GA
+                int num_chromosomes = 1000;
+                GANiceAssigner gaNiceAssigner = new GANiceAssigner(num_chromosomes, num_tasks, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
+                startTime = System.nanoTime();
+                gaNiceAssigner.evolve(testConf.mappingInfo);
+                CFSAnalyzer_v2 analyzer = new CFSAnalyzer_v2(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
+                analyzer.analyze(); 
+                proposed_schedulability = analyzer.checkSystemSchedulability();
+                proposed_timeConsumption = (System.nanoTime() - startTime) / 1000L;
                 if (!proposed_schedulability){
                     nice_lambda = params.getDouble("nice_lambda"); //20 (default)
                 }
             }
-
+            
+            // analyze by simulator
             for (Core core: testConf.mappingInfo) {
                 for (Task task: core.tasks) {
                     task.period = task.period * 1000; // us -> ns
                 }
             }
-
-            // analyze by simulator
-            MathUtility.assignNiceValues(testConf.mappingInfo, nice_lambda);
             startTime = System.nanoTime();
             boolean simulator_schedulability = analyze_by_CFS_simulator(testConf, params);            
             long simulator_timeConsumption = (System.nanoTime() - startTime)/1000L; //us
