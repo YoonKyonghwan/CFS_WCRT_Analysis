@@ -1,16 +1,16 @@
 #!/bin/bash
 
-INPUT_DIR="./generated_taskset_even"
+INPUT_DIR="./generated_taskset_10010000_updated"
 RESULT_DIR="./real_linux_application/exp_results_CFS"
 
-NUM_REPEAT=30
+NUM_REPEAT=1
 SCHEDULER="CFS"
 APPLICATION_PATH="./real_linux_application/app/application"
 
 num_cores=(1)
 num_tasks=(2 4 6 8 10)
-utilizations=(0.4 0.6 0.8)
-num_sets=50
+utilizations=(0.2 0.4 0.6 0.8)
+num_sets=100
 
 # If the result is not exist, create the directory
 if [ ! -d ${RESULT_DIR} ]; then
@@ -29,7 +29,6 @@ case "${SCHEDULER}" in
         exit 1
         ;;
 esac
-
 
 for num_core in "${num_cores[@]}"; do
     for num_task in "${num_tasks[@]}"; do

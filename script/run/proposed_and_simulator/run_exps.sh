@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # set arguments
-result_dir="./exp_results_proposed_time_consumption"
+result_dir="./exp_results_simulator_time_consumption"
 taskset_dir="./generated_taskset_even"
 
 num_cores=(1)
