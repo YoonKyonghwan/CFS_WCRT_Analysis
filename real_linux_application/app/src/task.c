@@ -133,11 +133,11 @@ long long timeDiff(struct timespec time_start, struct timespec time_end){
     return (time_end.tv_sec - time_start.tv_sec) * 1000000000LL + (time_end.tv_nsec - time_start.tv_nsec);
 }
 
-void busyWait( long long wait_time_ns){
+void busyWait( long long busy_time_ns){
     struct timespec start, end;
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
     long long elapsed_ns = 0;
-    while (elapsed_ns < wait_time_ns) {
+    while (elapsed_ns < busy_time_ns - 10000) { // 10us margin
         for (int i = 0; i < 1000; i++) {
             //waste time
         }
