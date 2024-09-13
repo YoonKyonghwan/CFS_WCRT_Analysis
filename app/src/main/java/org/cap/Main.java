@@ -46,76 +46,23 @@ public class Main {
             JsonReader jsonReader = new JsonReader();
             TestConfiguration testConf = jsonReader.readTasksFromFile(taskInfoPath);
             testConf.initializeTaskData();
+            
+            // analyze by proposed method
+            convertPeriod_ns_us(testConf);
             long startTime = System.nanoTime();
-            double nice_lambda = params.getDouble("nice_lambda");
-            int num_tasks = testConf.mappingInfo.stream().mapToInt(core -> core.tasks.size()).sum();
-            for (Core core: testConf.mappingInfo) {
-                for (Task task: core.tasks) {
-                    task.period = task.period/1000; // ns -> us
-                }
-            }
-
-            NiceAssignMethod niceAssignMethod = NiceAssignMethod.fromValue(params.getString("nice_assign_method"));
-            boolean proposed_schedulability = false;
-            long proposed_timeConsumption = 0;
-            if (niceAssignMethod == NiceAssignMethod.FIX_LAMBDA) {
-                startTime = System.nanoTime();
-                MathUtility.assignNiceValues(testConf.mappingInfo, nice_lambda);
-                CFSAnalyzer_v2 analyzer = new CFSAnalyzer_v2(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
-                analyzer.analyze(); 
-                proposed_schedulability = analyzer.checkSystemSchedulability();
-                proposed_timeConsumption = (System.nanoTime() - startTime) / 1000L;
-            }else if (niceAssignMethod == NiceAssignMethod.HEURISTIC){
-                // for accessing the nice value assignment algorithm.
-                nice_lambda = 0;   
-                startTime = System.nanoTime();
-                while(!proposed_schedulability && nice_lambda < 40) {
-                    MathUtility.assignNiceValues(testConf.mappingInfo, nice_lambda);
-                    CFSAnalyzer_v2 analyzer = new CFSAnalyzer_v2(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
-                    analyzer.analyze(); 
-                    proposed_schedulability = analyzer.checkSystemSchedulability();
-                    if (!proposed_schedulability){
-                        nice_lambda = nice_lambda + 0.01;
-                    }
-                }
-                proposed_timeConsumption = (System.nanoTime() - startTime) / 1000L;
-                if (!proposed_schedulability){
-                    nice_lambda = params.getDouble("nice_lambda"); 
-                    MathUtility.assignNiceValues(testConf.mappingInfo, nice_lambda);
-                } 
-            }else{ //GA
-                int num_chromosomes = 1000;
-                GANiceAssigner gaNiceAssigner = new GANiceAssigner(num_chromosomes, num_tasks, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
-                startTime = System.nanoTime();
-                gaNiceAssigner.evolve(testConf.mappingInfo);
-                CFSAnalyzer_v2 analyzer = new CFSAnalyzer_v2(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
-                analyzer.analyze(); 
-                proposed_schedulability = analyzer.checkSystemSchedulability();
-                proposed_timeConsumption = (System.nanoTime() - startTime) / 1000L;
-                if (!proposed_schedulability){
-                    nice_lambda = params.getDouble("nice_lambda"); //20 (default)
-                }
-            }
+            boolean proposed_schedulability = analysis_by_proposed(testConf, params);
+            long proposed_timeConsumption = (System.nanoTime() - startTime) / 1000L;
             
             // analyze by simulator
-            for (Core core: testConf.mappingInfo) {
-                for (Task task: core.tasks) {
-                    task.period = task.period * 1000; // us -> ns
-                }
-            }
+            convertPeriod_us_ns(testConf);
             startTime = System.nanoTime();
             boolean simulator_schedulability = analyze_by_CFS_simulator(testConf, params);            
             long simulator_timeConsumption = (System.nanoTime() - startTime)/1000L; //us
             // boolean simulator_schedulability = true;
             // long simulator_timeConsumption = 0; //us
 
-            for (Core core: testConf.mappingInfo) {
-                for (Task task: core.tasks) {
-                    task.period = task.period/1000; // ns -> us
-                }
-            }
-
             // save analysis results into file
+            convertPeriod_ns_us(testConf);
             AnalysisResultSaver analysisResultSaver = new AnalysisResultSaver();
             analysisResultSaver.saveResultSummary(
                     resultDir, taskInfoPath, 
@@ -129,6 +76,25 @@ public class Main {
         }
     }
 
+
+    private static void convertPeriod_us_ns(TestConfiguration testConf) {
+        for (Core core: testConf.mappingInfo) {
+            for (Task task: core.tasks) {
+                task.period = task.period * 1000; // us -> ns
+            }
+        }
+    }
+
+
+    private static void convertPeriod_ns_us(TestConfiguration testConf) {
+        for (Core core: testConf.mappingInfo) {
+            for (Task task: core.tasks) {
+                task.period = task.period/1000; // ns -> us
+            }
+        }
+    }
+
+
     private static long getMaximumPeriod(List<Core> cores) {
         long maxPeriod = -1;
         for (Core core : cores) {
@@ -139,6 +105,45 @@ public class Main {
         }
         return maxPeriod;
     }
+
+
+    private static boolean analysis_by_proposed(TestConfiguration testConf, Namespace params) {
+        NiceAssignMethod niceAssignMethod = NiceAssignMethod.fromValue(params.getString("nice_assign_method"));
+        boolean proposed_schedulability = false;
+        double nice_lambda = params.getDouble("nice_lambda");
+        int num_tasks = testConf.mappingInfo.stream().mapToInt(core -> core.tasks.size()).sum();
+        if (niceAssignMethod == NiceAssignMethod.FIX_LAMBDA) {
+            MathUtility.assignNiceValues(testConf.mappingInfo, nice_lambda);
+            CFSAnalyzer_v2 analyzer = new CFSAnalyzer_v2(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
+            analyzer.analyze(); 
+            proposed_schedulability = analyzer.checkSystemSchedulability();
+        }else if (niceAssignMethod == NiceAssignMethod.HEURISTIC){
+            // for accessing the nice value assignment algorithm.
+            nice_lambda = 0;   
+            while(!proposed_schedulability && nice_lambda < 40) {
+                MathUtility.assignNiceValues(testConf.mappingInfo, nice_lambda);
+                CFSAnalyzer_v2 analyzer = new CFSAnalyzer_v2(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
+                analyzer.analyze(); 
+                proposed_schedulability = analyzer.checkSystemSchedulability();
+                if (!proposed_schedulability){
+                    nice_lambda = nice_lambda + 0.01;
+                }
+            }
+            if (!proposed_schedulability){
+                nice_lambda = params.getDouble("nice_lambda"); 
+                MathUtility.assignNiceValues(testConf.mappingInfo, nice_lambda);
+            } 
+        }else{ //GA
+            int num_chromosomes = 1000;
+            GANiceAssigner gaNiceAssigner = new GANiceAssigner(num_chromosomes, num_tasks, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
+            gaNiceAssigner.evolve(testConf.mappingInfo);
+            CFSAnalyzer_v2 analyzer = new CFSAnalyzer_v2(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
+            analyzer.analyze(); 
+            proposed_schedulability = analyzer.checkSystemSchedulability();
+        }
+        return proposed_schedulability;
+    }
+
 
     private static boolean analyze_by_CFS_simulator(TestConfiguration testConf, Namespace params) throws ClassNotFoundException, NoSuchMethodException, SecurityException,
             InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {

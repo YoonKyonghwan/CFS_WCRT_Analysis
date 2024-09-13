@@ -73,4 +73,8 @@ public class GAChromosome {
         }
         System.out.println();
     }
+
+    public int sumOfNiceValues() {
+        return this.niceValues.stream().mapToInt(nice -> nice).sum();
+    }
 }

@@ -5,15 +5,21 @@ import java.util.List;
 
 public class GANiceAssigner {
     public List<GAChromosome> chromosomes;
-    private double mutationRate = 0.03;
     private int numTask;
     private int targetLatency;
     private int minGranularity;
     private int jiffy_us;
+    private int timeout_ms = 10000;
+    private double mutationRate = 0.03;
 
     public GANiceAssigner(int populationSize, int numTask, int targetLatency, int minGranularity, int jiffy_us) {
-        chromosomes = new ArrayList<>(populationSize);
-        for (int i = 0; i < populationSize; i++) {
+        //bound the number of chromosomes to 40^numTask
+        int num_chromosomes = populationSize;
+        if (Math.pow(40, numTask) < populationSize) {
+            num_chromosomes = (int) Math.pow(40, numTask);
+        }
+        chromosomes = new ArrayList<>(num_chromosomes);
+        for (int i = 0; i < num_chromosomes; i++) {
             GAChromosome chromosome = new GAChromosome(numTask, targetLatency, minGranularity, jiffy_us);
             chromosomes.add(chromosome);
         }
@@ -37,7 +43,7 @@ public class GANiceAssigner {
             // check timeout every 10000 iterations
             counterForTimeOut = (counterForTimeOut + 1) % 10000; 
             if (counterForTimeOut == 0) {
-                if (System.currentTimeMillis() - startTime > 10000) { // 5 seconds timeout
+                if (System.currentTimeMillis() - startTime > timeout_ms) {
                     break;
                 }
             }
@@ -46,23 +52,12 @@ public class GANiceAssigner {
             GAChromosome parent2 = rwSelection();
             copy(parent1, child1);
             copy(parent2, child2);
-            // System.out.println("original");
-            // child1.printNiceValues();
-            // child2.printNiceValues();
             crossover(child1, child2);
-            // System.out.println("after crossover");
-            // child1.printNiceValues();
-            // child2.printNiceValues();
             mutate(child1, mutationRate);
             mutate(child2, mutationRate);
-            // System.out.println("after mutation");
-            // child1.printNiceValues();
-            // child2.printNiceValues();
             child1.computeFitness(cores);
             child2.computeFitness(cores);
             GAChromosome child = (child1.fitness > child2.fitness) ? child1 : child2;
-            // System.out.println("child");
-            // child.printNiceValues();
 
             // replace
             if (child.fitness > parent1.fitness) {
@@ -76,7 +71,19 @@ public class GANiceAssigner {
 
         // set best chromosome to cores
         chromosomes.sort((a, b) -> b.fitness - a.fitness);
-        chromosomes.get(0).applyNicevalues(cores);
+        // sort chromosomes by sum of nice values
+        GAChromosome bestChromosome = chromosomes.get(0);
+        int bestFitness = bestChromosome.fitness;
+        for (GAChromosome chromosome : chromosomes) {
+            if (chromosome.fitness == bestFitness) {
+                if (chromosome.sumOfNiceValues() > bestChromosome.sumOfNiceValues()) {
+                    bestChromosome = chromosome;
+                }
+            }else{
+                break;
+            }
+        }
+        bestChromosome.applyNicevalues(cores);
     }
 
     private void initFitnessInPopulation(List<Core> cores) {
