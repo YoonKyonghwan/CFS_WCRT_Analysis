@@ -64,7 +64,7 @@ int main(int argc, char* argv[]){
         }
 
         sleep(wait_initialization_sec);
-        printf("    Start to run application. (simulation time : %ld us)\n", simulation_period_us);
+        printf("    Start to run application. (simulation time : %ld ms)\n", simulation_period_us/1000);
         usleep(simulation_period_us);
 
         printf("    Terminate tasks.\n");
