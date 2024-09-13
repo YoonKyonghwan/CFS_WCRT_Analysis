@@ -12,6 +12,8 @@ num_tasks=(2 4 6 8 10)
 utilizations=(0.2 0.4 0.6 0.8)
 num_sets=100
 
+bash script/run/real_linux/build_application.sh
+
 # If the result is not exist, create the directory
 if [ ! -d ${RESULT_DIR} ]; then
     mkdir ${RESULT_DIR}
