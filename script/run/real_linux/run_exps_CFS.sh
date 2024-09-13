@@ -32,6 +32,8 @@ case "${SCHEDULER}" in
         ;;
 esac
 
+start_time="$(date -u +%s)"
+
 for num_core in "${num_cores[@]}"; do
     for num_task in "${num_tasks[@]}"; do
         for utilization in "${utilizations[@]}"; do
@@ -53,5 +55,10 @@ for num_core in "${num_cores[@]}"; do
         done
     done
 done
+
+# check total execution time (minutes)
+
+elapsed="$(($end_time-$start_time))"
+echo "Total of $elapsed seconds elapsed for the experiment"
 
 python3 ./script/run/real_linux/gen_exp_summary.py --result_dir=${RESULT_DIR} --num_tasksets=${num_sets} 
