@@ -166,16 +166,18 @@ def show_bar_chart(time_data, values, title, fontsize, xtick_rotation):
     return
     
     
-def show_box_plot(file_path, values, title, fontsize, xtick_rotation):
+def show_box_plot_time_analysis(file_path, fontsize, xtick_rotation):
     df = pd.read_csv(file_path, sep=",")
-    time_data = df.groupby(['numTasks', 'utilization'])[['simulator_timeConsumption(us)', 'proposed_timeConsumption(us)']]
+    # df = df[df['proposed_schedulability'] == True]
+    time_data = df.groupby(['numTasks', 'utilization'])[['proposed_timeConsumption(us)']]
+    # time_data = df.groupby(['numTasks', 'utilization'])[['simulator_timeConsumption(us)', 'proposed_timeConsumption(us)']]
     
     # Prepare the data for the box plot
     boxplot_data = []
     labels = []
 
     for (numTasks, utilization), group in time_data:
-        time_consumption = group[values]
+        time_consumption = group['proposed_timeConsumption(us)']
         boxplot_data.append(time_consumption)
         labels.append(f"nT: {numTasks}, U: {utilization}")
 
@@ -192,14 +194,68 @@ def show_box_plot(file_path, values, title, fontsize, xtick_rotation):
     plt.xticks(fontsize=fontsize)
     plt.yticks(fontsize=fontsize)
 
+    # save it to pdf 
+    plt.savefig("time_boxplot.pdf", bbox_inches='tight', pad_inches=0.3)
+    
     # Display the plot
     plt.show()
     
-    print("Max : ", df[values].max(), "Min : ", df[values].min())
+    print("Max : ", df['proposed_timeConsumption(us)'].max(), "Min : ", df['proposed_timeConsumption(us)'].min())
     return
     
     
-def check_correntness_simulator(input_path):
+def check_correctness_simulator(input_path):
+    df = pd.read_csv(input_path, sep=",")
+
+    results = []
+    combinations = df[['numTasks', 'utilization']].drop_duplicates()
+
+    # Loop through each combination
+    for i, (num_tasks, utilization) in combinations.iterrows():
+        subset = df[(df['numTasks'] == num_tasks) & (df['utilization'] == utilization)]
+        # Calculate confusion matrix for the subset
+        confusion = confusion_matrix(subset['simulator_schedulability'], subset['proposed_schedulability'])
+        # Calculate True Positives (TP), True Negatives (TN), False Positives (FP), and False Negatives (FN)
+        if (confusion.shape == (2, 2)):
+            TP = confusion[1, 1]
+            TN = confusion[0, 0]
+            FP = confusion[0, 1]
+            FN = confusion[1, 0]
+        else:
+            assert confusion.shape == (1, 1), "need to check the confusion matrix : confusion.shape" + str(confusion.shape)
+            if subset['simulator_schedulability'].iloc[0] == False:
+                TP = 0
+                TN = confusion[0, 0]
+                FP = 0
+                FN = 0
+            else:
+                TP = confusion[0, 0]
+                TN = 0
+                FP = 0
+                FN = 0
+                
+        accuracy = (TP + TN) / (TP + TN + FP + FN)
+        # precision = TP / (TP + FP) if (TP + FP) != 0 else 0
+        # recall = TP / (TP + FN) if (TP + FN) != 0 else 0
+
+        # Append the results to the list
+        results.append([num_tasks, utilization, TP, TN, FP, FN, accuracy])
+
+    # Create a DataFrame to store the results
+    results_df = pd.DataFrame(results, columns=['numTasks', 'utilization', 'TP', 'TN', 'FP', 'FN', 'accuracy'], index=None)
+    results_df = results_df.sort_values(['numTasks', 'utilization'])
+    # print(results_df)
+
+    num_TP = results_df['TP'].sum()
+    # print("num_TP : ", num_TP)
+    # results_df.to_csv(output_path, index=False)
+
+    # total accuracy
+    total_accuracy = results_df['accuracy'].mean()
+    # print("total accuracy : ", total_accuracy)
+    return num_TP, total_accuracy, results_df
+
+def getNumTP(input_path):
     df = pd.read_csv(input_path, sep=",")
 
     results = []
@@ -239,23 +295,28 @@ def check_correntness_simulator(input_path):
     # Create a DataFrame to store the results
     results_df = pd.DataFrame(results, columns=['numTasks', 'utilization', 'TP', 'TN', 'FP', 'FN', 'accuracy'])
     results_df = results_df.sort_values(['numTasks', 'utilization'])
-    print(results_df)
+    # print(results_df)
 
     num_TP = results_df['TP'].sum()
-    print("num_TP : ", num_TP)
+    # print("num_TP : ", num_TP)
     # results_df.to_csv(output_path, index=False)
 
     # total accuracy
     total_accuracy = results_df['accuracy'].mean()
-    print("total accuracy : ", total_accuracy)
-    return
+    # print("total accuracy : ", total_accuracy)
+    return num_TP
 
 
 
-def check_correntness_real_linux(proposed_result, real_linux_result):
+def check_correntness_real_linux(proposed_result_path, real_linux_result_path):
+    proposed_result = pd.read_csv(proposed_result_path)
+    real_linux_result = pd.read_csv(real_linux_result_path)
     # merge the two dataframes with [numCores, numTasks, utilization, tasksetIndex]
     merged = pd.merge(proposed_result, real_linux_result, on=['numCores', 'numTasks', 'utilization', 'tasksetIndex'])
 
+    # merged_debug = merged[(merged['realLinux_schedulability'] == False) & (merged['proposed_schedulability'] == True)]
+    # print(merged_debug)
+    
     results = []
     configurations = merged[['numTasks', 'utilization']].drop_duplicates()
     for i, (num_tasks, utilization) in configurations.iterrows():
@@ -293,15 +354,16 @@ def check_correntness_real_linux(proposed_result, real_linux_result):
     # Create a DataFrame to store the results
     results_df = pd.DataFrame(results, columns=['numTasks', 'utilization', 'TP', 'TN', 'FP', 'FN', 'accuracy'])
     results_df = results_df.sort_values(['numTasks', 'utilization'])
-    print(results_df)
+    # print(results_df)
 
     num_TP = results_df['TP'].sum()
-    print("num_TP : ", num_TP)
-    # results_df.to_csv(output_path, index=False)
+    # print("num_TP : ", num_TP)
+    # results_df.to_csv("Table5.csv", index=False)
 
     # total accuracy
     total_accuracy = results_df['accuracy'].mean()
-    print("total accuracy : ", total_accuracy)
+    # print("total accuracy : ", total_accuracy)
+    return total_accuracy, results_df
 
 
     
