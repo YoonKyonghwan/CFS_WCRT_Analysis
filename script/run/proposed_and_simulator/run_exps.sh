@@ -1,18 +1,19 @@
 #!/bin/bash
 
 # set arguments
-result_dir="./exp_results_simulator_time_consumption"
-taskset_dir="./generated_taskset_even"
+result_dir="./exp_results_simulator_time_consumption_heuristic"
+taskset_dir="./generated_taskset_10010000"
+nice_assign="heuristic"
+lambda=5.0
 
 num_cores=(1)
 num_tasks=(2 4 6 8 10)
-utilizations=(0.4 0.6 0.8)
-
+utilizations=(0.2 0.4 0.6 0.8)
 num_sets=100
 
 schedule_simulation_method="random" 
-schedule_try_count=100
-test_try_count=10000
+schedule_try_count=1
+test_try_count=1
 target_latency=18000
 min_gran=2250
 jiffy_us=1000
@@ -31,7 +32,7 @@ for num_core in "${num_cores[@]}"; do
             for ((i=0; i<num_sets; i++)); do
                 file_name="${num_core}cores_${num_task}tasks_${utilization}utilization_${i}.json"
                 task_info_path="${taskset_dir}/${num_core}cores/${num_task}tasks/${utilization}utilization/${file_name}"
-                cmd="java -jar run.jar -t=$task_info_path -rd=$result_dir -ssm=$schedule_simulation_method -stc=$schedule_try_count -ttc=$test_try_count -tl=$target_latency -mg=$min_gran -jf=$jiffy_us -lo=off"
+                cmd="java -jar run.jar -t=$task_info_path -rd=$result_dir -ssm=$schedule_simulation_method -stc=$schedule_try_count -ttc=$test_try_count -tl=$target_latency -mg=$min_gran -jf=$jiffy_us -nat=$nice_assign -nl=$lambda -lo=off"
                 echo $cmd
                 ${cmd}
             done
