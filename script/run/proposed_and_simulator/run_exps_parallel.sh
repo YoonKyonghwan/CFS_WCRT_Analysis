@@ -12,8 +12,7 @@ schedule_try_count=$7
 test_try_count=$8
 nice_assign=$9
 lambda=${10}
-
-schedule_simulation_method="random" 
+schedule_simulation_method=${11}
 target_latency=18000
 min_gran=2250
 jiffy_us=1000

@@ -1,9 +1,10 @@
 #!/bin/bash
 
 # set arguments
-result_dir="./exp_results_simulator_time_consumption_heuristic"
-taskset_dir="./generated_taskset_10010000"
-nice_assign="heuristic"
+period_set=303000
+nice_assign="GA"
+taskset_dir="./generated_taskset_${period_set}"
+result_dir="./exp_results_proposed_time_consumption_${nice_assign}_${period_set}_2"
 lambda=5.0
 
 num_cores=(1)
@@ -11,9 +12,10 @@ num_tasks=(2 4 6 8 10)
 utilizations=(0.2 0.4 0.6 0.8)
 num_sets=100
 
-schedule_simulation_method="random" 
+# schedule_simulation_method="random" 
+schedule_simulation_method="random_target_task" 
 schedule_try_count=1
-test_try_count=1
+test_try_count=100
 target_latency=18000
 min_gran=2250
 jiffy_us=1000
@@ -24,7 +26,8 @@ mv ./app/build/libs/run.jar ./run.jar
 rm -rf "$result_dir"
 
 # check total execution time
-start_time="$(date -u +%s)"
+start_time=$(date +%s)
+start_time=$((start_time / 60))
 
 for num_core in "${num_cores[@]}"; do
     for num_task in "${num_tasks[@]}"; do
@@ -40,8 +43,9 @@ for num_core in "${num_cores[@]}"; do
     done
 done
 
-end_time="$(date -u +%s)"
-elapsed="$(($end_time-$start_time))"
-echo "Total of $elapsed seconds elapsed for the experiment"
+end_time=$(date +%s)
+end_time=$((end_time / 60))
+elapsed_time=$((end_time - start_time))
+echo "Execution time: $elapsed_time minutes"
 
 rm -rf logs/*.txt*
