@@ -27,11 +27,16 @@ public class NiceToWeight {
     );
 
     public static int getWeight(int nice) {
-        return niceToWeight.get(nice+20);
+        int index = nice + 20;
+        int weight = niceToWeight.get(index);
+        return weight;
     }
 
     public static long getWeightMul(int nice) {
-        return niceToWMult.get(nice+20);
+        int index = nice + 20;
+        long weight_mult = niceToWMult.get(index);
+        return weight_mult;
+        // return niceToWMult.get(nice+20);
     }
 
 }

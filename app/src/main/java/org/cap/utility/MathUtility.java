@@ -49,9 +49,11 @@ public class MathUtility {
             // assign nice values
             for (Task task : core.tasks) {
                 long period_us = task.period / 1000;
-                // task.nice = computeNice(period_us, min_deadline, lambda);
-                task.nice = computeNice2(period_us, max_deadline, lambda);
-                task.weight = NiceToWeight.getWeight(task.nice);
+                // int nice = computeNice(period_us, min_deadline, lambda);
+                int nice = computeNice2(period_us, max_deadline, lambda);
+                int weight = NiceToWeight.getWeight(nice);
+                task.nice = nice;
+                task.weight = weight;
             }
 
             // int max_nice = core.tasks.stream().mapToInt(task -> task.nice).max().getAsInt();
@@ -89,13 +91,29 @@ public class MathUtility {
 
         // double relative_weight = Math.log((double)deadline_i / min_deadline) / Math.log(lambda);
         double relative_weight = Math.log((double)deadline_i / min_deadline) * lambda;
-        return Math.min(-20 + (int) relative_weight, 19);
+        int nice = (int) (-20 + relative_weight);
+        assert relative_weight >= 0;
+        if (relative_weight == 0.0) {
+            return -20;
+        }else if(relative_weight > 39){
+            return 19;
+        }else{
+            return nice;
+        }
     }
 
     //nice_i /max \left(-20, 19 -  \ceil*{\log_{1.25} \frac{D_i}{D_{\text{min}}}}, \;19 \right)
     private static int computeNice2(long deadline_i, long max_deadline, double lambda){
-        double relative_weight = Math.log((double)deadline_i / max_deadline) * lambda;
-        return Math.max(-20, 19 + (int) relative_weight);
+        double relative_weight = Math.log((double)deadline_i / max_deadline)* lambda;
+        int nice = (int) (19 + relative_weight);
+        assert relative_weight <= 0;
+        if (relative_weight == 0.0) {
+            return 19;
+        }else if(relative_weight < -39){
+            return -20;
+        }else{
+            return nice;
+        }
     }
 
     public static void setTaskRandomOffset(List<Core> cores) {

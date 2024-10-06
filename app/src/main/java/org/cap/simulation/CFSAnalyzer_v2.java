@@ -70,50 +70,31 @@ public class CFSAnalyzer_v2 {
         double w_j = task_j.weight;
 
         // // interference bound by vruntime
-        double v_j_gap = 0;
-
-        // find the candidate of tau_k
-        // List<Integer> candidate_k_index = new ArrayList<>(tasks.size());
-        // for (Task task_k : tasks) {
-        //     if ((task_i.id != task_k.id) && checkVruntimeSpeedCondition(task_i, task_k)) {
-        //         candidate_k_index.add(task_k.id);
-        //     }
-        // }
-        // if (candidate_k_index.size() == 0) {
-        //     //task_i is the minimum vruntime (v_j^t >= v_i^t)
-        // }else if (candidate_k_index.size() == 1 && candidate_k_index.get(0) == task_j.id) {
-        //     v_j_gap += Math.max(getAlpha(task_i, w_j), (this.targetLatency / 2));
-        // }else {
-        //     double minWeight = 88761; //max_weight = 88761
-        //     for (Task task_k: tasks) {
-        //         if (candidate_k_index.contains(task_k.id) && task_k.weight < minWeight) {
-        //             minWeight = task_k.weight;
-        //         }
-        //     }
-        //     v_j_gap += getAlpha(task_i, minWeight);
-        //     v_j_gap += this.targetLatency / 2;
-        // }
-        
-        if (checkVruntimeSpeedCondition(task_i, task_j)){
-            if (tasks.size() > 2) {
-                double minWeight = 88761; //max_weight = 88761
-                for (Task task: tasks) {
-                    if (task.id != task_i.id && task.id != task_i.id && task.weight < minWeight) {
-                        minWeight = task.weight;
-                    }
+        double v_j_gap = 0;        
+        if (tasks.size() > 2) {
+            double weight_k = 88761; //max_weight = 88761
+            for (Task task: tasks) {
+                if (task.id != task_i.id && task.id != task_j.id && task.weight < weight_k) {
+                    weight_k = task.weight;
                 }
-    
-                v_j_gap += getAlpha(task_i, minWeight);
-                v_j_gap += this.targetLatency / 2;
-            }else{
-                //because v_min^t is from one of the two tasks
-                v_j_gap += Math.max(getAlpha(task_i, w_j), (this.targetLatency / 2));
             }
+            // if tau_k is V_min^t
+            double candidate1 = getAlpha(task_i, weight_k) + this.targetLatency / 2;
+            // if tau_j is V_min^t
+            double candidate2 = getAlpha(task_i, w_j);
+            // if tau_i is V_min^t, then v_j_gap = this.targetLatency / 2 and always smaller than candidate1
+            v_j_gap += Math.max(candidate1, candidate2);
+        }else{
+            //because v_min^t is from one of the two tasks
+            double candidate1 = getAlpha(task_i, w_j);
+            double candidate2 = (this.targetLatency / 2);
+            v_j_gap += Math.max(candidate1, candidate2);
         }
 
-        v_j_gap += C_i * ((double) NiceToWeight.getWeight(0) / w_i);
         v_j_gap += getGamma(task_i, task_j);
-        long interference = (long) (v_j_gap * (w_j / NiceToWeight.getWeight(0)));
+        double w_0 = NiceToWeight.getWeight(0);
+        long interference = (long) (v_j_gap * (w_j / w_0));
+        interference += (long) (C_i * (w_j / w_i));
 
         // interference bound by workload
         int num_of_jobs = 0;
@@ -121,10 +102,6 @@ public class CFSAnalyzer_v2 {
         num_of_jobs = (int) Math.ceil((double) R_prev / T_j) + 1;
         total_workload_j = num_of_jobs * C_j;
         interference = Math.min(interference, total_workload_j);
-        // if (R_prev > C_j){
-        //     total_workload_j = C_j + ((R_prev-C_j) / T_j * C_j) + Math.min((R_prev-C_j) % T_j, C_j);
-        //     interference = Math.min(interference, total_workload_j);        
-        // }
 
         // interference bound by max busy interval
         num_of_jobs = (int) Math.ceil((double) maxBusyInterval / T_j);
@@ -182,22 +159,24 @@ public class CFSAnalyzer_v2 {
     //     return interference;
     // }
 
-
     private double getAlpha(Task task_i, double minWeight) {
         double weight_ratio = (double) task_i.weight / (double) (task_i.weight + minWeight);
         double maxDelta = Math.max(this.targetLatency * weight_ratio, this.min_granularity);
         maxDelta = adjustTimeScliceWithJiffy(maxDelta);
         maxDelta = Math.min(maxDelta, task_i.bodyTime);
         double w_0 = NiceToWeight.getWeight(0);
-        return maxDelta * (w_0 / task_i.weight);
+        double alpha = maxDelta * (w_0 / task_i.weight);
+        return alpha;
     }
 
     private double getGamma(Task task_i, Task task_j) {
-        double weight_ratio = (double) task_i.weight / (double) (task_i.weight + task_j.weight);
+        double weight_ratio = (double) task_j.weight / (double) (task_i.weight + task_j.weight);
         double delta = Math.max(this.targetLatency * weight_ratio, this.min_granularity);
         delta = adjustTimeScliceWithJiffy(delta);
         delta = Math.min(delta, task_j.bodyTime);
-        return (delta * NiceToWeight.getWeight(0)) / task_j.weight;
+        double w_0 = NiceToWeight.getWeight(0);
+        double gamma = delta * (w_0 / task_j.weight);
+        return gamma;
     }
 
     /*

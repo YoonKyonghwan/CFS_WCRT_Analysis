@@ -119,14 +119,14 @@ public class Main {
             proposed_schedulability = analyzer.checkSystemSchedulability();
         }else if (niceAssignMethod == NiceAssignMethod.HEURISTIC){
             // for accessing the nice value assignment algorithm.
-            nice_lambda = 0;   
+            nice_lambda = 0;      
             while(!proposed_schedulability && nice_lambda < 40) {
                 MathUtility.assignNiceValues(testConf.mappingInfo, nice_lambda);
                 CFSAnalyzer_v2 analyzer = new CFSAnalyzer_v2(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
                 analyzer.analyze(); 
                 proposed_schedulability = analyzer.checkSystemSchedulability();
                 if (!proposed_schedulability){
-                    nice_lambda = nice_lambda + 0.01;
+                    nice_lambda = nice_lambda + 0.1;
                 }
             }
             if (!proposed_schedulability){
@@ -135,7 +135,9 @@ public class Main {
             } 
         }else{ //GA
             int num_chromosomes = 1000;
-            GANiceAssigner gaNiceAssigner = new GANiceAssigner(num_chromosomes, num_tasks, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
+            int timeout_ms = 3000;
+            double mutationRate = 0.05;
+            GANiceAssigner gaNiceAssigner = new GANiceAssigner(num_chromosomes, timeout_ms, mutationRate, num_tasks, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
             gaNiceAssigner.evolve(testConf.mappingInfo);
             CFSAnalyzer_v2 analyzer = new CFSAnalyzer_v2(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
             analyzer.analyze(); 
@@ -177,6 +179,7 @@ public class Main {
             test_try_count = 1;
         }
 
+        //compareCase = ComparatorCase.FIFO;
 
         CFSSimulator CFSSimulator = new CFSSimulator(scheduleMethod, compareCase, targetLatency, minimumGranularity, wakeupGranularity, schedule_try_count, initial_order, scheduling_tick_us);
         Logger logger = LoggerUtility.getLogger();
@@ -211,11 +214,6 @@ public class Main {
             for (Integer taskID : testConf.idNameMap.keySet()) {
                 logger.fine("\n\n ********** Start simulation with target task: " + taskID + " **********");
                 for(int i = 0 ; i  < test_try_count ; i++) {
-                    // if first try, start with initial offset(0)
-                    // if not first try, set random offset
-                    // if (i != 0) { 
-                    //     MathUtility.setTaskRandomOffset(testConf.mappingInfo);
-                    // }
                     SimulationResult simulResult = CFSSimulator.simulateCFS(testConf.mappingInfo,
                             taskID.intValue(), simulationTime);
                     CFSSimulator.mergeToFinalResult(finalSimulationResult, simulResult);
@@ -231,19 +229,14 @@ public class Main {
                 CFSSimulator.findTaskbyID(testConf, taskIDWCRT.intValue()).isSchedulable_by_simulator = task_schedulability;
                 CFSSimulator.findTaskbyID(testConf, taskIDWCRT.intValue()).WCRT_by_simulator = (int) WCRT_by_simulator;
                 logger.info(String.format("Task ID with %3d (WCRT: %8d us, Period: %8d us, Schedulability: %5s)", taskIDWCRT, WCRT_by_simulator, deadline, task_schedulability));
-                if(finalSimulationResult.schedulability == false)
-                    system_schedulability = false;
+                //if(finalSimulationResult.schedulability == false)
+                //    system_schedulability = false;
             }
             logger.info("Schedule execution count (unique): " + totalTryCount);
         } else{
             SimulationResult finalSimulationResult = new SimulationResult();
             long totalTryCount = 0L;
             for(int i = 0 ; i  < test_try_count ; i++) {
-                // if first try, start with initial offset(0)
-                // if not first try, set random offset
-                // if (i == 0) { 
-                //     MathUtility.setTaskRandomOffset(testConf.mappingInfo);
-                // }
                 SimulationResult simulResult = CFSSimulator.simulateCFS(testConf.mappingInfo, -1, simulationTime);
                 CFSSimulator.mergeToFinalResult(finalSimulationResult, simulResult);
                 totalTryCount += CFSSimulator.getTriedScheduleCount();

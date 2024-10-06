@@ -9,15 +9,17 @@ public class GANiceAssigner {
     private int targetLatency;
     private int minGranularity;
     private int jiffy_us;
-    private int timeout_ms = 10000;
-    private double mutationRate = 0.03;
+    private int timeout_ms;
+    private double mutationRate;
 
-    public GANiceAssigner(int populationSize, int numTask, int targetLatency, int minGranularity, int jiffy_us) {
+    public GANiceAssigner(int populationSize, int timeout_ms, double mutationRate, int numTask, int targetLatency, int minGranularity, int jiffy_us) {
         //bound the number of chromosomes to 40^numTask
         int num_chromosomes = populationSize;
         if (Math.pow(40, numTask) < populationSize) {
             num_chromosomes = (int) Math.pow(40, numTask);
         }
+        this.timeout_ms = timeout_ms;
+        this.mutationRate = mutationRate;
         chromosomes = new ArrayList<>(num_chromosomes);
         for (int i = 0; i < num_chromosomes; i++) {
             GAChromosome chromosome = new GAChromosome(numTask, targetLatency, minGranularity, jiffy_us);
@@ -34,24 +36,19 @@ public class GANiceAssigner {
         GAChromosome child2 = new GAChromosome(numTask, targetLatency, minGranularity, jiffy_us);
         initFitnessInPopulation(cores);
         long startTime = System.currentTimeMillis();
-        int counterForTimeOut = 0;
         while(true) {
             chromosomes.sort((a, b) -> b.fitness - a.fitness);
             if (chromosomes.get(0).fitness == numTask) { // break condition
                 break;
             }
-            // check timeout every 10000 iterations
-            counterForTimeOut = (counterForTimeOut + 1) % 10000; 
-            if (counterForTimeOut == 0) {
-                if (System.currentTimeMillis() - startTime > timeout_ms) {
-                    break;
-                }
+            if (System.currentTimeMillis() - startTime > timeout_ms) {
+                break;
             }
             
             GAChromosome parent1 = rwSelection();
             GAChromosome parent2 = rwSelection();
-            copy(parent1, child1);
-            copy(parent2, child2);
+            copyChromosome(parent1, child1);
+            copyChromosome(parent2, child2);
             crossover(child1, child2);
             mutate(child1, mutationRate);
             mutate(child2, mutationRate);
@@ -61,11 +58,11 @@ public class GANiceAssigner {
 
             // replace
             if (child.fitness > parent1.fitness) {
-                copy(child, parent1);
+                copyChromosome(child, parent1);
             } else if (child.fitness > parent2.fitness) {
-                copy(child, parent2);
+                copyChromosome(child, parent2);
             } else if (child.fitness > chromosomes.get(chromosomes.size() - 1).fitness) {
-                copy(child, chromosomes.get(chromosomes.size() - 1));
+                copyChromosome(child, chromosomes.get(chromosomes.size() - 1));
             }
         }
 
@@ -92,7 +89,7 @@ public class GANiceAssigner {
         }
     }
 
-    private void copy(GAChromosome fromChromosome, GAChromosome toChromosome) {
+    private void copyChromosome(GAChromosome fromChromosome, GAChromosome toChromosome) {
         for (int i = 0; i < numTask; i++) {
             toChromosome.niceValues.set(i, fromChromosome.niceValues.get(i));
         }

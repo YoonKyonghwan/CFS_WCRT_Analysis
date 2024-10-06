@@ -559,6 +559,7 @@ public class CFSSimulator {
             BasicTaskComparator taskComparator = (BasicTaskComparator) ctor.newInstance(new Object[] {});
 
             Queue<TaskStat> queueInCore = new PriorityQueue<>(taskComparator);
+
             for (Task task : core.tasks) {
                 if (targetTaskID == task.id)
                     task.isTargetTask = true;
@@ -567,7 +568,12 @@ public class CFSSimulator {
 
                 TaskStat taskStat = new TaskStat(task);
                 taskStat.readReleaseTime = task.startTime;
-                taskStat.virtualRuntime = 0L;
+                if (targetTaskID == task.id){
+                    taskStat.virtualRuntime = this.targetLatency / 2;
+                }else{
+                    taskStat.virtualRuntime = 0L;
+                }
+                
                 
                 skipReadStageIfNoReadTime(taskStat);
                 if (task.startTime == 0L) {
