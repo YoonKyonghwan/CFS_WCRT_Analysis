@@ -1,10 +1,11 @@
 #!/bin/bash
 
-INPUT_DIR="./generated_taskset_10010000_updated"
+INPUT_DIR="./generated_taskset_303000_updated"
 RESULT_DIR="./real_linux_application/exp_results_CFS"
 
 NUM_REPEAT=1
-SCHEDULER="CFS"
+# SCHEDULER="CFS"
+SCHED_INDEX=0
 APPLICATION_PATH="./real_linux_application/app/application"
 
 num_cores=(1)
@@ -14,23 +15,10 @@ num_sets=100
 
 bash script/run/real_linux/build_application.sh
 
-# If the result is not exist, create the directory
 if [ ! -d ${RESULT_DIR} ]; then
     mkdir ${RESULT_DIR}
 fi
 rm -rf ${RESULT_DIR}/*
-
-case "${SCHEDULER}" in
-    "CFS") SCHED_INDEX=0 ;;
-    "FIFO") SCHED_INDEX=1 ;;
-    "RR") SCHED_INDEX=2 ;;
-    "EDF") SCHED_INDEX=3 ;;
-    "RM") SCHED_INDEX=4 ;;
-    *)
-        echo "Unknown scheduler: ${SCHEDULER}"
-        exit 1
-        ;;
-esac
 
 start_time=$(date +%s)
 start_time=$((start_time / 60))
@@ -56,8 +44,6 @@ for num_core in "${num_cores[@]}"; do
         done
     done
 done
-
-# check total execution time (minutes)
 
 end_time=$(date +%s)
 end_time=$((end_time / 60))
