@@ -72,7 +72,7 @@ public class CFSAnalyzer_v2 {
         // // interference bound by vruntime
         double v_j_gap = 0;        
         if (tasks.size() > 2) {
-            double weight_k = 88761; //max_weight = 88761
+            double weight_k = 88761; //max_weight = 88761 (NiceToWeight.getWeight(-20))
             for (Task task: tasks) {
                 if (task.id != task_i.id && task.id != task_j.id && task.weight < weight_k) {
                     weight_k = task.weight;
@@ -165,7 +165,7 @@ public class CFSAnalyzer_v2 {
         maxDelta = adjustTimeScliceWithJiffy(maxDelta);
         maxDelta = Math.min(maxDelta, task_i.bodyTime);
         double w_0 = NiceToWeight.getWeight(0);
-        double alpha = maxDelta * (w_0 / task_i.weight);
+        double alpha = maxDelta * w_0 / task_i.weight;
         return alpha;
     }
 
@@ -175,7 +175,7 @@ public class CFSAnalyzer_v2 {
         delta = adjustTimeScliceWithJiffy(delta);
         delta = Math.min(delta, task_j.bodyTime);
         double w_0 = NiceToWeight.getWeight(0);
-        double gamma = delta * (w_0 / task_j.weight);
+        double gamma = delta * w_0 / task_j.weight;
         return gamma;
     }
 

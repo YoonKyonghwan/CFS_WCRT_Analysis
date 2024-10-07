@@ -36,10 +36,14 @@ public class GANiceAssigner {
         GAChromosome child2 = new GAChromosome(numTask, targetLatency, minGranularity, jiffy_us);
         initFitnessInPopulation(cores);
         long startTime = System.currentTimeMillis();
+        int additional_iterations = 0;
         while(true) {
             chromosomes.sort((a, b) -> b.fitness - a.fitness);
-            if (chromosomes.get(0).fitness == numTask) { // break condition
-                break;
+            if (chromosomes.get(0).fitness == this.numTask) { // break condition
+                additional_iterations++;
+                if (additional_iterations > (1000 * this.numTask)) {
+                    break;
+                }
             }
             if (System.currentTimeMillis() - startTime > timeout_ms) {
                 break;

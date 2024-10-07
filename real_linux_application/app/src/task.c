@@ -137,7 +137,7 @@ void busyWait( long long busy_time_ns){
     struct timespec start, end;
     clock_gettime(CLOCK_THREAD_CPUTIME_ID, &start);
     long long elapsed_ns = 0;
-    while (elapsed_ns < busy_time_ns - 100000) { // 100us margin
+    while (elapsed_ns < busy_time_ns - 200000) { // 200us margin
         for (int i = 0; i < 100; i++) {
             //waste time
         }
