@@ -4,7 +4,7 @@
 period_set=303000
 nice_assign="GA"
 taskset_dir="./generated_taskset_${period_set}"
-result_dir="./exp_results_proposed_time_consumption_${nice_assign}_${period_set}_2"
+result_dir="./exp_results_proposed_time_consumption_${nice_assign}_${period_set}"
 lambda=5.0
 
 num_cores=(1)

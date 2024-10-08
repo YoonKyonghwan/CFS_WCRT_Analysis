@@ -22,6 +22,7 @@ start_time=$((start_time / 60))
 
 echo "start run_exps_parallel.sh"
 if [ $nice_assign = "baseline" ]; then
+    nice_assign="fix_lambda"
     lambda=0.0
     for num_task in "${num_tasks[@]}"; do
         for utilization in "${utilizations[@]}"; do

@@ -41,7 +41,7 @@ public class GANiceAssigner {
             chromosomes.sort((a, b) -> b.fitness - a.fitness);
             if (chromosomes.get(0).fitness == this.numTask) { // break condition
                 additional_iterations++;
-                if (additional_iterations > (1000 * this.numTask)) {
+                if (additional_iterations > (100 * this.numTask)) {
                     break;
                 }
             }
