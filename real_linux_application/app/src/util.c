@@ -2,7 +2,7 @@
 
 long long min_period_ns = LLONG_MAX;
 
-void setTaskInfo(char *json_file_name, Task_Info *tasks, int sched_policy){
+void initTaskInfo(char *json_file_name, Task_Info *tasks, int sched_policy){
     json_object *tasks_info_json = json_object_from_file(json_file_name);
     if (tasks_info_json == NULL){
         printf("Error: when read json file\n");
@@ -86,30 +86,6 @@ long long lcm(long long a, long long b) {
 }
 
 
-
-void setNonRTTaskInfo(Task_Info* non_rt_task, char* name, int core_index, int execution_ns, int period_ns, int num_samples){
-    non_rt_task->name = name; "Non_RT_Task";
-    non_rt_task->isRTTask = false;
-    non_rt_task->sched_policy = CFS;
-    non_rt_task->isPeriodic = false;
-    non_rt_task->nice_value = 19;
-
-    non_rt_task->core_index = core_index;
-    non_rt_task->period_ns = period_ns;
-    non_rt_task->body_time_ns = execution_ns;
-    non_rt_task->num_samples = num_samples; // simulation_period_sec * 10; //max: 10 per 1sec
-    
-    non_rt_task->wcet_ns = execution_ns;
-    non_rt_task->real_wcet_ns = execution_ns;
-    non_rt_task->wcrt_ns = 0;
-
-    non_rt_task->response_time_ns = (long long*)malloc(non_rt_task->num_samples * sizeof(long long));
-    for (int k = 0; k < non_rt_task->num_samples; k++){
-        non_rt_task->response_time_ns[k] = 0;
-    }
-}
-
-
 int getNumTasks(char *json_file_name){
     json_object *tasks_info_json = json_object_from_file(json_file_name);
     if (tasks_info_json == NULL){
@@ -131,39 +107,7 @@ int getNumTasks(char *json_file_name){
 }
 
 
-void setNiceAndPriority(Task_Info *tasks, int num_tasks, double nice_lambda){
-    //sort tasks by period from small to large
-    for (int i = 0; i < num_tasks; i++){
-        for (int j = i + 1; j < num_tasks; j++){
-            if (tasks[i].period_ns > tasks[j].period_ns){
-                Task_Info temp = tasks[i];
-                tasks[i] = tasks[j];
-                tasks[j] = temp;
-            }
-        }
-    }
-    double min_period_ns = tasks[0].period_ns;
-
-    // set priority by period(RM)
-    int priority = 40;
-    for (int i = 0; i < num_tasks; i++){
-        if (tasks[i].isRTTask){
-            if ((i != 0) && (tasks[i].period_ns != tasks[i-1].period_ns)){
-                priority--;
-            }
-            tasks[i].priority = priority;
-            tasks[i].nice_value = setNiceValueByDeadline(tasks[i].period_ns, min_period_ns, nice_lambda);
-        }else{
-            tasks[i].priority = 0;
-            tasks[i].nice_value = 19;
-        }
-    }
-    
-    return;
-}
-
-
-void setNiceAndPriority2(Task_Info *tasks, int num_tasks){
+void setPriorityByRM(Task_Info *tasks, int num_tasks){
     //sort tasks by period from small to large
     for (int i = 0; i < num_tasks; i++){
         for (int j = i + 1; j < num_tasks; j++){
@@ -193,11 +137,6 @@ void setNiceAndPriority2(Task_Info *tasks, int num_tasks){
     return;
 }
 
-
-int setNiceValueByDeadline( long long period_ns,  long long min_period_ns, double nice_lambda){
-    double relative_weight = log((double)period_ns/(double)min_period_ns) * nice_lambda;
-    return min(-20 + (int) relative_weight, 19);
-}
 
 void updateRealWCET(char* input_file_name, Task_Info *tasks, int num_tasks){
     json_object *org_info = json_object_from_file(input_file_name);
@@ -216,7 +155,7 @@ void updateRealWCET(char* input_file_name, Task_Info *tasks, int num_tasks){
             sprintf(task_id_str, "%d", task_id);
             char *task_name = json_object_get_string(json_object_object_get(tasks_ids, task_id_str));
             long long real_wcet = getRealWCETByName(task_name, tasks, num_tasks)/1000 + 1;
-            //  long long wcet = json_object_get_int64(json_object_object_get(task_info, "bodyTime"));
+            // long long wcet = json_object_get_int64(json_object_object_get(task_info, "bodyTime"));
             // printf("Task name: %s, real_wcet: %d, wcet: %d\n", task_name, real_wcet, wcet);
             //update real_wcet
             json_object_set_int(json_object_object_get(task_info, "bodyTime"), real_wcet);

@@ -21,12 +21,9 @@ long long gcd(long long a, long long b);
 long long lcm(long long a, long long b);
 long long getHyperperiod_ns(Task_Info *tasks, int num_tasks);
 
-void setTaskInfo(char *json_file_name, Task_Info *tasks, int sched_policy);
-void setNonRTTaskInfo(Task_Info* non_rt_task, char* name, int core_index, int execution_ns, int period_ns, int num_samples);
+void initTaskInfo(char *json_file_name, Task_Info *tasks, int sched_policy);
 
-void setNiceAndPriority(Task_Info *tasks, int num_tasks, double nice_lambda);
-void setNiceAndPriority2(Task_Info *tasks, int num_tasks);
-int setNiceValueByDeadline( long long period,  long long min_period, double nice_lambda);
+void setPriorityByRM(Task_Info *tasks, int num_tasks);
 int getNumTasks(char *json_file_name);
 
 void freeTaskInfo(Task_Info *task);
@@ -35,7 +32,6 @@ void saveResultToJson(int num_tasks, Task_Info *tasks, Task_Info *non_RT_task, c
 void convertTaskResultToJson(json_object *task_result, Task_Info *task);
 
 void setCoreMapping(pthread_attr_t *threadAttr, Task_Info *task);
-// void setSchedPolicyPriority(pthread_attr_t *threadAttr, Task_Info *task);
 void printSchedPolicy(int policy);
 
 long long getRealWCETByName(char* task, Task_Info *tasks, int num_tasks);

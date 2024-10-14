@@ -2,7 +2,10 @@
 
 ## Overview
 
-Given that the proposed method provides conservative estimates of the WCRTs, it is necessary to examine the degree of over-estimation. To evaluate the accuracy of the proposed WCRT analysis method, its schedulability estimations are compared with the actual schedulability observed from executing tasks on a real Linux system. For a direct comparison with real Linux systems, we first measure the actual WCRTs by running tasks in a real Linux environment. For each task set, we run all tasks for 90 seconds at the same time, measuring the response time of all jobs. We then identify the longest response time for each task, which serves as the actual WCRT. Subsequently, we assess the schedulability of the task sets and compare these results with the schedulability analysis by our proposed method. However, measuring the WCRT by actually running tasks in real Linux systems is a time-intensive endeavor. As a result, for each configuration, we decide to randomly select 30 task sets from the task set described in Section V-A1, and we conduct our schedulability analysis for these chosen sets.
+Given that the proposed method provides conservative estimates of the WCRTs, it is necessary to examine the degree of over-estimation. 
+For a comparison with real Linux systems, we measured the actual WCRTs by running tasks in a real Linux environment. 
+For each task set, we executed all tasks simultaneously for twice the duration of their hyperperiod, during which the response time of all jobs was recorded. We then identify the longest response time for each task, which serves as the measured WCRT. 
+Subsequently, we assess the schedulability of the task sets and compare these results with the schedulability analysis using our proposed method. 
 
 ## Implementation Detail
 The application comprises three C code files, each serving a specific role in the system simulation.
@@ -39,4 +42,4 @@ This file implements task_function, crucial for real-time system simulation:
     - Otherwise, it starts the next job immediately.
 
 ### [util.c](./real_linux_application/app/src/util.c)
-Contains utility functions used across main.c and task.c, providing essential functionality to both files.
+This contains utility functions used across main.c and task.c, providing essential functionality to both files.

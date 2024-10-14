@@ -3,7 +3,6 @@
 
 struct timespec global_start_time = {0, 0};
 bool terminate = false;
-// bool initial_try = true;
 int wait_initialization_sec = 1;
 
 int main(int argc, char* argv[]){
@@ -24,13 +23,10 @@ int main(int argc, char* argv[]){
     int num_tasks = getNumTasks(json_file_name);  
 
     printf("Read Tasks_info from %s\n", json_file_name);
-    Task_Info tasks_info[num_tasks]; //rt_tasks
-    setTaskInfo(json_file_name, tasks_info, atoi(argv[1]));
+    Task_Info tasks_info[num_tasks]; 
+    initTaskInfo(json_file_name, tasks_info, atoi(argv[1]));
+    setPriorityByRM(tasks_info, num_tasks);
     long simulation_period_us = (long) (2 * getHyperperiod_ns(tasks_info, num_tasks)) / 1000;
-
-    // set nice value
-    printf("Set nice values and priorities.\n");
-    setNiceAndPriority2(tasks_info, num_tasks);
 
     // print task information
     printf("Task Information\n");
@@ -43,7 +39,6 @@ int main(int argc, char* argv[]){
         printf("Repeat_index %d\n", repeat_index);
         printf("    Initialize and create tasks\n");
         terminate = false;
-        // if (repeat_index != 0)  initial_try = false;
         pthread_attr_t threadAttr[num_tasks];
         pthread_t rt_threads[num_tasks];
         clock_gettime(CLOCK_MONOTONIC, &global_start_time);
