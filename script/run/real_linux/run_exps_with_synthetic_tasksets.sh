@@ -1,11 +1,10 @@
 #!/bin/bash
 
-INPUT_DIR="./generated_taskset_303000_updated"
+INPUT_DIR="./generated_taskset_303000"
 RESULT_DIR="./real_linux_application/exp_results_CFS"
 
-NUM_REPEAT=1
-# SCHEDULER="CFS"
-SCHED_INDEX=0
+NUM_REPEAT=5
+SCHED_INDEX=0 #"CFS"
 APPLICATION_PATH="./real_linux_application/app/application"
 
 num_cores=(1)

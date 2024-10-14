@@ -16,7 +16,7 @@
           "writeTime":0.0,
           "nice":-15,
           "period":200000.0,
-          "initialPriority":-1,
+          "initialPriority":0,
           "index":0
         },
         {

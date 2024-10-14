@@ -112,7 +112,7 @@ public class Main {
         boolean proposed_schedulability = false;
         double nice_lambda = params.getDouble("nice_lambda");
         int num_tasks = testConf.mappingInfo.stream().mapToInt(core -> core.tasks.size()).sum();
-        if (niceAssignMethod == NiceAssignMethod.FIX_LAMBDA) {
+        if (niceAssignMethod == NiceAssignMethod.BASELINE) {
             MathUtility.assignNiceValues(testConf.mappingInfo, nice_lambda);
             CFSAnalyzer_v2 analyzer = new CFSAnalyzer_v2(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
             analyzer.analyze(); 
@@ -178,8 +178,6 @@ public class Main {
         if(scheduleMethod == ScheduleSimulationMethod.BRUTE_FORCE) {
             test_try_count = 1;
         }
-
-        //compareCase = ComparatorCase.FIFO;
 
         CFSSimulator CFSSimulator = new CFSSimulator(scheduleMethod, compareCase, targetLatency, minimumGranularity, wakeupGranularity, schedule_try_count, initial_order, scheduling_tick_us);
         Logger logger = LoggerUtility.getLogger();

@@ -32,7 +32,7 @@
           "readTime": 0.0,
           "bodyTime": 15000.0,
           "writeTime": 0.0,
-          "nice": -15,
+          "nice": 6,
           "period": 125000,
           "initialPriority": -1,
           "index": 0
@@ -43,7 +43,7 @@
           "readTime": 0.0,
           "bodyTime": 25030.0,
           "writeTime": 0.0,
-          "nice": 0,
+          "nice": 6,
           "period": 125000,
           "initialPriority": -1,
           "index": 1
@@ -54,7 +54,7 @@
           "readTime": 0.0,
           "bodyTime": 7500.0,
           "writeTime": 0.0,
-          "nice": 19,
+          "nice": 4,
           "period": 62500,
           "initialPriority": -1,
           "index": 2
@@ -65,7 +65,7 @@
           "readTime": 0.0,
           "bodyTime": 6150.0,
           "writeTime": 0.0,
-          "nice": 1,
+          "nice": 6,
           "period": 125000,
           "initialPriority": -1,
           "index": 3
@@ -76,7 +76,7 @@
           "readTime": 0.0,
           "bodyTime": 1200.0,
           "writeTime": 0.0,
-          "nice": -7,
+          "nice": 6,
           "period": 125000,
           "initialPriority": -1,
           "index": 4
@@ -87,7 +87,7 @@
           "readTime": 0.0,
           "bodyTime": 900.0,
           "writeTime": 0.0,
-          "nice": 16,
+          "nice": 11,
           "period": 1000000,
           "initialPriority": -1,
           "index": 5
@@ -98,7 +98,7 @@
           "readTime": 0.0,
           "bodyTime": 1950.0,
           "writeTime": 0.0,
-          "nice": -4,
+          "nice": 7,
           "period": 250000,
           "initialPriority": -1,
           "index": 6
@@ -109,7 +109,7 @@
           "readTime": 0.0,
           "bodyTime": 1200.0,
           "writeTime": 0.0,
-          "nice": -3,
+          "nice": 6,
           "period": 125000,
           "initialPriority": -1,
           "index": 7
@@ -120,7 +120,7 @@
           "readTime": 0.0,
           "bodyTime": 5150.0,
           "writeTime": 0.0,
-          "nice": -10,
+          "nice": 7,
           "period": 250000,
           "initialPriority": -1,
           "index": 8
@@ -131,7 +131,7 @@
           "readTime": 0.0,
           "bodyTime": 1200.0,
           "writeTime": 0.0,
-          "nice": 10,
+          "nice": 11,
           "period": 1000000,
           "initialPriority": 0,
           "index": 9
@@ -142,7 +142,7 @@
           "readTime": 0.0,
           "bodyTime": 22500.0,
           "writeTime": 0.0,
-          "nice": 18,
+          "nice": 9,
           "period": 500000,
           "initialPriority": -1,
           "index": 10
@@ -153,7 +153,7 @@
           "readTime": 0.0,
           "bodyTime": 3500.0,
           "writeTime": 0.0,
-          "nice": -15,
+          "nice": 7,
           "period": 250000,
           "initialPriority": 0,
           "index": 11
@@ -164,7 +164,7 @@
           "readTime": 0.0,
           "bodyTime": 27000.0,
           "writeTime": 0.0,
-          "nice": 18,
+          "nice": 9,
           "period": 500000,
           "initialPriority": -1,
           "index": 12
@@ -175,7 +175,7 @@
           "readTime": 0.0,
           "bodyTime": 1500.0,
           "writeTime": 0.0,
-          "nice": 19,
+          "nice": 11,
           "period": 1000000,
           "initialPriority": -1,
           "index": 13
@@ -186,7 +186,7 @@
           "readTime": 0.0,
           "bodyTime": 16000.0,
           "writeTime": 0.0,
-          "nice": 19,
+          "nice": 11,
           "period": 1000000,
           "initialPriority": -1,
           "index": 14
@@ -197,7 +197,7 @@
           "readTime": 0.0,
           "bodyTime": 19100.0,
           "writeTime": 0.0,
-          "nice": 18,
+          "nice": 11,
           "period": 1000000,
           "initialPriority": -1,
           "index": 15
@@ -208,7 +208,7 @@
           "readTime": 0.0,
           "bodyTime": 88800.0,
           "writeTime": 0.0,
-          "nice": 17,
+          "nice": 12,
           "period": 2000000,
           "initialPriority": -1,
           "index": 16
@@ -219,7 +219,7 @@
           "readTime": 0.0,
           "bodyTime": 2000.0,
           "writeTime": 0.0,
-          "nice": -2,
+          "nice": 19,
           "period": 32000000,
           "initialPriority": -1,
           "index": 17
@@ -230,7 +230,7 @@
           "readTime": 0.0,
           "bodyTime": 1000.0,
           "writeTime": 0.0,
-          "nice": -5,
+          "nice": 19,
           "period": 32000000,
           "initialPriority": 0,
           "index": 18
@@ -241,7 +241,7 @@
           "readTime": 0.0,
           "bodyTime": 1000.0,
           "writeTime": 0.0,
-          "nice": 19,
+          "nice": 11,
           "period": 1000000,
           "initialPriority": -1,
           "index": 19
@@ -252,7 +252,7 @@
           "readTime": 0.0,
           "bodyTime": 200.0,
           "writeTime": 0.0,
-          "nice": 4,
+          "nice": 19,
           "period": 32000000,
           "initialPriority": -1,
           "index": 20

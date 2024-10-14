@@ -1,11 +1,10 @@
 #!/bin/bash
 
-INPUT_FILE="real_linux_application/app/sample_taskset.json"
-RESULT_DIR="real_linux_application/exp_results_non_RT"
-
-APPLICATION_PATH="real_linux_application/app/application"
-SIM_PERIOD_SEC=60
-SCHEDULERS=("CFS" "FIFO" "RR")
+INPUT_FILE="real_linux_application/app/realworld_taskset.json"
+NUM_REPEAT=1
+SCHEDULERS=("CFS" "FIFO" "RR" "EDF")
+RESULT_DIR="./real_linux_application/exp_results_real_application"
+APPLICATION_PATH="./real_linux_application/app/application"
 ENABLE_NSYS=0
 
 # If the result is not exist, create the directory
@@ -29,7 +28,7 @@ for SCHEDULER in "${SCHEDULERS[@]}"; do
     esac
     
     echo ""
-    cmd="${APPLICATION_PATH} ${SCHED_INDEX} ${SIM_PERIOD_SEC} ${INPUT_FILE} ${RESULT_DIR}/${OUTPUT_FILE} -non_RT"
+    cmd="${APPLICATION_PATH} ${SCHED_INDEX} ${NUM_REPEAT} ${INPUT_FILE} ${RESULT_DIR}/${OUTPUT_FILE}"
     if [ ${ENABLE_NSYS} -eq 0 ]; then
         echo "command : sudo ${cmd}"
         ${cmd}

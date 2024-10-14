@@ -131,7 +131,7 @@ public class ArgParser {
                 .type(Arguments.enumStringType(NiceAssignMethod.class))
                 .setDefault(NiceAssignMethod.HEURISTIC.toString())
                 .nargs("?")
-                .help("nice value method (fix_lambda, heuristic, GA) ");
+                .help("nice value method (baseline, heuristic, GA) ");
                                 
         Namespace params = parser.parseArgsOrFail(args);
         return params;

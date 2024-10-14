@@ -1,7 +1,7 @@
 package org.cap.model;
 
 public enum NiceAssignMethod {
-    FIX_LAMBDA("fix_lambda"), 
+    BASELINE("baseline"),
 	HEURISTIC("heuristic"),
 	GENETIC_ALGORITHM("GA");
 
