@@ -5,9 +5,10 @@ NUM_REPEAT=1
 SCHEDULERS=("CFS" "FIFO" "RR" "EDF")
 RESULT_DIR="./real_linux_application/exp_results_real_application"
 APPLICATION_PATH="./real_linux_application/app/application"
-ENABLE_NSYS=0
+ENABLE_NSYS=0 # 0: disable, 1: enable for debugging
 
-# If the result is not exist, create the directory
+bash script/run/real_linux/build_application.sh
+
 if [ ! -d ${RESULT_DIR} ]; then
     mkdir ${RESULT_DIR}
 fi

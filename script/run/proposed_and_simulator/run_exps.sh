@@ -18,6 +18,7 @@ schedule_try_count=1
 test_try_count=1000
 lambda=5.0
 
+echo "build run.jar"
 ./gradlew build
 mv ./app/build/libs/run.jar ./run.jar
 
