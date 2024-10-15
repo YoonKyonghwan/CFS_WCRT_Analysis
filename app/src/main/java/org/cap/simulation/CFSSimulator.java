@@ -179,7 +179,6 @@ public class CFSSimulator {
             if (initialOrder == false) {
                 CFSSimulationState simulationState = new CFSSimulationState(cores.size());
                 simulationState.insertPeriodsAtStartTime(cores);
-                //simulationState.insertPeriodsIntoEventQueue(simulationTime, cores);
                 simulationState.setPreviousEventTime(time);
                 long previousTime = simulationState.getPreviousEventTime();
                 time = simulationState.peekNextEventTime();
@@ -204,7 +203,6 @@ public class CFSSimulator {
                     queues = initializeQueues(cores, targetTaskID);
                     CFSSimulationState simulationState = new CFSSimulationState(cores.size());
                     simulationState.insertPeriodsAtStartTime(cores);
-                    //simulationState.insertPeriodsIntoEventQueue(simulationTime, cores);
                     simulationState.setPreviousEventTime(time);
                     long previousTime = simulationState.getPreviousEventTime();
                     time = simulationState.peekNextEventTime();
@@ -219,7 +217,6 @@ public class CFSSimulator {
         } else {
             CFSSimulationState simulationState = new CFSSimulationState(cores.size());
             simulationState.insertPeriodsAtStartTime(cores);
-            //simulationState.insertPeriodsIntoEventQueue(simulationTime, cores);
             simulationState.setPreviousEventTime(time);
             long previousTime = simulationState.getPreviousEventTime();
             time = simulationState.peekNextEventTime();
@@ -244,7 +241,7 @@ public class CFSSimulator {
     }
 
     private boolean checkTimeIsInMaximumInterferenceRange(long currentTime) {
-        boolean located = false;
+        // boolean located = false;
         /*for(InterferenceRange range : this.interferenceRangeList) {
             if(range.particiatedTaskNum() == this.maximumInterferenceTaskNum) {
                 if(range.getStartTime() <= currentTime && currentTime < range.getEndTime()) {
@@ -429,10 +426,8 @@ public class CFSSimulator {
         // task.virtualRuntime += temp ;
 
         long vruntime_increment = (timeUpdated << 10L)  / task.task.weight;
-        // long vruntime_increment = (timeUpdated << 10L) * NiceToWeight.getWeightMul(task.nice) >> 32L;
         task.virtualRuntime += vruntime_increment;
         logger.fine("Task " + task.task.id + " spends " + timeUpdated + " ns from " + simulationState.getPreviousEventTime() + " to " + time + "[vruntime_increment: " + vruntime_increment + "]");
-
 
         // Decrease execution time for each stage
         while(timeUpdated > 0 && task.stage != Stage.COMPLETED) {

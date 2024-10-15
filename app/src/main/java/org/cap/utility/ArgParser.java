@@ -14,30 +14,6 @@ public class ArgParser {
         ArgumentParser parser = ArgumentParsers.newFor("Main").build()
                 .defaultHelp(true)
                 .description("Simulate CFS and compute the proposed schedulability test");
-        parser.addArgument("--genTasks", "-gt")
-                .dest("gen_tasks")
-                .action(Arguments.storeTrue())
-                .help("generate tasks and exit");
-        parser.addArgument("--num_sets", "-ns")
-                .dest("num_sets")
-                .type(Integer.class)
-                .help("number of taskset to generate");
-        parser.addArgument("--num_tasks", "-nt")
-                .dest("num_tasks")
-                .type(Integer.class)
-                .help("number of tasks in a taskset");
-        parser.addArgument("--num_cores", "-nc")
-                .dest("num_cores")
-                .type(Integer.class)
-                .help("number of cores in a system");
-        parser.addArgument("--utilization", "-u")
-                .dest("utilization")
-                .type(Double.class)
-                .help("cpu utilization of tasks");
-        parser.addArgument("--generated_files_save_dir", "-gd")
-                .dest("generated_files_save_dir")
-                .type(String.class)
-                .help("directory to store generated files");
         parser.addArgument("--task_info_path", "-t")
                 .dest("task_info_path")
                 .type(String.class)
@@ -54,12 +30,6 @@ public class ArgParser {
                 .setDefault(ScheduleSimulationMethod.BRUTE_FORCE.toString())
                 .nargs("?")
                 .help("search method (either brute-force, random, random_target_task, or priority-queue) ");
-        parser.addArgument("--simulation_time", "-st")
-                .dest("simulation_time")
-                .type(Long.class)
-                .setDefault(0L)
-                .nargs("?")
-                .help("simulation time (0 for hyper period, -1 for max period, other positive integer values are used as an exact value) ");
         parser.addArgument("--tie_comparator", "-tc")
                 .dest("tie_comparator")
                 .type(Arguments.enumStringType(ComparatorCase.class))
@@ -105,15 +75,9 @@ public class ArgParser {
         parser.addArgument("--nice_lambda", "-nl")
                 .dest("nice_lambda")
                 .type(Double.class)
-                .setDefault(20.0)
+                .setDefault(5.0)
                 .nargs("?")
                 .help("nice_lambda");
-        parser.addArgument("--sched_RR_timeslice", "-rrts")
-                .dest("sched_RR_timeslice")
-                .type(Integer.class)
-                .setDefault(100000)
-                .nargs("?")
-                .help("sched_RR_timeslice(us)");
         parser.addArgument("--wakeup_granularity", "-wg")
                 .dest("wakeup_granularity")
                 .type(Integer.class)
@@ -132,7 +96,6 @@ public class ArgParser {
                 .setDefault(NiceAssignMethod.HEURISTIC.toString())
                 .nargs("?")
                 .help("nice value method (baseline, heuristic, GA) ");
-                                
         Namespace params = parser.parseArgsOrFail(args);
         return params;
     }

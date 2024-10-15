@@ -1,23 +1,19 @@
 package org.cap;
 
-import org.cap.model.Core;
 import org.cap.model.GANiceAssigner;
 import org.cap.model.NiceAssignMethod;
 import org.cap.model.ScheduleSimulationMethod;
 import org.cap.model.SimulationResult;
-import org.cap.model.Task;
 import org.cap.model.TestConfiguration;
 import org.cap.simulation.*;
 import org.cap.simulation.comparator.ComparatorCase;
 import org.cap.utility.AnalysisResultSaver;
 import org.cap.utility.ArgParser;
 import org.cap.utility.JsonReader;
-import org.cap.utility.JsonTaskCreator;
 import org.cap.utility.LoggerUtility;
 import org.cap.utility.MathUtility;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.List;
 import java.util.logging.Logger;
 
 import net.sourceforge.argparse4j.inf.Namespace;
@@ -27,84 +23,42 @@ public class Main {
             InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         // parse arguments
         Namespace params = new ArgParser().parseArgs(args);
-        assert params.getBoolean("gen_tasks") != null || params.getString("task_info_path") != null
-                : "Please specify either --gen_tasks or --task_info_path";
+        assert params.getString("task_info_path") != null : "Please specify --task_info_path to load task info file";
+        assert params.getString("result_dir") != null : "Please specify --resultDir to store result files";
+        String taskInfoPath = params.getString("task_info_path");
+        String resultDir = params.getString("result_dir");
 
-        // if --gen_tasks is specified, generate tasks and exit
-        if (params.getBoolean("gen_tasks")) {
-            JsonTaskCreator jsonTaskCreator = new JsonTaskCreator();
-            jsonTaskCreator.run(params);
-            return;
-        }
+        // read task info from file & initialize variables
+        JsonReader jsonReader = new JsonReader();
+        TestConfiguration testConf = jsonReader.readTasksFromFile(taskInfoPath);
+        testConf.initializeTaskData();
         
-        if (params.getString("task_info_path") != null) {
-            assert params.getString("result_dir") != null : "Please specify --resultDir to store result files";
-            String taskInfoPath = params.getString("task_info_path");
-            String resultDir = params.getString("result_dir");
+        // analyze by proposed method
+        MathUtility.convertPeriod_ns_us(testConf);
+        long startTime = System.nanoTime();
+        boolean proposed_schedulability = analysis_by_proposed(testConf, params);
+        long proposed_timeConsumption = (System.nanoTime() - startTime) / 1000L;
+        
+        // analyze by simulator
+        MathUtility.convertPeriod_us_ns(testConf);
+        startTime = System.nanoTime();
+        boolean simulator_schedulability = analyze_by_CFS_simulator(testConf, params);            
+        long simulator_timeConsumption = (System.nanoTime() - startTime)/1000L; //us
 
-            // read task info from file & initialize variables
-            JsonReader jsonReader = new JsonReader();
-            TestConfiguration testConf = jsonReader.readTasksFromFile(taskInfoPath);
-            testConf.initializeTaskData();
-            
-            // analyze by proposed method
-            convertPeriod_ns_us(testConf);
-            long startTime = System.nanoTime();
-            boolean proposed_schedulability = analysis_by_proposed(testConf, params);
-            long proposed_timeConsumption = (System.nanoTime() - startTime) / 1000L;
-            
-            // analyze by simulator
-            convertPeriod_us_ns(testConf);
-            startTime = System.nanoTime();
-            boolean simulator_schedulability = analyze_by_CFS_simulator(testConf, params);            
-            long simulator_timeConsumption = (System.nanoTime() - startTime)/1000L; //us
-            // boolean simulator_schedulability = true;
-            // long simulator_timeConsumption = 0; //us
+        // save analysis results into file
+        MathUtility.convertPeriod_ns_us(testConf);
+        AnalysisResultSaver analysisResultSaver = new AnalysisResultSaver();
+        analysisResultSaver.saveResultSummary(
+                resultDir, taskInfoPath, 
+                simulator_schedulability, simulator_timeConsumption,
+                proposed_schedulability, proposed_timeConsumption
+                );
+        analysisResultSaver.saveDetailedResult(resultDir, taskInfoPath, testConf);
 
-            // save analysis results into file
-            convertPeriod_ns_us(testConf);
-            AnalysisResultSaver analysisResultSaver = new AnalysisResultSaver();
-            analysisResultSaver.saveResultSummary(
-                    resultDir, taskInfoPath, 
-                    simulator_schedulability, simulator_timeConsumption,
-                    proposed_schedulability, proposed_timeConsumption
-                    );
-            analysisResultSaver.saveDetailedResult(resultDir, taskInfoPath, testConf);
-
-            // update the task info file with the nice values
-            analysisResultSaver.updateNiceValues(taskInfoPath, testConf);
-        }
+        // update the task info file with the nice values
+        analysisResultSaver.updateNiceValues(taskInfoPath, testConf);
     }
 
-
-    private static void convertPeriod_us_ns(TestConfiguration testConf) {
-        for (Core core: testConf.mappingInfo) {
-            for (Task task: core.tasks) {
-                task.period = task.period * 1000; // us -> ns
-            }
-        }
-    }
-
-
-    private static void convertPeriod_ns_us(TestConfiguration testConf) {
-        for (Core core: testConf.mappingInfo) {
-            for (Task task: core.tasks) {
-                task.period = task.period/1000; // ns -> us
-            }
-        }
-    }
-
-
-    private static long getMaximumPeriod(List<Core> cores) {
-        long maxPeriod = -1;
-        for (Core core : cores) {
-            for (Task task : core.tasks) {
-                if (task.period > maxPeriod)
-                    maxPeriod = task.period;
-            }
-        }
-        return maxPeriod;
-    }
 
 
     private static boolean analysis_by_proposed(TestConfiguration testConf, Namespace params) {
@@ -114,7 +68,7 @@ public class Main {
         int num_tasks = testConf.mappingInfo.stream().mapToInt(core -> core.tasks.size()).sum();
         if (niceAssignMethod == NiceAssignMethod.BASELINE) {
             MathUtility.assignNiceValues(testConf.mappingInfo, nice_lambda);
-            CFSAnalyzer_v2 analyzer = new CFSAnalyzer_v2(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
+            CFSAnalyzer analyzer = new CFSAnalyzer(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
             analyzer.analyze(); 
             proposed_schedulability = analyzer.checkSystemSchedulability();
         }else if (niceAssignMethod == NiceAssignMethod.HEURISTIC){
@@ -122,7 +76,7 @@ public class Main {
             nice_lambda = 0;      
             while(!proposed_schedulability && nice_lambda < 40) {
                 MathUtility.assignNiceValues(testConf.mappingInfo, nice_lambda);
-                CFSAnalyzer_v2 analyzer = new CFSAnalyzer_v2(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
+                CFSAnalyzer analyzer = new CFSAnalyzer(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
                 analyzer.analyze(); 
                 proposed_schedulability = analyzer.checkSystemSchedulability();
                 if (!proposed_schedulability){
@@ -139,7 +93,7 @@ public class Main {
             double mutationRate = 0.05;
             GANiceAssigner gaNiceAssigner = new GANiceAssigner(num_chromosomes, timeout_ms, mutationRate, num_tasks, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
             gaNiceAssigner.evolve(testConf.mappingInfo);
-            CFSAnalyzer_v2 analyzer = new CFSAnalyzer_v2(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
+            CFSAnalyzer analyzer = new CFSAnalyzer(testConf.mappingInfo, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
             analyzer.analyze(); 
             proposed_schedulability = analyzer.checkSystemSchedulability();
         }
@@ -152,7 +106,6 @@ public class Main {
         
         ScheduleSimulationMethod scheduleMethod = ScheduleSimulationMethod.fromValue(params.getString("schedule_simulation_method"));
         ComparatorCase compareCase = ComparatorCase.fromValue(params.getString("tie_comparator"));
-        long simulationTime = params.getLong("simulation_time");
         long schedule_try_count = params.getLong("schedule_try_count");
         String logger_option = params.getString("logger_option");
         int test_try_count = params.getInt("test_try_count");
@@ -183,12 +136,8 @@ public class Main {
         Logger logger = LoggerUtility.getLogger();
         boolean system_schedulability = true;
 
-        if(simulationTime == 0) { // hyper period
-            simulationTime = MathUtility.getLCM(testConf.mappingInfo) * 2;
-        }
-        else if (simulationTime == -1) {
-            simulationTime = getMaximumPeriod(testConf.mappingInfo);
-        }
+        long simulationTime = MathUtility.getLCM(testConf.mappingInfo) * 2;
+        
         logger.info("Simulated Time (ms): " + simulationTime/1000000L);
 
         if (scheduleMethod == ScheduleSimulationMethod.PRIORITY_QUEUE) {

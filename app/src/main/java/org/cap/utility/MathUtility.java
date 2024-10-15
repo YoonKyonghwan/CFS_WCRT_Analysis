@@ -3,6 +3,7 @@ package org.cap.utility;
 import org.cap.model.Core;
 import org.cap.model.NiceToWeight;
 import org.cap.model.Task;
+import org.cap.model.TestConfiguration;
 
 import java.util.List;
 
@@ -28,6 +29,35 @@ public class MathUtility {
         }
     }
 
+    public static void convertPeriod_us_ns(TestConfiguration testConf) {
+        for (Core core: testConf.mappingInfo) {
+            for (Task task: core.tasks) {
+                task.period = task.period * 1000; // us -> ns
+            }
+        }
+    }
+
+
+    public static void convertPeriod_ns_us(TestConfiguration testConf) {
+        for (Core core: testConf.mappingInfo) {
+            for (Task task: core.tasks) {
+                task.period = task.period/1000; // ns -> us
+            }
+        }
+    }
+
+
+    public static long getMaximumPeriod(List<Core> cores) {
+        long maxPeriod = -1;
+        for (Core core : cores) {
+            for (Task task : core.tasks) {
+                if (task.period > maxPeriod)
+                    maxPeriod = task.period;
+            }
+        }
+        return maxPeriod;
+    }
+
 
     public static void assignNiceValues(List<Core> cores, double lambda) {
         for (Core core : cores) {
@@ -50,7 +80,7 @@ public class MathUtility {
             for (Task task : core.tasks) {
                 long period_us = task.period / 1000;
                 // int nice = computeNice(period_us, min_deadline, lambda);
-                int nice = computeNice2(period_us, max_deadline, lambda);
+                int nice = computeNiceWithMaxD(period_us, max_deadline, lambda);
                 int weight = NiceToWeight.getWeight(nice);
                 task.nice = nice;
                 task.weight = weight;
@@ -84,12 +114,7 @@ public class MathUtility {
         }
     }
 
-    //nice_i = \min \left(-20 +  \ceil*{\log_{1.25} \frac{D_i}{D_{\text{min}}}}, \;19 \right)
-    private static int computeNice(long deadline_i, long min_deadline, double lambda){
-        // double relative_weight = Math.log((double)deadline_i / min_deadline) / Math.log(1.25);
-        // relative_weight =  Math.ceil(relative_weight) * lambda;
-
-        // double relative_weight = Math.log((double)deadline_i / min_deadline) / Math.log(lambda);
+    private static int computeNiceWithMinD(long deadline_i, long min_deadline, double lambda){
         double relative_weight = Math.log((double)deadline_i / min_deadline) * lambda;
         int nice = (int) (-20 + relative_weight);
         assert relative_weight >= 0;
@@ -102,8 +127,8 @@ public class MathUtility {
         }
     }
 
-    //nice_i /max \left(-20, 19 -  \ceil*{\log_{1.25} \frac{D_i}{D_{\text{min}}}}, \;19 \right)
-    private static int computeNice2(long deadline_i, long max_deadline, double lambda){
+
+    private static int computeNiceWithMaxD(long deadline_i, long max_deadline, double lambda){
         double relative_weight = Math.log((double)deadline_i / max_deadline)* lambda;
         int nice = (int) (19 + relative_weight);
         assert relative_weight <= 0;

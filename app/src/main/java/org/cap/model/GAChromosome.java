@@ -3,7 +3,7 @@ package org.cap.model;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.cap.simulation.CFSAnalyzer_v2;
+import org.cap.simulation.CFSAnalyzer;
 
 public class GAChromosome {
     public List<Integer> niceValues;
@@ -37,7 +37,7 @@ public class GAChromosome {
 
     public void computeFitness(List<Core> cores){
         applyNicevalues(cores);
-        CFSAnalyzer_v2 analyzer = new CFSAnalyzer_v2(cores, this.targetLatency, this.minGranularity, this.jiffy_us);
+        CFSAnalyzer analyzer = new CFSAnalyzer(cores, this.targetLatency, this.minGranularity, this.jiffy_us);
         analyzer.analyze(); 
         int num_schedulable = 0;
         for (Core core : cores) {

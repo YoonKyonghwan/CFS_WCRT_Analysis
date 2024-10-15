@@ -36,7 +36,6 @@ public class NiceToWeight {
         int index = nice + 20;
         long weight_mult = niceToWMult.get(index);
         return weight_mult;
-        // return niceToWMult.get(nice+20);
     }
 
 }

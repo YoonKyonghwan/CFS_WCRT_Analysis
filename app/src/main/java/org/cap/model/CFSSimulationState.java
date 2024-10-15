@@ -168,9 +168,6 @@ public class CFSSimulationState {
         this.eventTimeMap = new HashMap<Long, Integer>();
         this.selectedDivergeIndex = 0;
         this.simulationScheduleID = "-";
-
-        //this.coreStates = new ArrayList<>(Collections.nCopies(numberOfCores, new CoreState()));
-
         this.coreStates = new ArrayList<>();
 
         for(int i = 0 ; i < numberOfCores ; i++) {
