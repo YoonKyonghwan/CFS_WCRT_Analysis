@@ -400,7 +400,7 @@ public abstract class DefaultSchedulerSimulator {
         for (int i = 0; i < queues.size(); i++) {
             Queue<TaskStat> queue = queues.get(i);
             logger.log(Level.FINE, "- Core {0}{1}: {2}", new Object[]{i, 1, queue.stream().map(task -> task.task.id).collect(Collectors.toList())});
-            if (queue.size() > 0)
+            if (!queue.isEmpty())
                 schedulability = false;
         }
 
@@ -457,23 +457,34 @@ public abstract class DefaultSchedulerSimulator {
         MultiComparator taskComparator = this.comparator;
 
         if (!queueInCore.isEmpty()) {
-            minRuntime = queueInCore.peek().virtualRuntime;
+            TaskStat frontTask = queueInCore.peek();
             if (this.method == ScheduleSimulationMethod.PRIORITY_QUEUE) {
-                if (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
+                candidateTasks.add(queueInCore.poll());
+            } else {
+                while (!queueInCore.isEmpty() && taskComparator.compare(frontTask, queueInCore.peek()) == 0) {
                     candidateTasks.add(queueInCore.poll());
-            } else { // BRUTE_FORCE
-                TaskStat previousTask = null;
-                while (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime) {
-                    TaskStat task = queueInCore.poll();
-                    if(previousTask != null && taskComparator.compare(task, previousTask) != 0) {
-                        queueInCore.add(task);
-                        break;
-                    }
-                    candidateTasks.add(task);
-                    previousTask = task;
                 }
             }
         }
+
+        // if (!queueInCore.isEmpty()) {
+        //     minRuntime = queueInCore.peek().virtualRuntime;
+        //     if (this.method == ScheduleSimulationMethod.PRIORITY_QUEUE) {
+        //         if (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
+        //             candidateTasks.add(queueInCore.poll());
+        //     } else { // BRUTE_FORCE
+        //         TaskStat previousTask = null;
+        //         while (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime) {
+        //             TaskStat task = queueInCore.poll();
+        //             if(previousTask != null && taskComparator.compare(task, previousTask) != 0) {
+        //                 queueInCore.add(task);
+        //                 break;
+        //             }
+        //             candidateTasks.add(task);
+        //             previousTask = task;
+        //         }
+        //     }
+        // }
 
         return candidateTasks;
     }
