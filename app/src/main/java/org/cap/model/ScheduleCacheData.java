@@ -12,9 +12,9 @@ import org.cap.simulation.comparator.*;
 
 public class ScheduleCacheData {
     private List<Queue<TaskStat>> queues;
-    private CFSSimulationState simulationState;
+    private SimulationState simulationState;
     private long time;
-    private List<TaskStat> minRuntimeTasks;
+    private List<TaskStat> comparedTieTasks;
     private int coreIndex;
     private HashSet<Integer> subScheduleSet;
 
@@ -22,7 +22,7 @@ public class ScheduleCacheData {
         return queues;
     }
 
-    public CFSSimulationState getSimulationState() {
+    public SimulationState getSimulationState() {
         return simulationState;
     }
 
@@ -30,8 +30,8 @@ public class ScheduleCacheData {
         return time;
     }
 
-    public List<TaskStat> getMinRuntimeTasks() {
-        return minRuntimeTasks;
+    public List<TaskStat> getComparedTieTasks() {
+        return comparedTieTasks;
     }
 
     public int getCoreIndex() {
@@ -42,24 +42,24 @@ public class ScheduleCacheData {
         return subScheduleSet;
     }
 
-    public ScheduleCacheData copy(BasicTaskComparator comparator) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-        ScheduleCacheData scheduleData = new ScheduleCacheData(this.queues, this.simulationState, this.time, this.minRuntimeTasks, this.coreIndex,
+    public ScheduleCacheData copy(MultiComparator comparator) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+        ScheduleCacheData scheduleData = new ScheduleCacheData(this.queues, this.simulationState, this.time, this.comparedTieTasks, this.coreIndex,
             comparator, true);
 
         return scheduleData;
     }
 
     public ScheduleCacheData(List<Queue<TaskStat>> queues, HashMap<Integer, Long> wcrtMap,
-            CFSSimulationState simulationState, long time, List<TaskStat> minRuntimeTasks, int coreIndex) {
+            SimulationState simulationState, long time, List<TaskStat> minRuntimeTasks, int coreIndex) {
         this.queues = queues;
         this.simulationState = simulationState;
         this.time = time;
-        this.minRuntimeTasks = minRuntimeTasks;
+        this.comparedTieTasks = minRuntimeTasks;
         this.coreIndex = coreIndex;
         this.subScheduleSet = new HashSet<Integer>();
     }
 
-    private List<Queue<TaskStat>> copyQueues(List<Queue<TaskStat>> originalQueues, BasicTaskComparator comparator)
+    private List<Queue<TaskStat>> copyQueues(List<Queue<TaskStat>> originalQueues, MultiComparator comparator)
             throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException,
             IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         List<Queue<TaskStat>> newQueues = new ArrayList<>();
@@ -76,8 +76,8 @@ public class ScheduleCacheData {
         return newQueues;
     }
 
-    public ScheduleCacheData(List<Queue<TaskStat>> queues, CFSSimulationState simulationState, long time, List<TaskStat> minRuntimeTasks, int coreIndex,
-            BasicTaskComparator comparator, boolean copyData)
+    public ScheduleCacheData(List<Queue<TaskStat>> queues, SimulationState simulationState, long time, List<TaskStat> minRuntimeTasks, int coreIndex,
+            MultiComparator comparator, boolean copyData)
             throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException,
             IllegalAccessException, IllegalArgumentException, InvocationTargetException {
 
@@ -86,16 +86,16 @@ public class ScheduleCacheData {
         if(copyData == true) {
             this.queues = copyQueues(queues, comparator);
             this.simulationState = simulationState.copy();
-            this.minRuntimeTasks = new ArrayList<>();
+            this.comparedTieTasks = new ArrayList<>();
             for (TaskStat task : minRuntimeTasks) {
-                this.minRuntimeTasks.add(task.copy());
+                this.comparedTieTasks.add(task.copy());
             }
             this.subScheduleSet = new HashSet<Integer>();
         } else {
             this.queues = queues;
             
             this.simulationState = simulationState;            
-            this.minRuntimeTasks = minRuntimeTasks;
+            this.comparedTieTasks = minRuntimeTasks;
             this.subScheduleSet = new HashSet<Integer>();
         }
     }

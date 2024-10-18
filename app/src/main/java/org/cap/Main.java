@@ -1,20 +1,25 @@
 package org.cap;
 
+import java.lang.reflect.InvocationTargetException;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
+import org.cap.model.Core;
 import org.cap.model.GANiceAssigner;
 import org.cap.model.NiceAssignMethod;
 import org.cap.model.ScheduleSimulationMethod;
 import org.cap.model.SimulationResult;
+import org.cap.model.Task;
 import org.cap.model.TestConfiguration;
-import org.cap.simulation.*;
+import org.cap.simulation.CFSAnalyzer;
+import org.cap.simulation.CFSSimulator;
 import org.cap.simulation.comparator.ComparatorCase;
 import org.cap.utility.AnalysisResultSaver;
 import org.cap.utility.ArgParser;
 import org.cap.utility.JsonReader;
 import org.cap.utility.LoggerUtility;
 import org.cap.utility.MathUtility;
-
-import java.lang.reflect.InvocationTargetException;
-import java.util.logging.Logger;
 
 import net.sourceforge.argparse4j.inf.Namespace;
 
@@ -100,12 +105,25 @@ public class Main {
         return proposed_schedulability;
     }
 
+    private static long getMaximumPeriod(List<Core> cores) {
+        long maxPeriod = -1;
+        for (Core core : cores) {
+            for (Task task : core.tasks) {
+                if (task.period > maxPeriod)
+                    maxPeriod = task.period;
+            }
+        }
+        return maxPeriod;
+    }
 
     private static boolean analyze_by_CFS_simulator(TestConfiguration testConf, Namespace params) throws ClassNotFoundException, NoSuchMethodException, SecurityException,
             InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         
         ScheduleSimulationMethod scheduleMethod = ScheduleSimulationMethod.fromValue(params.getString("schedule_simulation_method"));
         ComparatorCase compareCase = ComparatorCase.fromValue(params.getString("tie_comparator"));
+        List<String> caseList = params.getList("additional_comparator");
+        //ComparatorCase compareCase = ComparatorCase.fromValue();
+        long simulationTime = params.getLong("simulation_time");
         long schedule_try_count = params.getLong("schedule_try_count");
         String logger_option = params.getString("logger_option");
         int test_try_count = params.getInt("test_try_count");
@@ -132,18 +150,24 @@ public class Main {
             test_try_count = 1;
         }
 
-        CFSSimulator CFSSimulator = new CFSSimulator(scheduleMethod, compareCase, targetLatency, minimumGranularity, wakeupGranularity, schedule_try_count, initial_order, scheduling_tick_us);
+        CFSSimulator CFSSimulator = new CFSSimulator(scheduleMethod, caseList, targetLatency, minimumGranularity, wakeupGranularity, schedule_try_count, initial_order, scheduling_tick_us);
         Logger logger = LoggerUtility.getLogger();
         boolean system_schedulability = true;
 
-        long simulationTime = MathUtility.getLCM(testConf.mappingInfo) * 2;
-        
-        logger.info("Simulated Time (ms): " + simulationTime/1000000L);
+        if(simulationTime == 0) { // hyper period * 2
+            simulationTime = MathUtility.getLCM(testConf.mappingInfo) * 2;
+        }
+        else if (simulationTime == -1) {
+            simulationTime = getMaximumPeriod(testConf.mappingInfo);
+        }
+
+        logger.info(String.format("Simulated Time (ms): %d", simulationTime/1000000L));
+        //logger.log(Level.INFO, "Simulated Time (ms): {0}", new Object[] {simulationTime/1000000L});
 
         if (scheduleMethod == ScheduleSimulationMethod.PRIORITY_QUEUE) {
             for (Integer taskID : testConf.idNameMap.keySet()) {
-                logger.fine("\n\n ********** Start simulation with target task: " + taskID + " **********");
-                SimulationResult simulResult = CFSSimulator.simulateCFS(testConf.mappingInfo,
+                logger.log(Level.FINE, "\n\n ********** Start simulation with target task: {0} **********", taskID);
+                SimulationResult simulResult = CFSSimulator.simulate(testConf.mappingInfo,
                         taskID.intValue(), simulationTime);
                 int WCRT_by_simulator = (int) (simulResult.wcrtMap.get(taskID)/1000);
                 CFSSimulator.findTaskbyID(testConf, taskID.intValue()).WCRT_by_simulator = WCRT_by_simulator;
@@ -159,9 +183,9 @@ public class Main {
             SimulationResult finalSimulationResult = new SimulationResult();
             long totalTryCount = 0L;
             for (Integer taskID : testConf.idNameMap.keySet()) {
-                logger.fine("\n\n ********** Start simulation with target task: " + taskID + " **********");
+                logger.log(Level.FINE, "\n\n ********** Start simulation with target task: {0} **********", taskID);
                 for(int i = 0 ; i  < test_try_count ; i++) {
-                    SimulationResult simulResult = CFSSimulator.simulateCFS(testConf.mappingInfo,
+                    SimulationResult simulResult = CFSSimulator.simulate(testConf.mappingInfo,
                             taskID.intValue(), simulationTime);
                     CFSSimulator.mergeToFinalResult(finalSimulationResult, simulResult);
                     totalTryCount += CFSSimulator.getTriedScheduleCount();
@@ -179,12 +203,12 @@ public class Main {
                 //if(finalSimulationResult.schedulability == false)
                 //    system_schedulability = false;
             }
-            logger.info("Schedule execution count (unique): " + totalTryCount);
+            logger.log(Level.INFO, "Schedule execution count (unique): {0}", new Object[] {totalTryCount});
         } else{
             SimulationResult finalSimulationResult = new SimulationResult();
             long totalTryCount = 0L;
             for(int i = 0 ; i  < test_try_count ; i++) {
-                SimulationResult simulResult = CFSSimulator.simulateCFS(testConf.mappingInfo, -1, simulationTime);
+                SimulationResult simulResult = CFSSimulator.simulate(testConf.mappingInfo, -1, simulationTime);
                 CFSSimulator.mergeToFinalResult(finalSimulationResult, simulResult);
                 totalTryCount += CFSSimulator.getTriedScheduleCount();
             }
@@ -198,7 +222,7 @@ public class Main {
                 CFSSimulator.findTaskbyID(testConf, taskID.intValue()).WCRT_by_simulator = (int) WCRT_by_simulator;
                 logger.info(String.format("Task ID with %3d (WCRT: %8d us, Period: %8d us, Schedulability: %5s)", taskID, WCRT_by_simulator, deadline, task_schedulability));
             }
-            logger.info("Schedule execution count (unique): " + totalTryCount);
+            logger.log(Level.INFO, "Schedule execution count (unique): {0}", new Object[] {totalTryCount});
             if (system_schedulability) {
                 logger.info("All tasks are schedulable");
             } else {

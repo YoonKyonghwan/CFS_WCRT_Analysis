@@ -4,11 +4,13 @@ public enum ComparatorCase {
     BODY_WCET("BodyWCETComparator"), 
 	PERIOD("PeriodComparator"), 
 	WEIGHT("WeightComparator"),
-    TARGET_TASK("TargetTaskBasedComparator"),
+    TARGET_TASK("TargetTaskComparator"),
     RELEASE_TIME("ReleaseTimeComparator"),
     FIFO("FIFOComparator"),
     UNORDERED("UnorderedComparator"),
-    INITIAL_ORDER("InitialOrderBasedComparator");
+    INITIAL_ORDER("InitialOrderComparator"),
+    VIRTUAL_RUNTIME("VirtualRuntimeComparator"),
+    VIRTUAL_DEADLINE("VirtualDeadlineComparator");
 	
 	private final String value;
 	

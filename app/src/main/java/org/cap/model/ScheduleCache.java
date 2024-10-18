@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.Stack;
 
-import org.cap.simulation.comparator.BasicTaskComparator;
+import org.cap.simulation.comparator.MultiComparator;
 
 public class ScheduleCache {
     HashMap<String, ScheduleCacheData> scheduleMap;
@@ -23,8 +23,8 @@ public class ScheduleCache {
 
     public String pushScheduleData(String parentScheduleID, List<Queue<TaskStat>> queues,
             HashMap<Integer, Long> wcrtMap,
-            CFSSimulationState simulationState, long time, List<TaskStat> minRuntimeTasks, int coreIndex,
-            BasicTaskComparator comparator) throws ClassNotFoundException, NoSuchMethodException, SecurityException,
+            SimulationState simulationState, long time, List<TaskStat> minRuntimeTasks, int coreIndex,
+            MultiComparator comparator) throws ClassNotFoundException, NoSuchMethodException, SecurityException,
             InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         
         //long scheduleId = getNewScheduleID();
@@ -72,11 +72,11 @@ public class ScheduleCache {
         if(this.scheduleMap.containsKey(parentScheduleID)) {
             this.scheduleMap.get(parentScheduleID).getSubScheduleSet().add(scheduleData.getSimulationState().getSelectedDivergeIndex());
             if(this.scheduleMap.get(parentScheduleID).getSubScheduleSet().size() > 1) {
-                assert this.scheduleMap.get(parentScheduleID).getSubScheduleSet().size() <= this.scheduleMap.get(parentScheduleID).getMinRuntimeTasks().size();
+                assert this.scheduleMap.get(parentScheduleID).getSubScheduleSet().size() <= this.scheduleMap.get(parentScheduleID).getComparedTieTasks().size();
             }
 
             // If all the schedule path is handled, the schedule cache of the prefix schedule is removed.
-            if(this.scheduleMap.get(parentScheduleID).getSubScheduleSet().size() == this.scheduleMap.get(parentScheduleID).getMinRuntimeTasks().size()) {
+            if(this.scheduleMap.get(parentScheduleID).getSubScheduleSet().size() == this.scheduleMap.get(parentScheduleID).getComparedTieTasks().size()) {
                 if(this.method != ScheduleSimulationMethod.BRUTE_FORCE) {
                     this.scheduleMap.remove(parentScheduleID);
                 }
@@ -85,7 +85,7 @@ public class ScheduleCache {
         }
     }
 
-    public void saveFinalScheduledIndex(String parentScheduleID, CFSSimulationState simulationState) {
+    public void saveFinalScheduledIndex(String parentScheduleID, SimulationState simulationState) {
         //assert prefix.length() > 0 && this.scheduleMap.containsKey(prefix);
         ScheduleCacheData scheduleData = this.scheduleMap.get(parentScheduleID);
         
@@ -93,7 +93,7 @@ public class ScheduleCache {
        if(scheduleData != null) {
             scheduleData.getSubScheduleSet().add(simulationState.getSelectedDivergeIndex());
 
-            if(this.scheduleMap.get(parentScheduleID).getSubScheduleSet().size() == this.scheduleMap.get(parentScheduleID).getMinRuntimeTasks().size()) {
+            if(this.scheduleMap.get(parentScheduleID).getSubScheduleSet().size() == this.scheduleMap.get(parentScheduleID).getComparedTieTasks().size()) {
                 if(this.method != ScheduleSimulationMethod.BRUTE_FORCE) {
                     this.scheduleMap.remove(parentScheduleID);
                 }
@@ -112,12 +112,12 @@ public class ScheduleCache {
         int taskIndex = 0;
 
         if(random == true) {
-            randomInDivergedPath = (int) (Math.random() * (pickedData.getMinRuntimeTasks().size() - pickedData.getSubScheduleSet().size()));
+            randomInDivergedPath = (int) (Math.random() * (pickedData.getComparedTieTasks().size() - pickedData.getSubScheduleSet().size()));
         } else {
             randomInDivergedPath = 0;
         }
 
-        for(int i = 0; i < pickedData.getMinRuntimeTasks().size() ; i++) {
+        for(int i = 0; i < pickedData.getComparedTieTasks().size() ; i++) {
             if(!pickedData.getSubScheduleSet().contains(Integer.valueOf(i))) {
                 if(taskIndex == randomInDivergedPath) {
                     divergeIndex = i;
@@ -135,7 +135,7 @@ public class ScheduleCache {
         return selectedSchedule;
     }
 
-    public SchedulePickResult pickScheduleData(BasicTaskComparator comparator)
+    public SchedulePickResult pickScheduleData(MultiComparator comparator)
             throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException,
             IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         SchedulePickResult selectedSchedule = null;
@@ -148,10 +148,10 @@ public class ScheduleCache {
         for(String scheduleID : this.scheduleMap.keySet()) {
             if(index == randomVal) {
                 ScheduleCacheData pickedData = this.scheduleMap.get(scheduleID);
-                int randomInDivergedPath = (int) (Math.random() * (pickedData.getMinRuntimeTasks().size() - pickedData.getSubScheduleSet().size()));
+                int randomInDivergedPath = (int) (Math.random() * (pickedData.getComparedTieTasks().size() - pickedData.getSubScheduleSet().size()));
                 int taskIndex = 0;
 
-                for(int i = 0; i < pickedData.getMinRuntimeTasks().size() ; i++) {
+                for(int i = 0; i < pickedData.getComparedTieTasks().size() ; i++) {
                     if(!pickedData.getSubScheduleSet().contains(Integer.valueOf(i))) {
                         if(taskIndex == randomInDivergedPath) {
                             divergeIndex = i;

@@ -30,12 +30,24 @@ public class ArgParser {
                 .setDefault(ScheduleSimulationMethod.BRUTE_FORCE.toString())
                 .nargs("?")
                 .help("search method (either brute-force, random, random_target_task, or priority-queue) ");
+        parser.addArgument("--simulation_time", "-st")
+                .dest("simulation_time")
+                .type(Long.class)
+                .setDefault(0L)
+                .nargs("?")
+                .help("simulation time (0 for hyper period * 2, -1 for max period, other positive integer values are used as an exact value) ");
         parser.addArgument("--tie_comparator", "-tc")
                 .dest("tie_comparator")
                 .type(Arguments.enumStringType(ComparatorCase.class))
                 .setDefault(ComparatorCase.FIFO.getClassName())
                 .nargs("?")
                 .help("tie comparator when the virtual runtime is same (BodyWCETComparator, PeriodComparator, WeightComparator, TargetTaskBasedComparator, InitialOrderBasedComparator, FIFOComparator, ReleaseTimeComparator or UnorderedComparator). If schedule simulation method is brute-force, tie comparator is fixed to UnorderedComparator.");
+        parser.addArgument("--additional_comparator", "-ac")
+                .dest("additional_comparator")
+                .type(Arguments.enumStringType(ComparatorCase.class))
+                .setDefault(new String [] {"FIFOComparator", "InitialOrderComparator"})
+                .nargs("+")
+                .help("additional comparators when the primaray comparator is same (BodyWCETComparator, PeriodComparator, WeightComparator, TargetTaskBasedComparator, InitialOrderComparator, FIFOComparator, ReleaseTimeComparator or UnorderedComparator).");
         parser.addArgument("--schedule_try_count", "-stc")
                 .dest("schedule_try_count")
                 .type(Long.class)

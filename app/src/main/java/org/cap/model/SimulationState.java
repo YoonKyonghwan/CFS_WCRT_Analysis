@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.PriorityQueue;
 import java.util.Map.Entry;
 
-public class CFSSimulationState {
+public class SimulationState {
     public BlockingPolicy blockingPolicy = BlockingPolicy.NONE;
     public int blockingTaskId;
     public boolean blockingPolicyReset = false;
@@ -33,8 +33,8 @@ public class CFSSimulationState {
         return selectedDivergeIndex;
     }
 
-    public CFSSimulationState copy() {
-        CFSSimulationState newState = new CFSSimulationState();
+    public SimulationState copy() {
+        SimulationState newState = new SimulationState();
         newState.blockingPolicy = this.blockingPolicy;
         newState.blockingTaskId = this.blockingTaskId;
         newState.coreStates = new ArrayList<>(this.coreStates.size());
@@ -163,7 +163,7 @@ public class CFSSimulationState {
         return nextTime;
     }
 
-    public CFSSimulationState(int numberOfCores) {
+    public SimulationState(int numberOfCores) {
         this.eventQueue = new PriorityQueue<Long>(); // default is ascending order
         this.eventTimeMap = new HashMap<Long, Integer>();
         this.selectedDivergeIndex = 0;
@@ -176,7 +176,7 @@ public class CFSSimulationState {
         }
     }
 
-    public CFSSimulationState() {
+    public SimulationState() {
     }
 }
 

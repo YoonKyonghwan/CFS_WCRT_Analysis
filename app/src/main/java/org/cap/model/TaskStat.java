@@ -23,6 +23,9 @@ public class TaskStat {
     // Virtual runtime
     public long virtualRuntime;
 
+    // Virtual deadline
+    public long virtualDeadline;
+
     private long queueInsertTime = 0;
 
     public TaskStat copy() {
@@ -46,6 +49,7 @@ public class TaskStat {
         this.bodyTimeInNanoSeconds = this.task.originalBodyTime;
         this.writeTimeInNanoSeconds = this.task.originalWriteTime;
         this.virtualRuntime = 0L;
+        this.virtualDeadline = 0L;
         this.queueInsertTime = -1;
     }
 

@@ -2,9 +2,10 @@ package org.cap.simulation.comparator;
 
 import org.cap.model.TaskStat;
 
-public class BodyWCETComparator extends TargetTaskBasedComparator {
+public class BodyWCETComparator implements TaskStatComparator {
+
     @Override
-    public int compareNotTargetTask(TaskStat o1, TaskStat o2) {
+    public int compare(TaskStat o1, TaskStat o2) {
         if(o1.task.bodyTime > o2.task.bodyTime) { // long body time executed earlier
             return -1;
         }
@@ -15,4 +16,5 @@ public class BodyWCETComparator extends TargetTaskBasedComparator {
             return 0;
         }
     }
+
 }

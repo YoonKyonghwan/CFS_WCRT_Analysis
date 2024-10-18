@@ -1,9 +1,12 @@
 package org.cap.utility;
 
-import java.util.logging.*;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.io.IOException;
+import java.util.logging.ConsoleHandler;
+import java.util.logging.FileHandler;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class LoggerUtility {
     private static final Logger logger = Logger.getLogger(LoggerUtility.class.getName());
