@@ -78,7 +78,9 @@ public abstract class DefaultSchedulerSimulator {
 
     abstract protected void updateMinimumVirtualRuntime(CoreState coreState, Queue<TaskStat> queue);
 
-    abstract protected long getTimeSlice(CoreState coreState, TaskStat task, Queue<TaskStat> queueInCore);
+    abstract protected long getTimeSlice(TaskStat task, Queue<TaskStat> queueInCore);
+
+    abstract protected TaskStat updateTaskStatAfterRun(TaskStat task, Queue<TaskStat> queueInCore, long timeUpdated, long remainedTime, SimulationState simulationState);
 
     public long getTriedScheduleCount() {
         return triedScheduleCount;
@@ -613,9 +615,8 @@ public abstract class DefaultSchedulerSimulator {
         // Update virtual runtime
         // long temp = (long) (Math.ceil(((timeUpdated << 10L)  / task.weight) /100) *100);
         // task.virtualRuntime += temp ;
-        long vruntime_increment = (timeUpdated << 10L)  / task.task.weight;
-        task.virtualRuntime += vruntime_increment;
-        logger.log(Level.FINE, "Task {0} spends {1} ns from {2} to {3}[vruntime_increment: {4}]", new Object[]{task.task.id, timeUpdated, simulationState.getPreviousEventTime(), time, vruntime_increment});
+        task = updateTaskStatAfterRun(task, queueInCore, timeUpdated, coreState.remainingRuntime, simulationState);
+        
 
         // Decrease execution time for each stage
         while(timeUpdated > 0 && task.stage != Stage.COMPLETED) {
@@ -711,7 +712,7 @@ public abstract class DefaultSchedulerSimulator {
     }
 
     protected void setRuntime(CoreState coreState, TaskStat task, Queue<TaskStat> queueInCore) {
-        coreState.remainingRuntime = getTimeSlice(coreState, task, queueInCore);
+        coreState.remainingRuntime = getTimeSlice(task, queueInCore);
         coreState.isRunning = true;
     }
 

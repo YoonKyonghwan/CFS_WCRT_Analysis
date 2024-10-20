@@ -4,6 +4,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
+import java.util.logging.Level;
 
 import org.cap.model.CoreState;
 import org.cap.model.ScheduleSimulationMethod;
@@ -83,7 +84,15 @@ public class CFSSimulator extends DefaultSchedulerSimulator {
     }
 
     @Override
-    protected long getTimeSlice(CoreState coreState, TaskStat task, Queue<TaskStat> queueInCore) {
+    protected TaskStat updateTaskStatAfterRun(TaskStat task, Queue<TaskStat> queueInCore, long timeUpdated, long remainedTime, SimulationState simulationState) {
+        long vruntime_increment = (timeUpdated << 10L)  / task.task.weight;
+        task.virtualRuntime += vruntime_increment;
+        logger.log(Level.FINE, "Task {0} spends {1} ns from {2} to {3}[vruntime_increment: {4}]", new Object[]{task.task.id, timeUpdated, simulationState.getPreviousEventTime(), simulationState.getPreviousEventTime() + timeUpdated, vruntime_increment});
+        return task;
+    }
+
+    @Override
+    protected long getTimeSlice(TaskStat task, Queue<TaskStat> queueInCore) {
         long timeSlice;
         long totalWeight = queueInCore.stream().mapToLong(t -> t.task.weight).sum() + task.task.weight;
         timeSlice = Math.max(this.targetLatency * task.task.weight / totalWeight, this.minimumGranularity);

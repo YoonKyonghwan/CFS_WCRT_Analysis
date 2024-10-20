@@ -4,6 +4,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
+import java.util.logging.Level;
 
 import org.cap.model.CoreState;
 import org.cap.model.ScheduleSimulationMethod;
@@ -11,6 +12,7 @@ import org.cap.model.SimulationState;
 import org.cap.model.Task;
 import org.cap.model.TaskStat;
 import org.cap.simulation.comparator.ComparatorCase;
+
 
 public class EEVDFSimulator extends DefaultSchedulerSimulator {
 
@@ -61,16 +63,26 @@ public class EEVDFSimulator extends DefaultSchedulerSimulator {
         taskStat.readReleaseTime = time;
         long min_vruntime = coreState.minimumVirtualRuntime;  // TODO
         taskStat.virtualRuntime = Math.max(coreState.getLastVirtualRuntime(task.id), min_vruntime);
+        taskStat.virtualDeadline = taskStat.virtualRuntime + (this.minimumGranularity / taskStat.task.weight);
         skipReadStageIfNoReadTime(taskStat);
 
         return taskStat;
     }
 
     @Override
-    protected long getTimeSlice(CoreState coreState, TaskStat task, Queue<TaskStat> queueInCore) {
+    protected long getTimeSlice(TaskStat task, Queue<TaskStat> queueInCore) {
         long timeSlice;
         timeSlice = this.minimumGranularity;
         timeSlice = Math.min(timeSlice, (long) (task.readTimeInNanoSeconds + task.bodyTimeInNanoSeconds + task.writeTimeInNanoSeconds));
         return timeSlice;
+    }
+
+    @Override
+    protected TaskStat updateTaskStatAfterRun(TaskStat task, Queue<TaskStat> queueInCore, long timeUpdated, long remainedTime, SimulationState simulationState) {
+        long vruntime_increment = (timeUpdated << 10L)  / task.task.weight;
+        task.virtualRuntime += vruntime_increment;
+        task.virtualDeadline = task.virtualRuntime + (this.minimumGranularity / task.task.weight);
+        logger.log(Level.FINE, "Task {0} spends {1} ns from {2} to {3}[vruntime_increment: {4}]", new Object[]{task.task.id, timeUpdated, simulationState.getPreviousEventTime(), simulationState.getPreviousEventTime() + timeUpdated, vruntime_increment});
+        return task;
     }
 }
