@@ -21,7 +21,7 @@ public class ScheduleCache {
         this.method = method;
     }
 
-    public String pushScheduleData(String parentScheduleID, List<Queue<TaskStat>> queues,
+    public String pushScheduleData(String parentScheduleID, List<RunQueue> queues,
             HashMap<Integer, Long> wcrtMap,
             SimulationState simulationState, long time, List<TaskStat> minRuntimeTasks, int coreIndex,
             MultiComparator comparator) throws ClassNotFoundException, NoSuchMethodException, SecurityException,
@@ -72,11 +72,11 @@ public class ScheduleCache {
         if(this.scheduleMap.containsKey(parentScheduleID)) {
             this.scheduleMap.get(parentScheduleID).getSubScheduleSet().add(scheduleData.getSimulationState().getSelectedDivergeIndex());
             if(this.scheduleMap.get(parentScheduleID).getSubScheduleSet().size() > 1) {
-                assert this.scheduleMap.get(parentScheduleID).getSubScheduleSet().size() <= this.scheduleMap.get(parentScheduleID).getComparedTieTasks().size();
+                assert this.scheduleMap.get(parentScheduleID).getSubScheduleSet().size() <= this.scheduleMap.get(parentScheduleID).getEqualPriorityTasks().size();
             }
 
             // If all the schedule path is handled, the schedule cache of the prefix schedule is removed.
-            if(this.scheduleMap.get(parentScheduleID).getSubScheduleSet().size() == this.scheduleMap.get(parentScheduleID).getComparedTieTasks().size()) {
+            if(this.scheduleMap.get(parentScheduleID).getSubScheduleSet().size() == this.scheduleMap.get(parentScheduleID).getEqualPriorityTasks().size()) {
                 if(this.method != ScheduleSimulationMethod.BRUTE_FORCE) {
                     this.scheduleMap.remove(parentScheduleID);
                 }
@@ -93,7 +93,7 @@ public class ScheduleCache {
        if(scheduleData != null) {
             scheduleData.getSubScheduleSet().add(simulationState.getSelectedDivergeIndex());
 
-            if(this.scheduleMap.get(parentScheduleID).getSubScheduleSet().size() == this.scheduleMap.get(parentScheduleID).getComparedTieTasks().size()) {
+            if(this.scheduleMap.get(parentScheduleID).getSubScheduleSet().size() == this.scheduleMap.get(parentScheduleID).getEqualPriorityTasks().size()) {
                 if(this.method != ScheduleSimulationMethod.BRUTE_FORCE) {
                     this.scheduleMap.remove(parentScheduleID);
                 }
@@ -112,12 +112,12 @@ public class ScheduleCache {
         int taskIndex = 0;
 
         if(random == true) {
-            randomInDivergedPath = (int) (Math.random() * (pickedData.getComparedTieTasks().size() - pickedData.getSubScheduleSet().size()));
+            randomInDivergedPath = (int) (Math.random() * (pickedData.getEqualPriorityTasks().size() - pickedData.getSubScheduleSet().size()));
         } else {
             randomInDivergedPath = 0;
         }
 
-        for(int i = 0; i < pickedData.getComparedTieTasks().size() ; i++) {
+        for(int i = 0; i < pickedData.getEqualPriorityTasks().size() ; i++) {
             if(!pickedData.getSubScheduleSet().contains(Integer.valueOf(i))) {
                 if(taskIndex == randomInDivergedPath) {
                     divergeIndex = i;
@@ -148,10 +148,10 @@ public class ScheduleCache {
         for(String scheduleID : this.scheduleMap.keySet()) {
             if(index == randomVal) {
                 ScheduleCacheData pickedData = this.scheduleMap.get(scheduleID);
-                int randomInDivergedPath = (int) (Math.random() * (pickedData.getComparedTieTasks().size() - pickedData.getSubScheduleSet().size()));
+                int randomInDivergedPath = (int) (Math.random() * (pickedData.getEqualPriorityTasks().size() - pickedData.getSubScheduleSet().size()));
                 int taskIndex = 0;
 
-                for(int i = 0; i < pickedData.getComparedTieTasks().size() ; i++) {
+                for(int i = 0; i < pickedData.getEqualPriorityTasks().size() ; i++) {
                     if(!pickedData.getSubScheduleSet().contains(Integer.valueOf(i))) {
                         if(taskIndex == randomInDivergedPath) {
                             divergeIndex = i;

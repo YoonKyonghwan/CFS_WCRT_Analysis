@@ -3,10 +3,10 @@ package org.cap.simulation;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Queue;
 import java.util.logging.Level;
 
 import org.cap.model.CoreState;
+import org.cap.model.RunQueue;
 import org.cap.model.ScheduleSimulationMethod;
 import org.cap.model.SimulationState;
 import org.cap.model.Task;
@@ -20,24 +20,21 @@ public class EEVDFSimulator extends DefaultSchedulerSimulator {
             throws NoSuchMethodException, SecurityException, ClassNotFoundException, InstantiationException,
             IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         super(method, minimumGranularity, numOfTryToSchedule, initialOrder);
-        
-        ArrayList<ComparatorCase> comparatorList = new ArrayList<>();
-
-        comparatorList.add(ComparatorCase.VIRTUAL_DEADLINE);
+        this.comparatorCaseList = new ArrayList<>();
+        this.comparatorCaseList.add(ComparatorCase.VIRTUAL_DEADLINE);
         for(String caseCompare : comparatorCaseList) {
-            comparatorList.add(ComparatorCase.fromValue(caseCompare));
+            this.comparatorCaseList.add(ComparatorCase.fromValue(caseCompare));
         }
-        initializeRunQueue(comparatorList);
     }
 
     @Override
-    protected long checkTaskAdditionalRuntime(TaskStat task, CoreState coreState, Queue<TaskStat> queueInCore, SimulationState simulationState, long time) {
+    protected long checkTaskAdditionalRuntime(TaskStat task, CoreState coreState, RunQueue queueInCore, SimulationState simulationState, long time) {
         return 0;
     }
 
     @Override
-    protected void updateMinimumVirtualRuntime(CoreState coreState, Queue<TaskStat> queue) {
-        if (queue.size() >= 1)
+    protected void updateMinimumVirtualRuntime(CoreState coreState, RunQueue queue) {
+        if (!queue.isEmpty())
             // coreState.minimumVirtualRuntime = queue.peek().virtualRuntime;
             coreState.minimumVirtualRuntime = Math.max(coreState.minimumVirtualRuntime, queue.peek().virtualRuntime);
     }
@@ -70,7 +67,7 @@ public class EEVDFSimulator extends DefaultSchedulerSimulator {
     }
 
     @Override
-    protected long getTimeSlice(TaskStat task, Queue<TaskStat> queueInCore) {
+    protected long getTimeSlice(TaskStat task, RunQueue queueInCore) {
         long timeSlice;
         timeSlice = this.minimumGranularity;
         timeSlice = Math.min(timeSlice, (long) (task.readTimeInNanoSeconds + task.bodyTimeInNanoSeconds + task.writeTimeInNanoSeconds));
@@ -78,7 +75,7 @@ public class EEVDFSimulator extends DefaultSchedulerSimulator {
     }
 
     @Override
-    protected TaskStat updateTaskStatAfterRun(TaskStat task, Queue<TaskStat> queueInCore, long timeUpdated, long remainedTime, SimulationState simulationState) {
+    protected TaskStat updateTaskStatAfterRun(TaskStat task, RunQueue queueInCore, long timeUpdated, long remainedTime, SimulationState simulationState) {
         long vruntime_increment = (timeUpdated << 10L)  / task.task.weight;
         task.virtualRuntime += vruntime_increment;
         task.virtualDeadline = task.virtualRuntime + (this.minimumGranularity / task.task.weight);

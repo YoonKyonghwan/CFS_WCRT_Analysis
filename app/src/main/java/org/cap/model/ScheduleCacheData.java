@@ -11,14 +11,14 @@ import java.util.ArrayList;
 import org.cap.simulation.comparator.*;
 
 public class ScheduleCacheData {
-    private List<Queue<TaskStat>> queues;
+    private List<RunQueue> queues;
     private SimulationState simulationState;
     private long time;
     private List<TaskStat> comparedTieTasks;
     private int coreIndex;
     private HashSet<Integer> subScheduleSet;
 
-    public List<Queue<TaskStat>> getQueues() {
+    public List<RunQueue> getQueues() {
         return queues;
     }
 
@@ -30,7 +30,7 @@ public class ScheduleCacheData {
         return time;
     }
 
-    public List<TaskStat> getComparedTieTasks() {
+    public List<TaskStat> getEqualPriorityTasks() {
         return comparedTieTasks;
     }
 
@@ -49,7 +49,7 @@ public class ScheduleCacheData {
         return scheduleData;
     }
 
-    public ScheduleCacheData(List<Queue<TaskStat>> queues, HashMap<Integer, Long> wcrtMap,
+    public ScheduleCacheData(List<RunQueue> queues, HashMap<Integer, Long> wcrtMap,
             SimulationState simulationState, long time, List<TaskStat> minRuntimeTasks, int coreIndex) {
         this.queues = queues;
         this.simulationState = simulationState;
@@ -59,24 +59,18 @@ public class ScheduleCacheData {
         this.subScheduleSet = new HashSet<Integer>();
     }
 
-    private List<Queue<TaskStat>> copyQueues(List<Queue<TaskStat>> originalQueues, MultiComparator comparator)
-            throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException,
-            IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-        List<Queue<TaskStat>> newQueues = new ArrayList<>();
+    private List<RunQueue> copyQueues(List<RunQueue> originalQueues) {
+        List<RunQueue> newQueues = new ArrayList<>();
 
-        for (Queue<TaskStat> originalQueueInCore : originalQueues) {
-            Queue<TaskStat> newQueueInCore = new PriorityQueue<>(comparator);
-            // Since it clones the queue, we must not change the queue insert time
-            for (TaskStat task : originalQueueInCore) {
-                newQueueInCore.add(task.copy());
-            }
+        for (RunQueue originalQueueInCore : originalQueues) {
+            RunQueue newQueueInCore = originalQueueInCore.copy();
             newQueues.add(newQueueInCore);
         }
 
         return newQueues;
     }
 
-    public ScheduleCacheData(List<Queue<TaskStat>> queues, SimulationState simulationState, long time, List<TaskStat> minRuntimeTasks, int coreIndex,
+    public ScheduleCacheData(List<RunQueue> queues, SimulationState simulationState, long time, List<TaskStat> minRuntimeTasks, int coreIndex,
             MultiComparator comparator, boolean copyData)
             throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException,
             IllegalAccessException, IllegalArgumentException, InvocationTargetException {
@@ -84,7 +78,7 @@ public class ScheduleCacheData {
         this.time = time;
         this.coreIndex = coreIndex;
         if(copyData == true) {
-            this.queues = copyQueues(queues, comparator);
+            this.queues = copyQueues(queues);
             this.simulationState = simulationState.copy();
             this.comparedTieTasks = new ArrayList<>();
             for (TaskStat task : minRuntimeTasks) {

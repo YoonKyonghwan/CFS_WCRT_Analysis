@@ -3,14 +3,11 @@ package org.cap.simulation;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map.Entry;
 import java.util.List;
-import java.util.Queue;
 import java.util.Stack;
 import java.util.ArrayList;
 import java.util.logging.Logger;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.PriorityQueue;
-import java.lang.reflect.Constructor;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
 
@@ -18,6 +15,7 @@ import org.cap.model.BlockingPolicy;
 import org.cap.model.SimulationState;
 import org.cap.model.Core;
 import org.cap.model.CoreState;
+import org.cap.model.RunQueue;
 import org.cap.model.ScheduleCache;
 import org.cap.model.ScheduleCacheData;
 import org.cap.model.SchedulePickResult;
@@ -29,7 +27,6 @@ import org.cap.model.TaskStat;
 import org.cap.model.TestConfiguration;
 import org.cap.simulation.comparator.MultiComparator;
 import org.cap.simulation.comparator.ComparatorCase;
-import org.cap.simulation.comparator.TaskStatComparator;
 import org.cap.utility.LoggerUtility;
 
 
@@ -62,25 +59,27 @@ public abstract class DefaultSchedulerSimulator {
     }
 
     // call this function in child's constructor
-    protected void initializeRunQueue(List<ComparatorCase> comparatorCaseList) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-        for (ComparatorCase compareCase :  comparatorCaseList) {
-            Class<?> clazz = Class.forName(ComparatorCase.class.getPackageName() + "." + compareCase.getClassName());
-            Constructor<?> ctor = clazz.getConstructor();
-            this.comparator.insertComparator((TaskStatComparator) ctor.newInstance(new Object[] {}));
+    protected List<RunQueue> createRunQueues(int coreNum, List<ComparatorCase> comparatorCaseList) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+        List<RunQueue> queues = new ArrayList<>();
+        for(int i = 0 ; i < coreNum ; i++) {
+            RunQueue queueInCore = new RunQueue(comparatorCaseList);
+            queues.add(queueInCore);
         }
+
+        return queues;
     }
 
     abstract protected TaskStat initializeTaskStat(Task task, int targetTaskID);
 
     abstract protected TaskStat initializeWakeupTaskStat(Task task, CoreState coreState, long time);
 
-    abstract protected long checkTaskAdditionalRuntime(TaskStat task, CoreState coreState, Queue<TaskStat> queueInCore, SimulationState simulationState, long time);
+    abstract protected long checkTaskAdditionalRuntime(TaskStat task, CoreState coreState, RunQueue queueInCore, SimulationState simulationState, long time);
 
-    abstract protected void updateMinimumVirtualRuntime(CoreState coreState, Queue<TaskStat> queue);
+    abstract protected void updateMinimumVirtualRuntime(CoreState coreState, RunQueue queue);
 
-    abstract protected long getTimeSlice(TaskStat task, Queue<TaskStat> queueInCore);
+    abstract protected long getTimeSlice(TaskStat task, RunQueue queueInCore);
 
-    abstract protected TaskStat updateTaskStatAfterRun(TaskStat task, Queue<TaskStat> queueInCore, long timeUpdated, long remainedTime, SimulationState simulationState);
+    abstract protected TaskStat updateTaskStatAfterRun(TaskStat task, RunQueue queueInCore, long timeUpdated, long remainedTime, SimulationState simulationState);
 
     public long getTriedScheduleCount() {
         return triedScheduleCount;
@@ -136,12 +135,12 @@ public abstract class DefaultSchedulerSimulator {
         return wcrtMap;
     }
 
-    private List<TaskStat> getBlockingTasks(List<Queue<TaskStat>> queues, SimulationState simulationState) {
+    private List<TaskStat> getBlockingTasks(List<RunQueue> queues, SimulationState simulationState) {
         if (simulationState.blockingPolicy != BlockingPolicy.NONE)
             return new ArrayList<>();
 
         List<TaskStat> readWriteTasks = new ArrayList<>();
-        for (Queue<TaskStat> queue : queues) {
+        for (RunQueue queue : queues) {
             if (queue.isEmpty())
                 continue;
             TaskStat task = queue.peek();
@@ -159,8 +158,9 @@ public abstract class DefaultSchedulerSimulator {
         logger.fine("*** CFS Simulation Started ***");
         logger.fine("------------------------------");
         SimulationResult finalSimulationResult;
+        List<RunQueue> queues = createRunQueues(cores.size(), this.comparatorCaseList);
         HashMap<Integer, Long> wcrtMap = initializeWCRTs(cores);
-        List<Queue<TaskStat>> queues = initializeQueues(cores, targetTaskID);
+        initializeJobs(queues, cores, targetTaskID);
         long time = 0;
         this.triedScheduleCount = 0;
         this.scheduleCache = new ScheduleCache(this.method);
@@ -191,7 +191,7 @@ public abstract class DefaultSchedulerSimulator {
                 int i = 0;
                 for(ArrayList<Integer> listPriority : fullList) {
                     setInitialOrderToCores(cores, listPriority);
-                    queues = initializeQueues(cores, targetTaskID);
+                    initializeJobs(queues, cores, targetTaskID);
                     SimulationState simulationState = new SimulationState(cores.size());
                     simulationState.insertPeriodsAtStartTime(cores);
                     simulationState.setPreviousEventTime(time);
@@ -219,7 +219,7 @@ public abstract class DefaultSchedulerSimulator {
                 if (pickResult == null) 
                     break;
                 ScheduleCacheData pickData = pickResult.getScheduleData();
-                pickData.getQueues().get(pickData.getCoreIndex()).addAll(pickData.getComparedTieTasks());
+                pickData.getQueues().get(pickData.getCoreIndex()).addAll(pickData.getEqualPriorityTasks());
                 SimulationResult simulResult = performSimulation(cores, pickData.getQueues(), wcrtMap,
                         pickData.getSimulationState(), pickData.getTime(), simulationTime, pickData.getCoreIndex(), true);
                 finalSimulationResult = mergeToFinalResult(finalSimulationResult, simulResult);                
@@ -232,13 +232,13 @@ public abstract class DefaultSchedulerSimulator {
     }
 
 
-    private SimulationResult performSimulation(List<Core> cores, List<Queue<TaskStat>> queues, HashMap<Integer, Long> wcrtMap,
+    private SimulationResult performSimulation(List<Core> cores, List<RunQueue> queues, HashMap<Integer, Long> wcrtMap,
             SimulationState simulationState, long time, long simulationTime, int coreIndex, boolean resume)
             throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException,
             IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         boolean diverged = false;
         ScheduleCacheData scheduleData = null;
-        List<TaskStat> minRuntimeTasks = null;
+        List<TaskStat> candidateTasksToRun = null;
         SimulationResult mergedResult = new SimulationResult(true, wcrtMap);
 
         HashMap<Integer, Long> cloneWcrtMap = cloneHashMap(wcrtMap);
@@ -274,7 +274,7 @@ public abstract class DefaultSchedulerSimulator {
                 }
                 
                 for (; coreIndex < cores.size(); coreIndex++) {
-                    Queue<TaskStat> queue = queues.get(coreIndex);
+                    RunQueue queue = queues.get(coreIndex);
                     CoreState coreState = simulationState.coreStates.get(coreIndex);
 
                     TaskStat task = null;
@@ -288,26 +288,26 @@ public abstract class DefaultSchedulerSimulator {
                     }
                     if(coreState.isRunning == false) {
                         task = null;
-                        minRuntimeTasks = pickNextCandidateTasks(queue, simulationState, time);
+                        candidateTasksToRun = pickNextCandidateTasks(queue, simulationState, time);
                         if (this.method == ScheduleSimulationMethod.PRIORITY_QUEUE) {
-                            if (!minRuntimeTasks.isEmpty())
-                                task = minRuntimeTasks.get(0);
+                            if (!candidateTasksToRun.isEmpty())
+                                task = candidateTasksToRun.get(0);
                         } else { // BRUTE_FORCE or RANDOM or RANDOM_TARGET_TASK
-                            if (minRuntimeTasks.size() > 1) {
-                                String scheduleID = this.scheduleCache.pushScheduleData(simulationState.getSimulationScheduleID(), queues, cloneWcrtMap, simulationState, time, minRuntimeTasks, coreIndex, this.comparator);
+                            if (candidateTasksToRun.size() > 1) {
+                                String scheduleID = this.scheduleCache.pushScheduleData(simulationState.getSimulationScheduleID(), queues, cloneWcrtMap, simulationState, time, candidateTasksToRun, coreIndex, this.comparator);
                                 int taskIndexToSelect = pickNextTaskToSchedule(simulationState, scheduleID);
                                 if(taskIndexToSelect == -1) {
                                     this.scheduleCache.popScheduleData();
                                     diverged = true;
                                     break outerLoop;
                                 } else {
-                                    task = minRuntimeTasks.get(taskIndexToSelect);
-                                    minRuntimeTasks.remove(taskIndexToSelect);
-                                    queue.addAll(minRuntimeTasks);
+                                    task = candidateTasksToRun.get(taskIndexToSelect);
+                                    candidateTasksToRun.remove(taskIndexToSelect);
+                                    queue.addAll(candidateTasksToRun);
                                 }
                             }
-                            else if (minRuntimeTasks.size() == 1)
-                                task = minRuntimeTasks.get(0);
+                            else if (candidateTasksToRun.size() == 1)
+                                task = candidateTasksToRun.get(0);
                         }
                         if (task == null)
                             continue;
@@ -337,7 +337,7 @@ public abstract class DefaultSchedulerSimulator {
 
             if (diverged == true) {
                 for (coreIndex = 0; coreIndex < cores.size(); coreIndex++) {
-                    Queue<TaskStat> queue = queues.get(coreIndex);
+                    RunQueue queue = queues.get(coreIndex);
                     queue.clear();
                 }
             } else {
@@ -370,9 +370,9 @@ public abstract class DefaultSchedulerSimulator {
                 queues = scheduleData.getQueues();
                 simulationState = scheduleData.getSimulationState();
                 time = scheduleData.getTime();
-                minRuntimeTasks = scheduleData.getComparedTieTasks();
+                candidateTasksToRun = scheduleData.getEqualPriorityTasks();
                 coreIndex = scheduleData.getCoreIndex();
-                queues.get(coreIndex).addAll(minRuntimeTasks);
+                queues.get(coreIndex).addAll(candidateTasksToRun);
                 resume = true;
             }
         } while(this.scheduleCache.getScheduleStackSize() > 0 || resume == true);
@@ -390,7 +390,7 @@ public abstract class DefaultSchedulerSimulator {
         return clonedMap;
     }
 
-    private SimulationResult checkSchedulability(List<Core> cores, List<Queue<TaskStat>> queues,
+    private SimulationResult checkSchedulability(List<Core> cores, List<RunQueue> queues,
             HashMap<Integer, Long> wcrtMap) {
         boolean schedulability = true;
 
@@ -400,7 +400,7 @@ public abstract class DefaultSchedulerSimulator {
 
         logger.fine("Unfinished tasks");
         for (int i = 0; i < queues.size(); i++) {
-            Queue<TaskStat> queue = queues.get(i);
+            RunQueue queue = queues.get(i);
             logger.log(Level.FINE, "- Core {0}{1}: {2}", new Object[]{i, 1, queue.stream().map(task -> task.task.id).collect(Collectors.toList())});
             if (!queue.isEmpty())
                 schedulability = false;
@@ -429,13 +429,11 @@ public abstract class DefaultSchedulerSimulator {
         return null;
     }
 
-    protected List<Queue<TaskStat>> initializeQueues(List<Core> cores, int targetTaskID)
-    throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException,
-    IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-        List<Queue<TaskStat>> queues = new ArrayList<>();
+    protected void initializeJobs(List<RunQueue> queues, List<Core> cores, int targetTaskID) {
+        int index = 0;
         for (Core core : cores) {
-            Queue<TaskStat> queueInCore = new PriorityQueue<>(this.comparator);
-
+            RunQueue queueInCore = queues.get(index);
+            queueInCore.clear();
             for (Task task : core.tasks) {
                 if (targetTaskID == task.id)
                     task.isTargetTask = true;
@@ -445,87 +443,37 @@ public abstract class DefaultSchedulerSimulator {
                 TaskStat taskStat = initializeTaskStat(task, targetTaskID);
 
                 if (task.startTime == 0L) {
-                    addIntoQueue(queueInCore, taskStat.copy(), 0L);
+                    queueInCore.addIntoQueue(taskStat.copy(), 0L);
                 }
             }
-            queues.add(queueInCore);
+            index++;
         }
-        return queues;
     }
 
-    private List<TaskStat> popCandidateTasks(Queue<TaskStat> queueInCore) {
-        double minRuntime;
+    private List<TaskStat> pickNextCandidateTasks(RunQueue queueInCore, SimulationState simulationState, long time) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         List<TaskStat> candidateTasks = new ArrayList<>();
-        MultiComparator taskComparator = this.comparator;
-
-        if (!queueInCore.isEmpty()) {
-            TaskStat frontTask = queueInCore.peek();
-            if (this.method == ScheduleSimulationMethod.PRIORITY_QUEUE) {
-                candidateTasks.add(queueInCore.poll());
-            } else {
-                while (!queueInCore.isEmpty() && taskComparator.compare(frontTask, queueInCore.peek()) == 0) {
-                    candidateTasks.add(queueInCore.poll());
-                }
-            }
-        }
-
-        // if (!queueInCore.isEmpty()) {
-        //     minRuntime = queueInCore.peek().virtualRuntime;
-        //     if (this.method == ScheduleSimulationMethod.PRIORITY_QUEUE) {
-        //         if (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime)
-        //             candidateTasks.add(queueInCore.poll());
-        //     } else { // BRUTE_FORCE
-        //         TaskStat previousTask = null;
-        //         while (!queueInCore.isEmpty() && queueInCore.peek().virtualRuntime == minRuntime) {
-        //             TaskStat task = queueInCore.poll();
-        //             if(previousTask != null && taskComparator.compare(task, previousTask) != 0) {
-        //                 queueInCore.add(task);
-        //                 break;
-        //             }
-        //             candidateTasks.add(task);
-        //             previousTask = task;
-        //         }
-        //     }
-        // }
-
-        return candidateTasks;
-    }
-
-    private List<TaskStat> pickNextCandidateTasks(Queue<TaskStat> queueInCore, SimulationState simulationState, long time) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
-        List<TaskStat> candidateTasks = new ArrayList<>();
+        boolean popAll = true;
 
         if (queueInCore.isEmpty())
             return candidateTasks;
 
+        if (this.method == ScheduleSimulationMethod.PRIORITY_QUEUE) {
+            popAll = false;
+        }
+
         switch (simulationState.blockingPolicy) {
             case NONE:
-                candidateTasks = popCandidateTasks(queueInCore);
+                candidateTasks = queueInCore.popCandidateTasks(popAll);
                 break;
             case READ:
-                List<TaskStat> readTasks = new ArrayList<>();
-                queueInCore.removeIf(t -> {
-                    if (t.stage == Stage.READ && t.task.id != simulationState.blockingTaskId) {
-                        readTasks.add(t);
-                        return true;
-                    }
-                    return false;
-                });
-
-                candidateTasks = popCandidateTasks(queueInCore);
-                addAllIntoQueue(queueInCore, readTasks, time);
+                List<TaskStat> readTasks = queueInCore.removeBlockingTasks(Stage.READ, simulationState.blockingTaskId);
+                candidateTasks = queueInCore.popCandidateTasks(popAll);
+                queueInCore.addAllIntoQueue(readTasks, time);
                 break;
             case WRITE:
-                List<TaskStat> writeTasks = new ArrayList<>();
-                queueInCore.removeIf(t -> {
-                    if (t.stage == Stage.WRITE && t.task.id != simulationState.blockingTaskId) {
-                        writeTasks.add(t);
-                        return true;
-                    }
-                    return false;
-                });
-
-                candidateTasks = popCandidateTasks(queueInCore);
-                addAllIntoQueue(queueInCore, writeTasks, time);
+                List<TaskStat> writeTasks =  queueInCore.removeBlockingTasks(Stage.WRITE, simulationState.blockingTaskId);
+                candidateTasks = queueInCore.popCandidateTasks(popAll);
+                queueInCore.addAllIntoQueue(writeTasks, time);
                 break;
         }
 
@@ -547,18 +495,6 @@ public abstract class DefaultSchedulerSimulator {
         } else {
             return -1;
         }        
-    }
-
-    protected void addIntoQueue(Queue<TaskStat> queue, TaskStat task, long time) {
-        task.setQueueInsertTime(time);
-        queue.add(task);
-    }
-
-    private void addAllIntoQueue(Queue<TaskStat> queue, List<TaskStat> tasks, long time) {
-        for(TaskStat task : tasks) {
-            task.setQueueInsertTime(time);
-        }
-        queue.addAll(tasks);
     }
 
     public List<Core>  setInitialOrderToCores(List<Core> cores, ArrayList<Integer> initialOrderList) {
@@ -588,10 +524,10 @@ public abstract class DefaultSchedulerSimulator {
         }
     }
 
-    private void addJobs(List<Core> cores, List<Queue<TaskStat>> queues, List<CoreState> coreStates, long time) {
+    private void addJobs(List<Core> cores, List<RunQueue> queues, List<CoreState> coreStates, long time) {
         for (Core core : cores) {
             CoreState coreState = coreStates.get(core.coreID - 1);
-            Queue<TaskStat> queue = queues.get(core.coreID - 1);
+            RunQueue queue = queues.get(core.coreID - 1);
 
             for (Task task : core.tasks) {
                 if (initialJobs(time, task) || periodicJobs(time, task)) {
@@ -599,13 +535,13 @@ public abstract class DefaultSchedulerSimulator {
                     // logger.fine("- Task " + task.id + " (Read Time: " + task.readTimeInNanoSeconds + ", Body Time: " + task.bodyTimeInNanoSeconds
                             // + ", Write Time: " + task.writeTimeInNanoSeconds + ")");
                     TaskStat taskStat = initializeWakeupTaskStat(task, coreState, time);
-                    addIntoQueue(queue, taskStat, time);
+                    queue.addIntoQueue(taskStat, time);
                 }
             }
         }
     }
 
-    protected void executeTask(TaskStat task, Queue<TaskStat> queueInCore, HashMap<Integer, Long> wcrtMap,
+    protected void executeTask(TaskStat task, RunQueue queueInCore, HashMap<Integer, Long> wcrtMap,
             SimulationState simulationState, CoreState coreState, long time, int coreIndex) {
         logger.log(Level.FINER, "-Core: {0}, Task {1} executed in stage: {2}", new Object[]{coreIndex, task.task.id, task.stage});
         long timeUpdated = time - simulationState.getPreviousEventTime();
@@ -696,7 +632,7 @@ public abstract class DefaultSchedulerSimulator {
             }
 
             if(coreState.isRunning == false) {
-                addIntoQueue(queueInCore, task, time);
+                queueInCore.addIntoQueue(task, time);
             }
 
             if (simulationState.blockingPolicy == BlockingPolicy.READ)
@@ -711,7 +647,7 @@ public abstract class DefaultSchedulerSimulator {
         
     }
 
-    protected void setRuntime(CoreState coreState, TaskStat task, Queue<TaskStat> queueInCore) {
+    protected void setRuntime(CoreState coreState, TaskStat task, RunQueue queueInCore) {
         coreState.remainingRuntime = getTimeSlice(task, queueInCore);
         coreState.isRunning = true;
     }

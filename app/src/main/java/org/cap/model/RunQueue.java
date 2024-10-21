@@ -1,4 +1,4 @@
-package org.cap.simulation;
+package org.cap.model;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.PriorityQueue;
 import java.util.stream.Stream;
 
-import org.cap.model.TaskStat;
 import org.cap.simulation.comparator.ComparatorCase;
 import org.cap.simulation.comparator.MultiComparator;
 import org.cap.simulation.comparator.TaskStatComparator;
@@ -27,9 +26,31 @@ public class RunQueue {
         this.queueInCore = new PriorityQueue<>(this.taskComparator);
     }
 
+    public RunQueue(MultiComparator comparator) {
+        this.taskComparator = comparator;
+        this.queueInCore = new PriorityQueue<>(this.taskComparator );
+    }
+    
+    private void add(TaskStat taskStat) {
+        this.queueInCore.add(taskStat);
+    }
+
     public void addIntoQueue(TaskStat task, long time) {
         task.setQueueInsertTime(time);
         this.queueInCore.add(task);
+    }
+
+    public List<TaskStat> removeBlockingTasks(Stage blockStage, int curBlockingTaskId) {
+        List<TaskStat> readTasks = new ArrayList<>();
+        queueInCore.removeIf(t -> {
+            if (t.stage == blockStage && t.task.id != curBlockingTaskId) {
+                readTasks.add(t);
+                return true;
+            }
+            return false;
+        });
+
+        return readTasks;
     }
 
     public void addAllIntoQueue(List<TaskStat> tasks, long time) {
@@ -58,6 +79,14 @@ public class RunQueue {
     public Stream<TaskStat> stream () {
         return this.queueInCore.stream();
     }
+
+    public RunQueue copy() {
+        RunQueue newQueue = new RunQueue(this.taskComparator);
+        for (TaskStat task : this.queueInCore) {
+            newQueue.add(task.copy());
+        }
+        return newQueue;
+    }
     
     public List<TaskStat> popCandidateTasks(boolean popAll) {
         List<TaskStat> candidateTasks = new ArrayList<>();
@@ -74,5 +103,9 @@ public class RunQueue {
         }
 
         return candidateTasks;
+    }
+
+    public void addAll(List<TaskStat> equalPriorityTasks) {
+        this.queueInCore.addAll(equalPriorityTasks);
     }
 }
