@@ -49,9 +49,12 @@ public class CFSSimulator extends DefaultSchedulerSimulator {
 
     @Override
     protected void updateMinimumVirtualRuntime(CoreState coreState, RunQueue queue) {
-        if (!queue.isEmpty())
-            // coreState.minimumVirtualRuntime = queue.peek().virtualRuntime;
+        if (!queue.isEmpty()) {
             coreState.minimumVirtualRuntime = Math.max(coreState.minimumVirtualRuntime, queue.peek().virtualRuntime);
+        }
+        else {
+            coreState.minimumVirtualRuntime = coreState.currentTask.virtualRuntime;
+        }
     }
 
     @Override
@@ -70,7 +73,7 @@ public class CFSSimulator extends DefaultSchedulerSimulator {
     }
 
     @Override
-    protected TaskStat initializeWakeupTaskStat(Task task, CoreState coreState, long time) {
+    protected TaskStat initializeWakeupTaskStat(Task task, CoreState coreState, RunQueue queue, long time) {
         TaskStat taskStat = new TaskStat(task);
         taskStat.readReleaseTime = time;
         long min_vruntime = coreState.minimumVirtualRuntime - (this.targetLatency/2);  // place_entity in linux/kernel/sched/fair.c  (assume that GENTLE_FAIR_SLEEPERS is enabled)
@@ -92,7 +95,7 @@ public class CFSSimulator extends DefaultSchedulerSimulator {
     @Override
     protected long getTimeSlice(TaskStat task, RunQueue queueInCore) {
         long timeSlice;
-        long totalWeight = queueInCore.stream().mapToLong(t -> t.task.weight).sum() + task.task.weight;
+        long totalWeight = queueInCore.getTotalWeight() + task.task.weight;
         timeSlice = Math.max(this.targetLatency * task.task.weight / totalWeight, this.minimumGranularity);
         timeSlice = (timeSlice / this.schedulePeriod) * this.schedulePeriod + this.schedulePeriod;
         timeSlice = Math.min(timeSlice, (long) (task.readTimeInNanoSeconds + task.bodyTimeInNanoSeconds + task.writeTimeInNanoSeconds));

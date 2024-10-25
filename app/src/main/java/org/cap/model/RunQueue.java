@@ -40,6 +40,39 @@ public class RunQueue {
         this.queueInCore.add(task);
     }
 
+    public long getMinVruntimeInQueue() {
+        long minVruntime = Long.MAX_VALUE;
+
+        if(this.queueInCore.isEmpty()) {
+            return 0;
+        }
+
+        for (TaskStat task : this.queueInCore) {
+            if (minVruntime >  task.virtualRuntime) {
+                minVruntime = task.virtualRuntime;
+            }
+        }
+
+        return minVruntime;
+    }
+
+    public long getAverageVruntimeInQueue(long minimumVirtualRuntime) {
+        long averageVruntime = 0L;
+        for (TaskStat task : this.queueInCore) {
+            averageVruntime += (task.virtualRuntime - minimumVirtualRuntime) * task.task.weight;
+        }
+
+        return minimumVirtualRuntime + averageVruntime;
+    }
+
+    public long getAverageLoad() {
+        return this.queueInCore.stream().mapToLong(t -> t.task.weight).sum();
+    }
+
+    public long getTotalWeight() {
+        return getAverageLoad();
+    }
+
     public List<TaskStat> removeBlockingTasks(Stage blockStage, int curBlockingTaskId) {
         List<TaskStat> readTasks = new ArrayList<>();
         queueInCore.removeIf(t -> {

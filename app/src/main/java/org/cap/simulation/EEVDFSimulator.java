@@ -34,9 +34,7 @@ public class EEVDFSimulator extends DefaultSchedulerSimulator {
 
     @Override
     protected void updateMinimumVirtualRuntime(CoreState coreState, RunQueue queue) {
-        if (!queue.isEmpty())
-            // coreState.minimumVirtualRuntime = queue.peek().virtualRuntime;
-            coreState.minimumVirtualRuntime = Math.max(coreState.minimumVirtualRuntime, queue.peek().virtualRuntime);
+        coreState.minimumVirtualRuntime = Math.max(coreState.minimumVirtualRuntime, queue.getMinVruntimeInQueue());
     }
 
     @Override
@@ -44,7 +42,7 @@ public class EEVDFSimulator extends DefaultSchedulerSimulator {
         TaskStat taskStat = new TaskStat(task);
         taskStat.readReleaseTime = task.startTime;
         if (targetTaskID == task.id){
-            taskStat.virtualRuntime = 0; // TODO
+            taskStat.virtualRuntime = 0L; // TODO
         }else{
             taskStat.virtualRuntime = 0L;
         }
@@ -55,11 +53,22 @@ public class EEVDFSimulator extends DefaultSchedulerSimulator {
     }
 
     @Override
-    protected TaskStat initializeWakeupTaskStat(Task task, CoreState coreState, long time) {
+    protected TaskStat initializeWakeupTaskStat(Task task, CoreState coreState, RunQueue queue, long time) {
         TaskStat taskStat = new TaskStat(task);
         taskStat.readReleaseTime = time;
-        long min_vruntime = coreState.minimumVirtualRuntime;  // TODO
-        taskStat.virtualRuntime = Math.max(coreState.getLastVirtualRuntime(task.id), min_vruntime);
+        long min_vruntime =  Math.max(coreState.minimumVirtualRuntime, queue.getMinVruntimeInQueue());
+        // multiple tasks are inserted at the same time, what should be executed first, what is the value of average vruntime?
+        long avg_vruntime = queue.getAverageVruntimeInQueue(min_vruntime);
+        long vlag = avg_vruntime - taskStat.virtualRuntime;
+        long avg_load = queue.getAverageLoad();
+        long actual_lag;
+        if (avg_load > 0) {
+            actual_lag = vlag * (avg_load + task.weight) / avg_load;
+        } else {
+            actual_lag = 0;
+        }
+
+        taskStat.virtualRuntime = avg_vruntime - actual_lag;
         taskStat.virtualDeadline = taskStat.virtualRuntime + (this.minimumGranularity / taskStat.task.weight);
         skipReadStageIfNoReadTime(taskStat);
 
@@ -78,7 +87,9 @@ public class EEVDFSimulator extends DefaultSchedulerSimulator {
     protected TaskStat updateTaskStatAfterRun(TaskStat task, RunQueue queueInCore, long timeUpdated, long remainedTime, SimulationState simulationState) {
         long vruntime_increment = (timeUpdated << 10L)  / task.task.weight;
         task.virtualRuntime += vruntime_increment;
-        task.virtualDeadline = task.virtualRuntime + (this.minimumGranularity / task.task.weight);
+        if (remainedTime > 0) {
+            task.virtualDeadline = task.virtualRuntime + (this.minimumGranularity / task.task.weight);
+        }
         logger.log(Level.FINE, "Task {0} spends {1} ns from {2} to {3}[vruntime_increment: {4}]", new Object[]{task.task.id, timeUpdated, simulationState.getPreviousEventTime(), simulationState.getPreviousEventTime() + timeUpdated, vruntime_increment});
         return task;
     }

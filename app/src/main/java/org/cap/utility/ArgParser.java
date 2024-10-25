@@ -36,12 +36,6 @@ public class ArgParser {
                 .setDefault(0L)
                 .nargs("?")
                 .help("simulation time (0 for hyper period * 2, -1 for max period, other positive integer values are used as an exact value) ");
-        parser.addArgument("--tie_comparator", "-tc")
-                .dest("tie_comparator")
-                .type(Arguments.enumStringType(ComparatorCase.class))
-                .setDefault(ComparatorCase.FIFO.getClassName())
-                .nargs("?")
-                .help("tie comparator when the virtual runtime is same (BodyWCETComparator, PeriodComparator, WeightComparator, TargetTaskBasedComparator, InitialOrderBasedComparator, FIFOComparator, ReleaseTimeComparator or UnorderedComparator). If schedule simulation method is brute-force, tie comparator is fixed to UnorderedComparator.");
         parser.addArgument("--additional_comparator", "-ac")
                 .dest("additional_comparator")
                 .type(Arguments.enumStringType(ComparatorCase.class))

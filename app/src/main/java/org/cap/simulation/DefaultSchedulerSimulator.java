@@ -71,7 +71,7 @@ public abstract class DefaultSchedulerSimulator {
 
     abstract protected TaskStat initializeTaskStat(Task task, int targetTaskID);
 
-    abstract protected TaskStat initializeWakeupTaskStat(Task task, CoreState coreState, long time);
+    abstract protected TaskStat initializeWakeupTaskStat(Task task, CoreState coreState, RunQueue queue, long time);
 
     abstract protected long checkTaskAdditionalRuntime(TaskStat task, CoreState coreState, RunQueue queueInCore, SimulationState simulationState, long time);
 
@@ -203,7 +203,7 @@ public abstract class DefaultSchedulerSimulator {
                     finalSimulationResult = mergeToFinalResult(finalSimulationResult, simulResult);   
                     i++;   
                 }
-                System.out.println(i);
+                //System.out.println(i);
             }
         } else {
             SimulationState simulationState = new SimulationState(cores.size());
@@ -282,16 +282,16 @@ public abstract class DefaultSchedulerSimulator {
                         task = coreState.currentTask;
                         executeTask(task, queue, cloneWcrtMap, simulationState, coreState, time, coreIndex);
                         updateMinimumVirtualRuntime(coreState, queue);
-                        if(queue.isEmpty()) {
-                            coreState.minimumVirtualRuntime = task.virtualRuntime;
-                        }
                     }
                     if(coreState.isRunning == false) {
                         task = null;
                         candidateTasksToRun = pickNextCandidateTasks(queue, simulationState, time);
                         if (this.method == ScheduleSimulationMethod.PRIORITY_QUEUE) {
-                            if (!candidateTasksToRun.isEmpty())
+                            if (!candidateTasksToRun.isEmpty()) {
                                 task = candidateTasksToRun.get(0);
+                                candidateTasksToRun.remove(0);
+                                queue.addAll(candidateTasksToRun);
+                            }
                         } else { // BRUTE_FORCE or RANDOM or RANDOM_TARGET_TASK
                             if (candidateTasksToRun.size() > 1) {
                                 String scheduleID = this.scheduleCache.pushScheduleData(simulationState.getSimulationScheduleID(), queues, cloneWcrtMap, simulationState, time, candidateTasksToRun, coreIndex, this.comparator);
@@ -528,15 +528,20 @@ public abstract class DefaultSchedulerSimulator {
         for (Core core : cores) {
             CoreState coreState = coreStates.get(core.coreID - 1);
             RunQueue queue = queues.get(core.coreID - 1);
+            ArrayList<TaskStat> tasksToPutInQueue = new ArrayList<>();
 
             for (Task task : core.tasks) {
                 if (initialJobs(time, task) || periodicJobs(time, task)) {
                     logger.log(Level.FINE, "Tasks {0} Released at time {1}", new Object[]{task.id, time});
                     // logger.fine("- Task " + task.id + " (Read Time: " + task.readTimeInNanoSeconds + ", Body Time: " + task.bodyTimeInNanoSeconds
                             // + ", Write Time: " + task.writeTimeInNanoSeconds + ")");
-                    TaskStat taskStat = initializeWakeupTaskStat(task, coreState, time);
-                    queue.addIntoQueue(taskStat, time);
+                    TaskStat taskStat = initializeWakeupTaskStat(task, coreState, queue, time);
+                    tasksToPutInQueue.add(taskStat);
                 }
+            }
+
+            for (TaskStat task : tasksToPutInQueue) {
+                queue.addIntoQueue(task, time);
             }
         }
     }
