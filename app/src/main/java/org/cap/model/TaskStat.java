@@ -40,6 +40,7 @@ public class TaskStat {
         newTask.readTimeInNanoSeconds = this.readTimeInNanoSeconds;
         newTask.bodyTimeInNanoSeconds = this.bodyTimeInNanoSeconds;
         newTask.writeTimeInNanoSeconds = this.writeTimeInNanoSeconds;
+        newTask.virtualDeadline = this.virtualDeadline;
         return newTask;
     }
 

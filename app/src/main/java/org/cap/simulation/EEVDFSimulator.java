@@ -9,6 +9,7 @@ import org.cap.model.CoreState;
 import org.cap.model.RunQueue;
 import org.cap.model.ScheduleSimulationMethod;
 import org.cap.model.SimulationState;
+import org.cap.model.Stage;
 import org.cap.model.Task;
 import org.cap.model.TaskStat;
 import org.cap.simulation.comparator.ComparatorCase;
@@ -25,6 +26,7 @@ public class EEVDFSimulator extends DefaultSchedulerSimulator {
         for(String caseCompare : comparatorCaseList) {
             this.comparatorCaseList.add(ComparatorCase.fromValue(caseCompare));
         }
+        this.needsEligibleCheck = true;
     }
 
     @Override
@@ -46,7 +48,7 @@ public class EEVDFSimulator extends DefaultSchedulerSimulator {
         }else{
             taskStat.virtualRuntime = 0L;
         }
-        
+        taskStat.virtualDeadline = taskStat.virtualRuntime + (this.minimumGranularity / taskStat.task.weight);
         skipReadStageIfNoReadTime(taskStat);
 
         return taskStat;
@@ -87,10 +89,10 @@ public class EEVDFSimulator extends DefaultSchedulerSimulator {
     protected TaskStat updateTaskStatAfterRun(TaskStat task, RunQueue queueInCore, long timeUpdated, long remainedTime, SimulationState simulationState) {
         long vruntime_increment = (timeUpdated << 10L)  / task.task.weight;
         task.virtualRuntime += vruntime_increment;
-        if (remainedTime > 0) {
+        if (task.stage != Stage.COMPLETED) {
             task.virtualDeadline = task.virtualRuntime + (this.minimumGranularity / task.task.weight);
         }
-        logger.log(Level.FINE, "Task {0} spends {1} ns from {2} to {3}[vruntime_increment: {4}]", new Object[]{task.task.id, timeUpdated, simulationState.getPreviousEventTime(), simulationState.getPreviousEventTime() + timeUpdated, vruntime_increment});
+        logger.log(Level.FINE, "Task {0} spends {1} ns from {2} to {3}[vruntime_increment: {4}][virtual_deadline: {5}]", new Object[]{task.task.id, timeUpdated, simulationState.getPreviousEventTime(), simulationState.getPreviousEventTime() + timeUpdated, vruntime_increment, task.virtualDeadline});
         return task;
     }
 }

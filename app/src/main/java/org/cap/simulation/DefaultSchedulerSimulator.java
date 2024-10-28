@@ -43,6 +43,7 @@ public abstract class DefaultSchedulerSimulator {
     protected long numOfTryToSchedule;
     protected ScheduleCache scheduleCache;
     protected long minimumGranularity = 1 * 1000L;
+    protected boolean needsEligibleCheck = false;
 
     public DefaultSchedulerSimulator(ScheduleSimulationMethod method, long minimumGranularity, long numOfTryToSchedule, boolean initialOrder) {
         this.method = method;
@@ -59,10 +60,10 @@ public abstract class DefaultSchedulerSimulator {
     }
 
     // call this function in child's constructor
-    protected List<RunQueue> createRunQueues(int coreNum, List<ComparatorCase> comparatorCaseList) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+    protected List<RunQueue> createRunQueues(int coreNum, List<ComparatorCase> comparatorCaseList, boolean needsEligibleCheck) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         List<RunQueue> queues = new ArrayList<>();
         for(int i = 0 ; i < coreNum ; i++) {
-            RunQueue queueInCore = new RunQueue(comparatorCaseList);
+            RunQueue queueInCore = new RunQueue(comparatorCaseList, needsEligibleCheck);
             queues.add(queueInCore);
         }
 
@@ -158,7 +159,7 @@ public abstract class DefaultSchedulerSimulator {
         logger.fine("*** CFS Simulation Started ***");
         logger.fine("------------------------------");
         SimulationResult finalSimulationResult;
-        List<RunQueue> queues = createRunQueues(cores.size(), this.comparatorCaseList);
+        List<RunQueue> queues = createRunQueues(cores.size(), this.comparatorCaseList, this.needsEligibleCheck);
         HashMap<Integer, Long> wcrtMap = initializeWCRTs(cores);
         initializeJobs(queues, cores, targetTaskID);
         long time = 0;
@@ -285,7 +286,7 @@ public abstract class DefaultSchedulerSimulator {
                     }
                     if(coreState.isRunning == false) {
                         task = null;
-                        candidateTasksToRun = pickNextCandidateTasks(queue, simulationState, time);
+                        candidateTasksToRun = pickNextCandidateTasks(queue, simulationState, coreState.minimumVirtualRuntime, time);
                         if (this.method == ScheduleSimulationMethod.PRIORITY_QUEUE) {
                             if (!candidateTasksToRun.isEmpty()) {
                                 task = candidateTasksToRun.get(0);
@@ -312,7 +313,7 @@ public abstract class DefaultSchedulerSimulator {
                         if (task == null)
                             continue;
                         else {
-                            logger.log(Level.FINE, "Task {0}(vruntime:{1}) started to run at time {2}", new Object[]{task.task.id, task.virtualRuntime, time});
+                            logger.log(Level.FINE, "Task {0}(vruntime:{1}) started to run at time {2} : vd {3}", new Object[]{task.task.id, task.virtualRuntime, time, task.virtualDeadline});
                         }
                         setRuntime(simulationState.coreStates.get(coreIndex), task, queue);
                         simulationState.putEventTime((time + coreState.remainingRuntime));
@@ -450,7 +451,7 @@ public abstract class DefaultSchedulerSimulator {
         }
     }
 
-    private List<TaskStat> pickNextCandidateTasks(RunQueue queueInCore, SimulationState simulationState, long time) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+    private List<TaskStat> pickNextCandidateTasks(RunQueue queueInCore, SimulationState simulationState, long minimumVirtualRuntime, long time) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         List<TaskStat> candidateTasks = new ArrayList<>();
         boolean popAll = true;
 
@@ -463,16 +464,16 @@ public abstract class DefaultSchedulerSimulator {
 
         switch (simulationState.blockingPolicy) {
             case NONE:
-                candidateTasks = queueInCore.popCandidateTasks(popAll);
+                candidateTasks = queueInCore.popCandidateTasks(popAll, minimumVirtualRuntime);
                 break;
             case READ:
                 List<TaskStat> readTasks = queueInCore.removeBlockingTasks(Stage.READ, simulationState.blockingTaskId);
-                candidateTasks = queueInCore.popCandidateTasks(popAll);
+                candidateTasks = queueInCore.popCandidateTasks(popAll, minimumVirtualRuntime);
                 queueInCore.addAllIntoQueue(readTasks, time);
                 break;
             case WRITE:
                 List<TaskStat> writeTasks =  queueInCore.removeBlockingTasks(Stage.WRITE, simulationState.blockingTaskId);
-                candidateTasks = queueInCore.popCandidateTasks(popAll);
+                candidateTasks = queueInCore.popCandidateTasks(popAll, minimumVirtualRuntime);
                 queueInCore.addAllIntoQueue(writeTasks, time);
                 break;
         }
@@ -550,14 +551,10 @@ public abstract class DefaultSchedulerSimulator {
             SimulationState simulationState, CoreState coreState, long time, int coreIndex) {
         logger.log(Level.FINER, "-Core: {0}, Task {1} executed in stage: {2}", new Object[]{coreIndex, task.task.id, task.stage});
         long timeUpdated = time - simulationState.getPreviousEventTime();
+        long passedTime = timeUpdated;
 
         // Decrease runtime
-        coreState.remainingRuntime -= timeUpdated;
-        // Update virtual runtime
-        // long temp = (long) (Math.ceil(((timeUpdated << 10L)  / task.weight) /100) *100);
-        // task.virtualRuntime += temp ;
-        task = updateTaskStatAfterRun(task, queueInCore, timeUpdated, coreState.remainingRuntime, simulationState);
-        
+        coreState.remainingRuntime -= timeUpdated;        
 
         // Decrease execution time for each stage
         while(timeUpdated > 0 && task.stage != Stage.COMPLETED) {
@@ -620,6 +617,11 @@ public abstract class DefaultSchedulerSimulator {
                     break;
             }
         }
+
+        // Update virtual runtime
+        // long temp = (long) (Math.ceil(((timeUpdated << 10L)  / task.weight) /100) *100);
+        // task.virtualRuntime += temp ;
+        task = updateTaskStatAfterRun(task, queueInCore, passedTime, coreState.remainingRuntime, simulationState);
 
         // Add task back to queue if task is not finished but runtime is over
         if (task.stage != Stage.COMPLETED) {

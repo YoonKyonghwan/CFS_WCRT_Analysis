@@ -14,9 +14,11 @@ import org.cap.simulation.comparator.TaskStatComparator;
 public class RunQueue {
     MultiComparator taskComparator;
     PriorityQueue<TaskStat> queueInCore;
+    boolean needsEligibleCheck = false;
 
-    public RunQueue(List<ComparatorCase> comparatorCaseList) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
+    public RunQueue(List<ComparatorCase> comparatorCaseList, boolean needsEligibleCheck) throws ClassNotFoundException, NoSuchMethodException, SecurityException, InstantiationException, IllegalAccessException, IllegalArgumentException, InvocationTargetException {
         this.taskComparator = new MultiComparator();
+        //this.popConditionChecker;
 
         for (ComparatorCase compareCase :  comparatorCaseList) {
             Class<?> clazz = Class.forName(ComparatorCase.class.getPackageName() + "." + compareCase.getClassName());
@@ -24,13 +26,15 @@ public class RunQueue {
             this.taskComparator.insertComparator((TaskStatComparator) ctor.newInstance(new Object[] {}));
         }
         this.queueInCore = new PriorityQueue<>(this.taskComparator);
+        this.needsEligibleCheck = needsEligibleCheck;
     }
 
-    public RunQueue(MultiComparator comparator) {
+    public RunQueue(MultiComparator comparator, boolean needsEligibleCheck) {
         this.taskComparator = comparator;
+        this.needsEligibleCheck = needsEligibleCheck;
         this.queueInCore = new PriorityQueue<>(this.taskComparator );
     }
-    
+
     private void add(TaskStat taskStat) {
         this.queueInCore.add(taskStat);
     }
@@ -73,6 +77,15 @@ public class RunQueue {
         return getAverageLoad();
     }
 
+    public boolean checkEligible(TaskStat task, long avgVruntime, long minVruntime) {
+        if (avgVruntime >= (task.virtualRuntime - minVruntime) * task.task.weight) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+    
+
     public List<TaskStat> removeBlockingTasks(Stage blockStage, int curBlockingTaskId) {
         List<TaskStat> readTasks = new ArrayList<>();
         queueInCore.removeIf(t -> {
@@ -101,10 +114,6 @@ public class RunQueue {
         return this.queueInCore.peek();
     }
 
-    public TaskStat poll() {
-        return this.queueInCore.poll();
-    }
-
     public void clear() {
         this.queueInCore.clear();
     }
@@ -114,25 +123,41 @@ public class RunQueue {
     }
 
     public RunQueue copy() {
-        RunQueue newQueue = new RunQueue(this.taskComparator);
+        RunQueue newQueue = new RunQueue(this.taskComparator, this.needsEligibleCheck);
         for (TaskStat task : this.queueInCore) {
             newQueue.add(task.copy());
         }
         return newQueue;
     }
     
-    public List<TaskStat> popCandidateTasks(boolean popAll) {
+    public List<TaskStat> popCandidateTasks(boolean popAll, long minimumVirtualRuntime) {
         List<TaskStat> candidateTasks = new ArrayList<>();
+        List<TaskStat> poppedTasks = new ArrayList<>();
+        long avgVruntime = 0L;
 
         if (!queueInCore.isEmpty()) {
-            TaskStat frontTask = this.queueInCore.peek();
-            if (popAll == false) {
-                candidateTasks.add(this.queueInCore.poll());
-            } else {
-                while (!queueInCore.isEmpty() && this.taskComparator.compare(frontTask, this.queueInCore.peek()) == 0) {
-                    candidateTasks.add(queueInCore.poll());
+            if(this.needsEligibleCheck == true) {
+                minimumVirtualRuntime = Math.max(getMinVruntimeInQueue(), minimumVirtualRuntime);
+                avgVruntime = getAverageVruntimeInQueue(minimumVirtualRuntime) - minimumVirtualRuntime;
+            }
+
+            while(candidateTasks.isEmpty()) {
+                TaskStat frontTask = this.queueInCore.peek();
+                if (popAll == false) {
+                    candidateTasks.add(this.queueInCore.poll());
+                } else {
+                    while (!queueInCore.isEmpty() && this.taskComparator.compare(frontTask, this.queueInCore.peek()) == 0) {
+                        TaskStat task = queueInCore.poll();
+                        if(this.needsEligibleCheck == false || (this.needsEligibleCheck == true && checkEligible(task, avgVruntime, minimumVirtualRuntime))) {
+                            candidateTasks.add(task);
+                        } else {
+                            poppedTasks.add(task); // not eligible tasks
+                        }
+                    }
                 }
             }
+
+            queueInCore.addAll(poppedTasks);
         }
 
         return candidateTasks;
