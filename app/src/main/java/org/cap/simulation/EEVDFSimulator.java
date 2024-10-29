@@ -48,7 +48,7 @@ public class EEVDFSimulator extends DefaultSchedulerSimulator {
         }else{
             taskStat.virtualRuntime = 0L;
         }
-        taskStat.virtualDeadline = taskStat.virtualRuntime + (this.minimumGranularity / taskStat.task.weight);
+        taskStat.virtualDeadline = taskStat.virtualRuntime + ((this.minimumGranularity / taskStat.task.weight) >> 1);
         skipReadStageIfNoReadTime(taskStat);
 
         return taskStat;
@@ -71,7 +71,11 @@ public class EEVDFSimulator extends DefaultSchedulerSimulator {
         }
 
         taskStat.virtualRuntime = avg_vruntime - actual_lag;
-        taskStat.virtualDeadline = taskStat.virtualRuntime + (this.minimumGranularity / taskStat.task.weight);
+        if (initialJobs(time, task)) {
+            taskStat.virtualDeadline = taskStat.virtualRuntime + ((this.minimumGranularity / taskStat.task.weight) >> 1);
+        } else {
+            taskStat.virtualDeadline = taskStat.virtualRuntime + (this.minimumGranularity / taskStat.task.weight);
+        }
         skipReadStageIfNoReadTime(taskStat);
 
         return taskStat;
