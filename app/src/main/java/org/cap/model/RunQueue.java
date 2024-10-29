@@ -62,11 +62,17 @@ public class RunQueue {
 
     public long getAverageVruntimeInQueue(long minimumVirtualRuntime) {
         long averageVruntime = 0L;
+        long avgLoad = 0L;
         for (TaskStat task : this.queueInCore) {
             averageVruntime += (task.virtualRuntime - minimumVirtualRuntime) * task.task.weight;
         }
-
-        return minimumVirtualRuntime + averageVruntime;
+        
+        avgLoad = getAverageLoad();
+        if(avgLoad > 0) {
+            return minimumVirtualRuntime + (averageVruntime / avgLoad);
+        } else {
+            return minimumVirtualRuntime + averageVruntime;
+        }
     }
 
     public long getAverageLoad() {

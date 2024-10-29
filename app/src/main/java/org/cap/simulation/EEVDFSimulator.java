@@ -61,9 +61,12 @@ public class EEVDFSimulator extends DefaultSchedulerSimulator {
         long min_vruntime =  Math.max(coreState.minimumVirtualRuntime, queue.getMinVruntimeInQueue());
         // multiple tasks are inserted at the same time, what should be executed first, what is the value of average vruntime?
         long avg_vruntime = queue.getAverageVruntimeInQueue(min_vruntime);
-        long vlag = avg_vruntime - taskStat.virtualRuntime;
+        long vlag = avg_vruntime - coreState.getLastVirtualRuntime(task.id);
         long avg_load = queue.getAverageLoad();
         long actual_lag;
+        long twiceOfSlice = this.minimumGranularity * 2 / taskStat.task.weight;
+        // clamp
+        vlag = Math.max(-twiceOfSlice, Math.min(twiceOfSlice, vlag));        
         if (avg_load > 0) {
             actual_lag = vlag * (avg_load + task.weight) / avg_load;
         } else {
