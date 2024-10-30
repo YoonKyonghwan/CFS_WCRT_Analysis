@@ -48,7 +48,7 @@ public class EEVDFSimulator extends DefaultSchedulerSimulator {
         }else{
             taskStat.virtualRuntime = 0L;
         }
-        taskStat.virtualDeadline = taskStat.virtualRuntime + ((this.minimumGranularity / taskStat.task.weight) >> 1);
+        taskStat.virtualDeadline = taskStat.virtualRuntime + (((this.minimumGranularity << 10L) / taskStat.task.weight) >> 1);
         skipReadStageIfNoReadTime(taskStat);
 
         return taskStat;
@@ -75,9 +75,9 @@ public class EEVDFSimulator extends DefaultSchedulerSimulator {
 
         taskStat.virtualRuntime = avg_vruntime - actual_lag;
         if (initialJobs(time, task)) {
-            taskStat.virtualDeadline = taskStat.virtualRuntime + ((this.minimumGranularity / taskStat.task.weight) >> 1);
+            taskStat.virtualDeadline = taskStat.virtualRuntime + (((this.minimumGranularity << 10L) / taskStat.task.weight) >> 1);
         } else {
-            taskStat.virtualDeadline = taskStat.virtualRuntime + (this.minimumGranularity / taskStat.task.weight);
+            taskStat.virtualDeadline = taskStat.virtualRuntime + ((this.minimumGranularity << 10L) / taskStat.task.weight);
         }
         skipReadStageIfNoReadTime(taskStat);
 
@@ -87,7 +87,8 @@ public class EEVDFSimulator extends DefaultSchedulerSimulator {
     @Override
     protected long getTimeSlice(TaskStat task, RunQueue queueInCore) {
         long timeSlice;
-        timeSlice = this.minimumGranularity;
+        long leftSlice = (((task.virtualDeadline - task.virtualRuntime) * task.task.weight) >> 10L) + 1;
+        timeSlice = (leftSlice > 0) ? leftSlice : this.minimumGranularity;
         timeSlice = Math.min(timeSlice, (long) (task.readTimeInNanoSeconds + task.bodyTimeInNanoSeconds + task.writeTimeInNanoSeconds));
         return timeSlice;
     }
@@ -96,8 +97,8 @@ public class EEVDFSimulator extends DefaultSchedulerSimulator {
     protected TaskStat updateTaskStatAfterRun(TaskStat task, RunQueue queueInCore, long timeUpdated, long remainedTime, SimulationState simulationState) {
         long vruntime_increment = (timeUpdated << 10L)  / task.task.weight;
         task.virtualRuntime += vruntime_increment;
-        if (task.stage != Stage.COMPLETED) {
-            task.virtualDeadline = task.virtualRuntime + (this.minimumGranularity / task.task.weight);
+        if (task.stage != Stage.COMPLETED && remainedTime == 0) {
+            task.virtualDeadline = task.virtualRuntime + ((this.minimumGranularity << 10L) / task.task.weight);
         }
         logger.log(Level.FINE, "Task {0} spends {1} ns from {2} to {3}[vruntime_increment: {4}][virtual_deadline: {5}]", new Object[]{task.task.id, timeUpdated, simulationState.getPreviousEventTime(), simulationState.getPreviousEventTime() + timeUpdated, vruntime_increment, task.virtualDeadline});
         return task;

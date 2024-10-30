@@ -315,7 +315,7 @@ public abstract class DefaultSchedulerSimulator {
                         else {
                             logger.log(Level.FINE, "Task {0}(vruntime:{1}) started to run at time {2} : vd {3}", new Object[]{task.task.id, task.virtualRuntime, time, task.virtualDeadline});
                         }
-                        setRuntime(simulationState.coreStates.get(coreIndex), task, queue);
+                        setRuntime(coreState, task, queue);
                         simulationState.putEventTime((time + coreState.remainingRuntime));
                         coreState.currentTask = task;
                     }
