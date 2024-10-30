@@ -48,12 +48,12 @@ def get_subLog(task_id, response_time_us, log_data):
 
 # Parse the log data
 def parse_log(log_data):
-    task_starts = re.findall(r"Task (\d+)\(vruntime:.+\) started to run at time (\d+)", log_data)
-    task_durations = re.findall(r"Task \d+ spends (\d+) ns from \d+ to \d+\[vruntime_increment:.+\]", log_data)
+    task_executions = re.findall(r"Task (\d+) spends (\d+) ns from (\d+) to \d+\[vruntime_increment:.+\]", log_data)
     task_releases = re.findall(r"Tasks (\d+) Released at time (\d+)", log_data)
     task_completions = re.findall(r"Task (\d+) completed at time (\d+) with RT \d+", log_data)
 
-    tasks = [(int(task), int(start), int(duration)) for (task, start), duration in zip(task_starts, task_durations)]
+    # Convert the strings to integers and reorder the tuples
+    tasks = [(int(task), int(start), int(duration)) for task, duration, start in task_executions]
     releases = [(int(task), int(time)) for task, time in task_releases]
     completions = [(int(task), int(time)) for task, time in task_completions]
     
