@@ -39,14 +39,19 @@ For a comprehensive understanding of the task set and instructions for conductin
     ```
 
 ### To Evaluate the Schedulability by the Simulator & the Proposed Analysis
-1. **Configure the experiment settings in the [script](./script/run/proposed_and_simulator/run_exps.sh)**:
+1. **Build the application**
+    ```bash
+    gradle wrapper
+    ./gradlew build
+    ```
+2. **Configure the experiment settings in the [script](./script/run/proposed_and_simulator/run_exps.sh)**:
     * **num_tasks**: List of the number of tasks (default: 2, 4, 6, 8, 10)
     * **utilization**: List of utilization values (default: 0.2, 0.4, 0.6, 0.8)
     * **target_latency**: Target latency in microseconds (default: 18,000)
     * **min_gran**: Minimum granularity in microseconds (default: 2,250)
     * **jiffy**: Jiffy value in microseconds (default: 1,000)
     * **nice_assign**: Strategy for assigning nice values (default: GA)
-2. **Run the script**:
+3. **Run the script**:
     ```bash
     bash ./script/run/proposed_and_simulator/run_exps.sh
     ```
@@ -56,10 +61,14 @@ For a comprehensive understanding of the task set and instructions for conductin
         ```
 
 ### To Evaluate the Schedulability on a Real Linux System
-1. **Configure the experiment settings in the [script](./script/run/real_linux/run_exps_with_synthetic_tasksets.sh)**:
+1. **Build the application**:
+    ```bash
+    bash ./script/run/real_linux/build_application.sh
+    ```
+2. **Configure the experiment settings in the [script](./script/run/real_linux/run_exps_with_synthetic_tasksets.sh)**:
     * **num_tasks**: List of the number of tasks (default: 2, 4, 6, 8, 10)
     * **utilization**: List of utilization values (default: 0.2, 0.4, 0.6, 0.8)
-2. **Run the application with synthetic task sets**:
+3. **Run the application with synthetic task sets**:
     ```bash
     sudo bash ./script/run/real_linux/run_exps_with_synthetic_tasksets.sh
     ```
