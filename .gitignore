@@ -1,4 +1,3 @@
-.gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
@@ -44,6 +43,8 @@ bin/
 .idea/
 .gradle/
 gradle
+gradlew
+gradlew.bat
 
 logs/
 inputs/
