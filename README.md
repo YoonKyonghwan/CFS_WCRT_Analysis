@@ -11,6 +11,9 @@ For a comprehensive understanding of the task set and instructions for conductin
 
 ## Prerequisites
 
+###  Clone the repository
+    git clone --recurse-submodules [repository address]
+
 ###  To run simulator and analyze WCRT by proposed method
 * **Java Version**: Requires Java 8 or higher.
 * **Build Tool**: Gradle is used for building the application and managing dependencies.
