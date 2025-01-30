@@ -96,7 +96,8 @@ public class CFSSimulator extends DefaultSchedulerSimulator {
     protected long getTimeSlice(TaskStat task, RunQueue queueInCore) {
         long timeSlice;
         long totalWeight = queueInCore.getTotalWeight() + task.task.weight;
-        timeSlice = Math.max(this.targetLatency * task.task.weight / totalWeight, this.minimumGranularity);
+        long timeSliceBasePeriod = queueInCore.size() <= this.targetLatency / this.minimumGranularity ? this.targetLatency : this.minimumGranularity * queueInCore.size();
+        timeSlice = Math.max(timeSliceBasePeriod * task.task.weight / totalWeight, this.minimumGranularity);
         timeSlice = (timeSlice / this.schedulePeriod) * this.schedulePeriod + this.schedulePeriod;
         timeSlice = Math.min(timeSlice, (long) (task.readTimeInNanoSeconds + task.bodyTimeInNanoSeconds + task.writeTimeInNanoSeconds));
 

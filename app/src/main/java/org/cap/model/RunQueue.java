@@ -120,6 +120,10 @@ public class RunQueue {
         return this.queueInCore.peek();
     }
 
+    public int size() {
+        return this.queueInCore.size();
+    }
+
     public void clear() {
         this.queueInCore.clear();
     }
