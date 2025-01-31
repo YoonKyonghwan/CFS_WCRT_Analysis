@@ -11,6 +11,7 @@ public class CFSAnalyzer {
     private int targetLatency; 
     private int min_granularity;
     private int jiffy_us; // default 1ms
+    private int sched_nr_latency = 8;
 
 
     public CFSAnalyzer(List<Core> cores, int targetLatency, int min_granularity, int jiffy_us) {
@@ -68,10 +69,11 @@ public class CFSAnalyzer {
         int C_j = (int) task_j.bodyTime;
         double w_i = task_i.weight;
         double w_j = task_j.weight;
+        int task_size = tasks.size();
 
         // // interference bound by vruntime
         double v_j_gap = 0;        
-        if (tasks.size() > 2) {
+        if (task_size > 2) {
             double weight_k = 88761; //max_weight = 88761 (NiceToWeight.getWeight(-20))
             for (Task task: tasks) {
                 if (task.id != task_i.id && task.id != task_j.id && task.weight < weight_k) {
@@ -79,19 +81,19 @@ public class CFSAnalyzer {
                 }
             }
             // if tau_k is V_min^t
-            double candidate1 = getAlpha(task_i, weight_k) + this.targetLatency / 2;
+            double candidate1 = getAlpha(task_i, weight_k, task_size) + this.targetLatency / 2;
             // if tau_j is V_min^t
-            double candidate2 = getAlpha(task_i, w_j);
+            double candidate2 = getAlpha(task_i, w_j, task_size);
             // if tau_i is V_min^t, then v_j_gap = this.targetLatency / 2 and always smaller than candidate1
             v_j_gap += Math.max(candidate1, candidate2);
         }else{
             //because v_min^t is from one of the two tasks
-            double candidate1 = getAlpha(task_i, w_j);
+            double candidate1 = getAlpha(task_i, w_j, task_size);
             double candidate2 = (this.targetLatency / 2);
             v_j_gap += Math.max(candidate1, candidate2);
         }
 
-        v_j_gap += getGamma(task_i, task_j);
+        v_j_gap += getGamma(task_i, task_j, task_size);
         double w_0 = NiceToWeight.getWeight(0);
         long interference = (long) (v_j_gap * (w_j / w_0));
         interference += (long) (C_i * (w_j / w_i));
@@ -112,9 +114,13 @@ public class CFSAnalyzer {
     }
 
 
-    private double getAlpha(Task task_i, double minWeight) {
+    private double getAlpha(Task task_i, double minWeight, int task_size) {
+        int adjusted_targetLatency = this.targetLatency;
+        if (task_size > sched_nr_latency){
+            adjusted_targetLatency = task_size * this.min_granularity;
+        }
         double weight_ratio = (double) task_i.weight / (double) (task_i.weight + minWeight);
-        double maxDelta = Math.max(this.targetLatency * weight_ratio, this.min_granularity);
+        double maxDelta = Math.max(adjusted_targetLatency * weight_ratio, this.min_granularity);
         maxDelta = adjustTimeScliceWithJiffy(maxDelta);
         maxDelta = Math.min(maxDelta, task_i.bodyTime);
         double w_0 = NiceToWeight.getWeight(0);
@@ -123,9 +129,13 @@ public class CFSAnalyzer {
     }
 
 
-    private double getGamma(Task task_i, Task task_j) {
+    private double getGamma(Task task_i, Task task_j, int task_size) {
+        int adjusted_targetLatency = this.targetLatency;
+        if (task_size > sched_nr_latency){
+            adjusted_targetLatency = task_size * this.min_granularity;
+        }
         double weight_ratio = (double) task_j.weight / (double) (task_i.weight + task_j.weight);
-        double delta = Math.max(this.targetLatency * weight_ratio, this.min_granularity);
+        double delta = Math.max(adjusted_targetLatency * weight_ratio, this.min_granularity);
         delta = adjustTimeScliceWithJiffy(delta);
         delta = Math.min(delta, task_j.bodyTime);
         double w_0 = NiceToWeight.getWeight(0);
@@ -150,7 +160,7 @@ public class CFSAnalyzer {
         return true;
     }
 
-    
+
     public long getMaxBusyInterval(Core core, Task task_i) {
         int C_i = (int) task_i.bodyTime;
 
