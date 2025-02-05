@@ -14,8 +14,6 @@ import org.cap.model.Task;
 import org.cap.model.TestConfiguration;
 import org.cap.simulation.CFSAnalyzer;
 import org.cap.simulation.CFSSimulator;
-import org.cap.simulation.EEVDFSimulator;
-import org.cap.simulation.comparator.ComparatorCase;
 import org.cap.utility.AnalysisResultSaver;
 import org.cap.utility.ArgParser;
 import org.cap.utility.JsonReader;
@@ -95,7 +93,7 @@ public class Main {
             } 
         }else{ //GA
             int num_chromosomes = 1000;
-            int timeout_ms = 3000;
+            int timeout_ms = 5000;
             double mutationRate = 0.05;
             GANiceAssigner gaNiceAssigner = new GANiceAssigner(num_chromosomes, timeout_ms, mutationRate, num_tasks, params.getInt("target_latency"), params.getInt("minimum_granularity"), params.getInt("jiffy"));
             gaNiceAssigner.evolve(testConf.mappingInfo);

@@ -2,7 +2,7 @@
 
 # set arguments
 num_cores=(1)
-num_tasks=(2 4 6 8 10)
+num_tasks=(4 8 12 16 20)
 utilizations=(0.2 0.4 0.6 0.8)
 target_latency=18000
 min_gran=2250

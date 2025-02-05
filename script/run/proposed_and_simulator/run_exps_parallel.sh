@@ -1,6 +1,6 @@
 #!/bin/bash
 
-num_tasks=(2 4 6 8 10)
+num_tasks=(4 8 12 16 20)
 utilizations=(0.2 0.4 0.6 0.8)
 nice_assign="GA" # baseline, heuristic, GA
 
@@ -9,7 +9,7 @@ test_try_count=1000
 period_set=303000
 taskset_dir="./generated_taskset_${period_set}"
 schedule_simulation_method="random" #random, random_target
-result_dir="./exp_results_proposed_${nice_assign}_${period_set}_${schedule_simulation_method}"
+result_dir="./exp_results_proposed_${nice_assign}_${period_set}_${schedule_simulation_method}_new"
 
 rm -rf "$result_dir"
 
