@@ -12,7 +12,9 @@ For a comprehensive understanding of the task set and instructions for conductin
 ## Prerequisites
 
 ###  Clone the repository
-    git clone --recurse-submodules [repository address]
+``` bash
+git clone --recurse-submodules [repository address]
+``` 
 
 ###  To run simulator and analyze WCRT by proposed method
 * **Java Version**: Requires Java 8 or higher.
@@ -26,9 +28,9 @@ For a comprehensive understanding of the task set and instructions for conductin
 * We tested the application on Raspberry Pi4 which installed Rasbian(Linux Kernel 5.15.92)
 
 ### Python Libraries (for Additional Analysis Only)
-    ``` bash
-    pip3 install pandas matplotlib scikit-learn
-    ```
+``` bash
+pip3 install pandas matplotlib scikit-learn
+```
 
 
 
