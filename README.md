@@ -38,7 +38,7 @@ For a comprehensive understanding of the task set and instructions for conductin
 * You can modify the number of tasks in a set and the system utilization in [main.py](./task_generation/main.py).
 * For each combination of task numbers and system utilizations, a corresponding number of task sets (num_tasksets) will be generated.
     ```
-    python3 ./task_generation/main.py --generated_files_save_dir=test_gen_tasksets --num_tasksets=100 --min_period=30000 --max_period=3000000
+    python3 ./task_generation/main.py --generated_files_save_dir=./generated_taskset_303000 --num_tasksets=100 --min_period=30000 --max_period=3000000
     ```
 
 ### To Evaluate the Schedulability by the Simulator & the Proposed Analysis
