@@ -1,5 +1,6 @@
 package org.cap;
 
+import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.util.List;
 import java.util.logging.Level;
@@ -52,17 +53,19 @@ public class Main {
         // save analysis results into file
         MathUtility.convertPeriod_ns_us(testConf);
         AnalysisResultSaver analysisResultSaver = new AnalysisResultSaver();
-        analysisResultSaver.saveResultSummary(
+        String inputFileName = new File(taskInfoPath).getName();
+        if (inputFileName.contains("cores") && inputFileName.contains("tasks") && inputFileName.contains("utilization")) {
+            analysisResultSaver.saveResultSummary(
                 resultDir, taskInfoPath, 
                 simulator_schedulability, simulator_timeConsumption,
                 proposed_schedulability, proposed_timeConsumption
                 );
+        }
         analysisResultSaver.saveDetailedResult(resultDir, taskInfoPath, testConf);
 
         // update the task info file with the nice values
         analysisResultSaver.updateNiceValues(taskInfoPath, testConf);
     }
-
 
 
     private static boolean analysis_by_proposed(TestConfiguration testConf, Namespace params) {

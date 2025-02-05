@@ -1,0 +1,35 @@
+{
+  "idNameMap": {
+    "1": "task1",
+    "2": "task2"
+  },
+  "mappingInfo": [
+    {
+      "coreID": 1,
+      "tasks": [
+        {
+          "id": 1,
+          "startTime": 0,
+          "readTime": 0.0,
+          "bodyTime": 59289.0,
+          "writeTime": 0.0,
+          "nice": 19,
+          "period": 600000,
+          "initialPriority": -1,
+          "index": 0
+        },
+        {
+          "id": 2,
+          "startTime": 0,
+          "readTime": 0.0,
+          "bodyTime": 15036.0,
+          "writeTime": 0.0,
+          "nice": 14,
+          "period": 30000,
+          "initialPriority": -1,
+          "index": 1
+        }
+      ]
+    }
+  ]
+}

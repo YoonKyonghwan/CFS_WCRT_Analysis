@@ -1,5 +1,6 @@
 package org.cap.utility;
 
+import java.io.File;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -16,6 +17,12 @@ public class LoggerUtility {
             LocalDateTime now = LocalDateTime.now();
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss");
             String formatDateTime = now.format(formatter);
+
+            // Create the result directory if it doesn't exist
+            File dir = new File("./logs");
+            if (!dir.exists()) {
+                dir.mkdirs();
+            }
 
             FileHandler fileHandler = new FileHandler("./logs/simulation_" + formatDateTime + ".txt");
             fileHandler.setFormatter(new CustomFormatter());

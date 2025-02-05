@@ -42,10 +42,15 @@ For a comprehensive understanding of the task set and instructions for conductin
     ```
 
 ### To Evaluate the Schedulability by the Simulator & the Proposed Analysis
-1. **Build the application**
+1. **Build the application**:
     ```bash
     gradle wrapper
     ./gradlew build
+    mv ./app/build/libs/run.jar ./run.jar
+    ```
+    *(Optional) The build is successful if executing the command generates "exp_result.csv".
+    ```bash
+    java -jar run.jar -t=./sample_taskset.json -rd=./ 
     ```
 2. **Configure the experiment settings in the [script](./script/run/proposed_and_simulator/run_exps.sh)**:
     * **num_tasks**: List of the number of tasks (default: 2, 4, 6, 8, 10)

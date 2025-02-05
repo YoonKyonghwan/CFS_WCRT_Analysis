@@ -66,25 +66,38 @@ public class AnalysisResultSaver {
 
     public void saveDetailedResult(String resultDir, String taskInfoPath, TestConfiguration testConf){
         String inputFileName = new File(taskInfoPath).getName();
-        Pattern pattern = Pattern.compile("(\\d+)cores_(\\d+)tasks_(\\d+(?:\\.\\d+)?)utilization_(\\d+)\\.json");
-        Matcher matcher = pattern.matcher(inputFileName);
-        
-        if (!matcher.matches()) {
-            System.err.println("Invalid input file name format");
-            return;
+        Boolean isRegularFile = true;
+        if (!inputFileName.contains("cores") || !inputFileName.contains("tasks") || !inputFileName.contains("utilization")) {
+            isRegularFile = false;
         }
-        
-        String numCores = matcher.group(1);
-        String numTasks = matcher.group(2);
-        String utilization = matcher.group(3);
-        
-        // Create the result directory if it doesn't exist
-        String detailResultDir = resultDir + "/detail_result/" + numCores + "cores/" + numTasks + "tasks/" + utilization + "utilization";
+
+        String detailResultDir = resultDir;
+        if (isRegularFile){
+            Pattern pattern = Pattern.compile("(\\d+)cores_(\\d+)tasks_(\\d+(?:\\.\\d+)?)utilization_(\\d+)\\.json");
+            Matcher matcher = pattern.matcher(inputFileName);
+            
+            if (!matcher.matches()) {
+                System.err.println("Invalid input file name format");
+                return;
+            }
+            
+            String numCores = matcher.group(1);
+            String numTasks = matcher.group(2);
+            String utilization = matcher.group(3);
+            
+            // Create the result directory if it doesn't exist
+            detailResultDir = resultDir + "/detail_result/" + numCores + "cores/" + numTasks + "tasks/" + utilization + "utilization";
+        }
+
         File dir = new File(detailResultDir);
         if (!dir.exists()) {
             dir.mkdirs();
         }
-        String resultFileName = detailResultDir + "/" + inputFileName.replace(".json", "_result.csv");
+
+        String resultFileName = detailResultDir + "/exp_result.csv";
+        if (isRegularFile){
+            resultFileName = detailResultDir + "/" + inputFileName.replace(".json", "_result.csv");
+        }
         File file = new File(resultFileName);
         if (file.exists()) {
             file.delete();

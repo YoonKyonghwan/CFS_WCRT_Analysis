@@ -27,7 +27,7 @@ public class ArgParser {
         parser.addArgument("--schedule_simulation_method", "-ssm")
                 .dest("schedule_simulation_method")
                 .type(Arguments.enumStringType(ScheduleSimulationMethod.class))
-                .setDefault(ScheduleSimulationMethod.BRUTE_FORCE.toString())
+                .setDefault(ScheduleSimulationMethod.RANDOM.toString())
                 .nargs("?")
                 .help("search method (either brute-force, random, random_target_task, or priority-queue) ");
         parser.addArgument("--simulation_time", "-st")
@@ -63,13 +63,13 @@ public class ArgParser {
         parser.addArgument("--target_latency", "-tl")
                 .dest("target_latency")
                 .type(Integer.class)
-                .setDefault(20000)
+                .setDefault(18000)
                 .nargs("?")
                 .help("The target latency");
         parser.addArgument("--minimum_granularity", "-mg")
                 .dest("minimum_granularity")
                 .type(Integer.class)
-                .setDefault(1)
+                .setDefault(2250)
                 .nargs("?")
                 .help("The minimum granularity");
         parser.addArgument("--jiffy", "-jf")
@@ -99,7 +99,7 @@ public class ArgParser {
         parser.addArgument("--nice_assign_method", "-nat")
                 .dest("nice_assign_method")
                 .type(Arguments.enumStringType(NiceAssignMethod.class))
-                .setDefault(NiceAssignMethod.HEURISTIC.toString())
+                .setDefault(NiceAssignMethod.GENETIC_ALGORITHM.toString())
                 .nargs("?")
                 .help("nice value method (baseline, heuristic, GA) ");
         Namespace params = parser.parseArgsOrFail(args);
