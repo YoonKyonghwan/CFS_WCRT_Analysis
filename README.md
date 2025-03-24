@@ -57,7 +57,7 @@ pip3 install pandas matplotlib scikit-learn
     java -jar run.jar -t=./sample_taskset.json -rd=./ 
     ```
 2. **Configure the experiment settings in the [script](./script/run/proposed_and_simulator/run_exps.sh)**:
-    * **num_tasks**: List of the number of tasks (default: 2, 4, 6, 8, 10)
+    * **num_tasks**: List of the number of tasks (default: 4, 8, 12, 16, 20)
     * **utilization**: List of utilization values (default: 0.2, 0.4, 0.6, 0.8)
     * **target_latency**: Target latency in microseconds (default: 18,000)
     * **min_gran**: Minimum granularity in microseconds (default: 2,250)
@@ -78,7 +78,7 @@ pip3 install pandas matplotlib scikit-learn
     bash ./script/run/real_linux/build_application.sh
     ```
 2. **Configure the experiment settings in the [script](./script/run/real_linux/run_exps_with_synthetic_tasksets.sh)**:
-    * **num_tasks**: List of the number of tasks (default: 2, 4, 6, 8, 10)
+    * **num_tasks**: List of the number of tasks (default: 4, 8, 12, 16, 20)
     * **utilization**: List of utilization values (default: 0.2, 0.4, 0.6, 0.8)
 3. **Run the application with synthetic task sets**:
     ```bash

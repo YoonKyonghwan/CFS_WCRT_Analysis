@@ -8,7 +8,7 @@ SCHED_INDEX=0 #"CFS"
 APPLICATION_PATH="./real_linux_application/app/application"
 
 num_cores=(1)
-num_tasks=(2 4 6 8 10)
+num_tasks=(4 8 12 16 20)
 utilizations=(0.2 0.4 0.6 0.8)
 num_sets=100
 
